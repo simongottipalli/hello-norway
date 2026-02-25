@@ -10,7 +10,6 @@ RUN npm ci
 
 COPY prisma ./prisma
 COPY prisma.config.ts ./
-RUN npx prisma generate
 
 # Build the app
 FROM base AS builder
