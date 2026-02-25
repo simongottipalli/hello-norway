@@ -9,7 +9,6 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY prisma ./prisma
-COPY prisma.config.ts ./
 
 # Build the app
 FROM base AS builder
@@ -34,10 +33,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Prisma schema + migrations (required for `prisma generate` / `migrate deploy` at runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
 USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma generate --schema=./prisma/schema.prisma && npx prisma migrate deploy --schema=./prisma/schema.prisma && node server.js"]
