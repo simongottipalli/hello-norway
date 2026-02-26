@@ -100,7 +100,7 @@ model UserTask {
 model OTPCode {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String   @db.VarChar(320)
-  code      String   @db.VarChar(255)
+  code      Int      @db.Integer
   expiresAt DateTime @db.Timestamptz(6)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 
