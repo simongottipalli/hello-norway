@@ -39,11 +39,12 @@ describe("User Model", () => {
       };
 
       // TypeScript should prevent this at compile time, but we test runtime behavior
+      // Prisma should throw an error about the required field
       await expect(
         prisma.user.create({
           data: testUser as any,
         })
-      ).rejects.toThrow();
+      ).rejects.toThrow(/name/);
     });
 
     it("should retrieve user with name field", async () => {
