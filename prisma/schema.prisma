@@ -47,16 +47,17 @@ enum UserTaskStatus {
 }
 
 model User {
-  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email            String     @unique @db.VarChar(320)
-  isEU             Boolean
-  employmentStatus EmploymentStatus
-  arrivalDate      DateTime?  @db.Date
-  hasChildren      Boolean
-  housingType      HousingType
-  createdAt        DateTime   @default(now()) @db.Timestamptz(6)
-  updatedAt        DateTime   @updatedAt @db.Timestamptz(6)
-  userTasks        UserTask[]
+  id                  String            @id @default(uuid()) @db.Uuid
+  email               String            @unique @db.VarChar(320)
+  isEU                Boolean?
+  employmentStatus    EmploymentStatus?
+  hasChildren         Boolean?
+  housingType         HousingType?
+  plannedArrivalDate  DateTime?         @db.Date
+  arrivalDate         DateTime?         @db.Date
+  createdAt           DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime          @updatedAt @db.Timestamptz(6)
+  userTasks           UserTask[]
 }
 
 model Task {
@@ -70,8 +71,8 @@ model Task {
   requiresEU                 Boolean?
   requiresEmploymentStatus   EmploymentStatus[]
   requiresChildren           Boolean?
-  minYearsInNorway           Int?               @db.SmallInt
-  maxYearsInNorway           Int?               @db.SmallInt
+  minDaysFromArrival         Int?               @db.SmallInt
+  maxDaysFromArrival         Int?               @db.SmallInt
   sortOrder                  Int                @db.SmallInt
   createdAt                  DateTime           @default(now()) @db.Timestamptz(6)
   updatedAt                  DateTime           @updatedAt @db.Timestamptz(6)
