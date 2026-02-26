@@ -96,3 +96,13 @@ model UserTask {
   @@index([userId])
   @@index([taskId])
 }
+
+model OTPCode {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @db.VarChar(320)
+  code      String   @db.VarChar(255)
+  expiresAt DateTime @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([email])
+}
