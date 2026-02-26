@@ -14,9 +14,84 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum EmploymentStatus {
+  EMPLOYED
+  SELF_EMPLOYED
+  UNEMPLOYED
+  STUDENT
+  OTHER
+}
+
+enum HousingType {
+  RENT
+  OWN
+  LIVES_WITH_FAMILY
+  OTHER
+}
+
+enum TaskCategory {
+  ARRIVAL
+  IDENTITY_BANKING
+  HEALTH
+  TAX_WORK
+  FAMILY
+  HOUSING
+  DRIVING
+  OTHER
+}
+
+enum UserTaskStatus {
+  TODO
+  SAVED
+  DONE
+}
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email            String     @unique @db.VarChar(320)
+  isEU             Boolean
+  employmentStatus EmploymentStatus
+  arrivalDate      DateTime?  @db.Date
+  hasChildren      Boolean
+  housingType      HousingType
+  createdAt        DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime   @updatedAt @db.Timestamptz(6)
+  userTasks        UserTask[]
+}
+
+model Task {
+  id                         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                       String             @unique @db.VarChar(80)
+  title                      String             @db.VarChar(140)
+  shortDescription           String             @db.VarChar(280)
+  body                       String             @db.Text
+  category                   TaskCategory
+  officialLinks              Json               @db.JsonB
+  requiresEU                 Boolean?
+  requiresEmploymentStatus   EmploymentStatus[]
+  requiresChildren           Boolean?
+  minYearsInNorway           Int?               @db.SmallInt
+  maxYearsInNorway           Int?               @db.SmallInt
+  sortOrder                  Int                @db.SmallInt
+  createdAt                  DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt                  DateTime           @updatedAt @db.Timestamptz(6)
+  userTasks                  UserTask[]
+
+  @@index([category, sortOrder])
+  @@index([slug])
+}
+
+model UserTask {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String         @db.Uuid
+  taskId      String         @db.Uuid
+  status      UserTaskStatus
+  completedAt DateTime?      @db.Timestamptz(6)
+  createdAt   DateTime       @default(now()) @db.Timestamptz(6)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task        Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId])
+  @@index([userId])
+  @@index([taskId])
 }
