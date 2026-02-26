@@ -1,12 +1,14 @@
-# API Tests
+# Unit & Integration Tests
 
-This directory contains comprehensive tests for the Task API endpoints.
+This directory contains comprehensive unit and integration tests for the Task API endpoints.
 
 ## Test Framework
 
 We use **Vitest** with **Supertest** for API testing:
 - **Vitest**: Fast, modern test runner with TypeScript support
 - **Supertest**: HTTP assertion library for testing Express apps
+
+> **Note**: For end-to-end UI tests, see the [e2e/](../../e2e/README.md) directory which uses Playwright.
 
 ## Running Tests
 

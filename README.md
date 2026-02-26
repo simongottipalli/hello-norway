@@ -13,8 +13,11 @@ A Next.js application with Express API backend, helping newcomers navigate essen
 ### Backend
 - **[Express](https://expressjs.com/)** — Fast, minimalist web framework
 - **[Prisma](https://www.prisma.io/)** — Type-safe ORM with PostgreSQL
+
+### Testing
 - **[Vitest](https://vitest.dev/)** — Fast unit testing with TypeScript support
 - **[Supertest](https://github.com/ladjs/supertest)** — HTTP assertion library for API testing
+- **[Playwright](https://playwright.dev/)** — End-to-end testing for UI and API workflows
 
 ## Getting Started
 
@@ -63,10 +66,15 @@ src/
     errorHandler.ts         # Centralized error handling
   lib/                      # Libraries and clients
     prisma.ts               # Prisma client instance
-  __tests__/                # Test files
+  __tests__/                # Unit test files
     tasks.test.ts           # Task API tests
     setup.ts                # Test configuration
     README.md               # Testing documentation
+
+e2e/                        # End-to-end tests
+  tasks.spec.ts             # UI tests for tasks page
+  api.spec.ts               # API integration tests
+  README.md                 # E2E testing documentation
 
 prisma/
   schema.prisma             # Database schema
@@ -74,7 +82,8 @@ prisma/
   seed.ts                   # Database seed data
 
 public/                     # Static assets
-vitest.config.ts            # Test configuration
+vitest.config.ts            # Unit test configuration
+playwright.config.ts        # E2E test configuration
 ```
 
 ## Environment Variables
@@ -94,8 +103,13 @@ vitest.config.ts            # Test configuration
 | `npm run build` | Production build |
 | `npm run start` | Start production server locally |
 | `npm run lint` | Run ESLint |
-| `npm test` | Run all tests once |
-| `npm run test:watch` | Run tests in watch mode |
+| `npm test` | Run unit tests once |
+| `npm run test:watch` | Run unit tests in watch mode |
+| `npm run test:e2e` | Run end-to-end tests |
+| `npm run test:e2e:ui` | Run E2E tests with interactive UI |
+| `npm run test:e2e:headed` | Run E2E tests with visible browser |
+| `npm run test:e2e:debug` | Debug E2E tests step-by-step |
+| `npm run test:all` | Run all tests (unit + E2E) |
 
 ## API Endpoints
 
@@ -112,10 +126,14 @@ See [API Tests](src/__tests__/README.md) for detailed endpoint documentation and
 
 ## Testing
 
-We use **Vitest** with **Supertest** for comprehensive API testing.
+We have comprehensive testing at multiple levels:
+
+### Unit & Integration Tests (Vitest + Supertest)
+
+Test the backend API endpoints and business logic:
 
 ```bash
-# Run all tests
+# Run unit tests
 npm test
 
 # Run tests in watch mode (auto-rerun on changes)
@@ -125,13 +143,51 @@ npm run test:watch
 npx vitest run --reporter=verbose
 ```
 
-**Test Coverage:**
+**Coverage:**
 - ✅ 13 test cases covering all CRUD operations
 - ✅ Happy path scenarios (create, read, update, delete)
 - ✅ Error handling (missing fields, duplicates, not found)
 - ✅ Data validation and integrity checks
 
-See [Test Documentation](src/__tests__/README.md) for more details.
+See [Unit Test Documentation](src/__tests__/README.md) for more details.
+
+### End-to-End Tests (Playwright)
+
+Test complete user workflows through the browser:
+
+```bash
+# Run E2E tests
+npm run test:e2e
+
+# Run with interactive UI (recommended for development)
+npm run test:e2e:ui
+
+# Run with visible browser
+npm run test:e2e:headed
+
+# Debug tests step-by-step
+npm run test:e2e:debug
+```
+
+**Coverage:**
+- ✅ UI interactions (forms, buttons, navigation)
+- ✅ Task creation, deletion, and listing
+- ✅ Form validation and error handling
+- ✅ API endpoint testing (GET, POST, PUT, DELETE)
+- ✅ Data persistence and page reloads
+- ✅ Multiple task operations
+
+See [E2E Test Documentation](e2e/README.md) for more details.
+
+### Run All Tests
+
+```bash
+npm run test:all
+```
+
+This runs both unit tests and E2E tests sequentially.
+
+For a comprehensive testing guide, see [TESTING.md](TESTING.md).
 
 ## Database
 
