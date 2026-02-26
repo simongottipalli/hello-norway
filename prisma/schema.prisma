@@ -83,14 +83,16 @@ model Task {
 }
 
 model UserTask {
-  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String         @db.Uuid
-  taskId      String         @db.Uuid
-  status      UserTaskStatus
-  completedAt DateTime?      @db.Timestamptz(6)
-  createdAt   DateTime       @default(now()) @db.Timestamptz(6)
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task        Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String         @db.Uuid
+  taskId        String         @db.Uuid
+  status        UserTaskStatus
+  completedAt   DateTime?      @db.Timestamptz(6)
+  dueDate       DateTime?      @db.Date
+  personalNotes String?        @db.Text
+  createdAt     DateTime       @default(now()) @db.Timestamptz(6)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task          Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@unique([userId, taskId])
   @@index([userId])
