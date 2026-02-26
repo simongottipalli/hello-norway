@@ -33,21 +33,17 @@ describe("User Model", () => {
       expect(user).toHaveProperty("updatedAt");
     });
 
-    it("should create a user without name field (nullable)", async () => {
+    it("should require name field when creating user", async () => {
       const testUser = {
         email: `test-no-name-${Date.now()}@example.com`,
       };
 
-      const user = await prisma.user.create({
-        data: testUser,
-      });
-
-      // Clean up this user
-      await prisma.user.delete({ where: { id: user.id } });
-
-      expect(user).toHaveProperty("id");
-      expect(user.email).toBe(testUser.email);
-      expect(user.name).toBeNull();
+      // TypeScript should prevent this at compile time, but we test runtime behavior
+      await expect(
+        prisma.user.create({
+          data: testUser as any,
+        })
+      ).rejects.toThrow();
     });
 
     it("should retrieve user with name field", async () => {

@@ -50,7 +50,7 @@ npx vitest run --reporter=verbose
 
 ### User Model
 - ✅ Creates a user with name field
-- ✅ Creates a user without name field (nullable)
+- ✅ Requires name field when creating user (validation)
 - ✅ Retrieves user with name field
 - ✅ Updates user name field
 - ✅ Validates name field is in User type

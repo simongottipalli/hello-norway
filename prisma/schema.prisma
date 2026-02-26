@@ -49,7 +49,7 @@ enum UserTaskStatus {
 model User {
   id                  String            @id @default(uuid()) @db.Uuid
   email               String            @unique @db.VarChar(320)
-  name                String?           @db.VarChar(255)
+  name                String            @db.VarChar(255)
   isEU                Boolean?
   employmentStatus    EmploymentStatus?
   hasChildren         Boolean?
