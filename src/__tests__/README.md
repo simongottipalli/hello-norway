@@ -48,13 +48,22 @@ npx vitest run --reporter=verbose
 - ✅ Deletes a task
 - ✅ Returns 404 when task not found
 
+### User Model
+- ✅ Creates a user with name field
+- ✅ Requires name field when creating user (validation)
+- ✅ Retrieves user with name field
+- ✅ Updates user name field
+- ✅ Validates name field is in User type
+- ✅ Verifies all expected fields in User model
+
 ## Test Structure
 
 ```
 src/__tests__/
 ├── README.md           # This file
 ├── setup.ts           # Test setup (loads environment variables)
-└── tasks.test.ts      # Task API test suite
+├── tasks.test.ts      # Task API test suite
+└── user.test.ts       # User model test suite
 ```
 
 ## Writing New Tests
