@@ -1,114 +1,74 @@
 # Unit & Integration Tests
 
-This directory contains comprehensive unit and integration tests for the Task API endpoints.
+Tests for backend services and API endpoints using **Vitest** and **Supertest**.
 
-## Test Framework
-
-We use **Vitest** with **Supertest** for API testing:
-- **Vitest**: Fast, modern test runner with TypeScript support
-- **Supertest**: HTTP assertion library for testing Express apps
-
-> **Note**: For end-to-end UI tests, see the [e2e/](../../e2e/README.md) directory which uses Playwright.
+> **Note**: For end-to-end UI tests, see the [e2e/](../../e2e/README.md) directory (Playwright).
 
 ## Running Tests
 
 ```bash
-# Run all tests once
-npm test
-
-# Run tests in watch mode (re-runs on file changes)
-npm run test:watch
-
-# Run tests with verbose output
-npx vitest run --reporter=verbose
+npm test                    # Run all tests
+npm run test:watch          # Watch mode
+npx vitest run --reporter=verbose  # Verbose output
 ```
-
-## Test Coverage
-
-### Health Endpoint
-- ✅ GET /health returns status
-
-### GET /tasks
-- ✅ Returns all tasks
-- ✅ Returns tasks with correct structure
-- ✅ Returns tasks ordered by category and sortOrder
-
-### POST /tasks
-- ✅ Creates a new task with all fields
-- ✅ Creates a task with only required fields
-- ✅ Returns 400 when missing required fields
-- ✅ Returns 400 when slug already exists
-
-### PATCH /tasks/:id
-- ✅ Updates a task
-- ✅ Returns 404 when task not found
-- ✅ Returns 400 when updating to duplicate slug
-
-### DELETE /tasks/:id
-- ✅ Deletes a task
-- ✅ Returns 404 when task not found
-
-### User Model
-- ✅ Creates a user with name field
-- ✅ Requires name field when creating user (validation)
-- ✅ Retrieves user with name field
-- ✅ Updates user name field
-- ✅ Validates name field is in User type
-- ✅ Verifies all expected fields in User model
 
 ## Test Structure
 
 ```
 src/__tests__/
-├── README.md           # This file
-├── setup.ts           # Test setup (loads environment variables)
-├── tasks.test.ts      # Task API test suite
-└── user.test.ts       # User model test suite
+├── setup.ts                      # Test configuration
+├── tasks.test.ts                 # Task API tests
+├── user.test.ts                  # User model tests
+└── services/
+    └── email/
+        ├── emailService.test.ts      # Email service unit tests
+        ├── brevoProvider.test.ts     # Brevo provider unit tests
+        └── integration.test.ts       # Email integration tests
 ```
 
-## Writing New Tests
+## Writing Tests
 
-When adding new endpoints or features:
-
-1. Add test cases to the appropriate describe block
-2. Use `beforeAll` for setup that runs once
-3. Use `afterAll` for cleanup (e.g., closing database connections)
-4. Follow the existing pattern: Arrange → Act → Assert
-
-Example:
+Follow the **Arrange → Act → Assert** pattern:
 
 ```typescript
-it("should do something", async () => {
-  // Arrange
-  const testData = { ... };
+describe("Feature", () => {
+  it("should handle success case", async () => {
+    // Arrange: Set up test data
+    const input = { ... };
 
-  // Act
-  const response = await request(app)
-    .post("/endpoint")
-    .send(testData);
+    // Act: Execute the operation
+    const response = await request(app).post("/endpoint").send(input);
 
-  // Assert
-  expect(response.status).toBe(200);
-  expect(response.body).toHaveProperty("id");
+    // Assert: Verify results
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ ... });
+  });
+
+  it("should handle error case", async () => {
+    // Test error handling
+  });
 });
 ```
 
-## Database Considerations
+## Test Coverage Patterns
 
-- Tests run against the same database as development
-- Tests clean up after themselves (delete created resources)
-- Existing seed data is not modified
-- Consider using a separate test database for CI/CD
+For each feature, cover:
+- ✅ **Happy path**: Successful operations
+- ✅ **Validation**: Missing/invalid inputs (400 errors)
+- ✅ **Not found**: Non-existent resources (404 errors)
+- ✅ **Conflicts**: Duplicate/constraint violations (400/409 errors)
+- ✅ **Edge cases**: Boundary conditions, special values
 
-## Debugging Tests
+## Debugging
 
 ```bash
-# Run a specific test file
-npx vitest run src/__tests__/tasks.test.ts
-
-# Run tests matching a pattern
-npx vitest run -t "should create"
-
-# Run with debug output
-DEBUG=* npm test
+npx vitest run src/__tests__/tasks.test.ts  # Run specific file
+npx vitest run -t "should create"           # Run matching pattern
+DEBUG=* npm test                            # Debug output
 ```
+
+## Notes
+
+- Tests use the development database
+- Tests clean up created resources in `afterAll` hooks
+- Use `beforeAll` for one-time setup, `beforeEach` for per-test setup
