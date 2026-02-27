@@ -25,15 +25,15 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run dev:server',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      url: 'http://localhost:3000/health',
+      reuseExistingServer: true,
       stdout: 'ignore',
       stderr: 'pipe',
     },
     {
       command: 'npm run dev:client',
       url: 'http://localhost:3001',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       stdout: 'ignore',
       stderr: 'pipe',
     },

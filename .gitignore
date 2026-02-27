@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/coverage-html
+/.nyc_output
 /test-results/
 /playwright-report/
 /blob-report/

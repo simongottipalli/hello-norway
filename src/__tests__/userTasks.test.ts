@@ -11,6 +11,7 @@ describe("UserTask Model with New Fields", () => {
     const user = await prisma.user.create({
       data: {
         email: `test-usertask-${Date.now()}@example.com`,
+        name: "Test User",
       },
     });
     testUserId = user.id;
