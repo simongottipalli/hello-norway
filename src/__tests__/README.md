@@ -6,10 +6,34 @@ Tests for backend services and API endpoints using **Vitest** and **Supertest**.
 
 ## Running Tests
 
+### Unified Test Runner (Recommended)
+
 ```bash
-npm test                    # Run all tests
-npm run test:watch          # Watch mode
+npm test                    # Run ALL tests (unit + E2E)
+npm test -- --unit          # Run only unit/integration tests
+npm test -- --unit --watch  # Watch mode for unit tests
+npm test -- --coverage      # Run with coverage report
+npm test -- --help          # Show all available options
+```
+
+### Direct npm Scripts
+
+```bash
+npm run test:unit              # Run unit/integration tests
+npm run test:unit:watch        # Watch mode
+npm run test:unit:coverage     # Generate coverage report
+npm run test:unit:ui           # Interactive UI mode
+npm run test:all               # Run unit + E2E tests (sequential)
+npm run test:all:parallel      # Run unit + E2E tests (parallel)
+npm run test:ci                # CI mode with coverage
+```
+
+### Advanced Vitest Commands
+
+```bash
 npx vitest run --reporter=verbose  # Verbose output
+npx vitest run src/__tests__/tasks.test.ts  # Run specific file
+npx vitest run -t "should create"           # Run matching pattern
 ```
 
 ## Test Structure
@@ -59,12 +83,24 @@ For each feature, cover:
 - ✅ **Conflicts**: Duplicate/constraint violations (400/409 errors)
 - ✅ **Edge cases**: Boundary conditions, special values
 
+## Test Coverage
+
+Generate coverage reports to see which code is tested:
+
+```bash
+npm run test:unit:coverage     # Generate coverage report
+```
+
+Coverage reports are generated in:
+- `coverage/` - HTML report (open `coverage/index.html` in browser)
+- Console output shows coverage summary
+
 ## Debugging
 
 ```bash
 npx vitest run src/__tests__/tasks.test.ts  # Run specific file
 npx vitest run -t "should create"           # Run matching pattern
-DEBUG=* npm test                            # Debug output
+DEBUG=* npm run test:unit                   # Debug output
 ```
 
 ## Notes

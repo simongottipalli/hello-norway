@@ -13,6 +13,28 @@ export const getAllTasks = async (_req: Request, res: Response) => {
   }
 };
 
+export const getTaskById = async (req: Request, res: Response) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const task = await prisma.task.findUnique({
+      where: { id },
+    });
+
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    res.json(task);
+  } catch (error: any) {
+    const errorResponse = handlePrismaError(error);
+    if (errorResponse) {
+      return res.status(errorResponse.status).json({ error: errorResponse.message });
+    }
+    res.status(500).json({ error: "Failed to fetch task" });
+  }
+};
+
 export const createTask = async (req: Request, res: Response) => {
   try {
     const {

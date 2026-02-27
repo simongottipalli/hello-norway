@@ -4,7 +4,9 @@ This directory contains end-to-end tests for the Hello Norway application using 
 
 ## Overview
 
-E2E tests verify the complete user flow from the browser perspective, testing both the frontend UI and API interactions. These tests run against the actual application with both the backend and frontend servers running.
+E2E tests verify the complete user flow from the browser perspective, focusing on **frontend UI interactions**. These tests run against the actual application with both the backend and frontend servers running.
+
+> **Note**: For API endpoint testing, see the [unit and integration tests](../src/__tests__/README.md) which use Vitest and Supertest.
 
 ## Test Files
 
@@ -18,15 +20,7 @@ Tests for the Tasks page UI functionality:
 - Form state management
 - Multiple task operations
 - Data persistence
-
-### `api.spec.ts`
-Tests for the API endpoints:
-- GET /api/tasks - List all tasks
-- POST /api/tasks - Create new task
-- GET /api/tasks/[id] - Get specific task
-- PUT /api/tasks/[id] - Update task
-- DELETE /api/tasks/[id] - Delete task
-- Error handling and validation
+- Browser interactions (clicks, form fills, dialog handling)
 
 ## Running Tests
 
@@ -34,47 +28,39 @@ Tests for the API endpoints:
 Make sure you have installed dependencies:
 ```bash
 npm install
+npx playwright install  # Install browser binaries
 ```
 
-### Run All E2E Tests
+### Unified Test Runner (Recommended)
+
 ```bash
-npm run test:e2e
+npm test                    # Run ALL tests (unit + E2E)
+npm test -- --e2e           # Run only E2E tests
+npm test -- --e2e --headed  # E2E with visible browser
+npm test -- --e2e --ui      # Interactive UI mode
+npm test -- --parallel      # Run unit + E2E in parallel
+npm test -- --help          # Show all available options
 ```
 
-### Run Tests with UI Mode (Interactive)
-```bash
-npm run test:e2e:ui
-```
-This opens Playwright's UI mode where you can:
-- See all tests
-- Run tests interactively
-- Debug with time-travel
-- View test traces
+### Direct npm Scripts
 
-### Run Tests in Headed Mode (See Browser)
 ```bash
-npm run test:e2e:headed
+npm run test:e2e              # Run E2E tests
+npm run test:e2e:ui           # Interactive UI mode
+npm run test:e2e:headed       # Show browser during tests
+npm run test:e2e:debug        # Debug with Playwright Inspector
+npm run test:all              # Run unit + E2E tests (sequential)
+npm run test:all:parallel     # Run unit + E2E tests (parallel)
+npm run test:ci               # CI mode with coverage
 ```
 
-### Debug Tests
-```bash
-npm run test:e2e:debug
-```
-Opens Playwright Inspector for step-by-step debugging.
+### Advanced Playwright Commands
 
-### Run Specific Test File
 ```bash
-npx playwright test e2e/tasks.spec.ts
-```
-
-### Run Specific Test
-```bash
-npx playwright test -g "should create a new task"
-```
-
-### Run All Tests (Unit + E2E)
-```bash
-npm run test:all
+npx playwright test e2e/tasks.spec.ts           # Run specific file
+npx playwright test -g "should create a new task"  # Run matching pattern
+npx playwright test --trace on                  # Generate trace files
+npx playwright show-report                      # View HTML report
 ```
 
 ## Test Configuration
@@ -112,14 +98,17 @@ test.describe('Feature Name', () => {
 });
 ```
 
-### API Testing
+### UI Interaction Testing
 ```typescript
-test('should call API endpoint', async ({ request }) => {
-  const response = await request.get('/api/endpoint');
-  expect(response.ok()).toBeTruthy();
+test('should interact with form elements', async ({ page }) => {
+  // Fill form
+  await page.getByLabel('Task Title').fill('New Task');
 
-  const data = await response.json();
-  expect(data).toHaveProperty('id');
+  // Click button
+  await page.getByRole('button', { name: 'Add Task' }).click();
+
+  // Verify UI update
+  await expect(page.getByText('New Task')).toBeVisible();
 });
 ```
 
