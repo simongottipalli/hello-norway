@@ -146,8 +146,7 @@ test.describe('Tasks Page', () => {
     // Start submission
     const submitPromise = page.getByRole('button', { name: 'Add Task' }).click();
 
-    // Check if button or input gets disabled (may be too fast to catch)
-    const button = page.getByRole('button', { name: /Add Task|Adding.../ });
+    // Check if input gets disabled (may be too fast to catch)
     const input = page.getByPlaceholder('Enter task title...');
 
     // Wait for submission to complete
