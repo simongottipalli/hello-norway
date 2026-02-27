@@ -18,6 +18,7 @@
     "test:all": "npm run test && npm run test:e2e"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^4.0.1",
     "@prisma/client": "^6.19.2",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
