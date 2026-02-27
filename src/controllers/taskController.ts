@@ -8,7 +8,7 @@ export const getAllTasks = async (_req: Request, res: Response) => {
       orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
     });
     res.json(tasks);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: "Failed to fetch tasks" });
   }
 };
@@ -26,7 +26,7 @@ export const getTaskById = async (req: Request, res: Response) => {
     }
 
     res.json(task);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorResponse = handlePrismaError(error);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
@@ -74,7 +74,7 @@ export const createTask = async (req: Request, res: Response) => {
     });
 
     res.status(201).json(task);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorResponse = handlePrismaError(error);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
@@ -94,7 +94,7 @@ export const updateTask = async (req: Request, res: Response) => {
     });
 
     res.json(task);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorResponse = handlePrismaError(error);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
@@ -112,7 +112,7 @@ export const deleteTask = async (req: Request, res: Response) => {
     });
 
     res.status(204).send();
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorResponse = handlePrismaError(error);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });

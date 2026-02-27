@@ -37,7 +37,7 @@ describe('EmailService', () => {
         messageId: 'test-id',
       };
 
-      (mockProvider.sendEmail as any).mockResolvedValue(expectedResult);
+      (mockProvider.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue(expectedResult);
 
       const result = await service.sendEmail(options);
 
@@ -58,7 +58,7 @@ describe('EmailService', () => {
         error: 'Failed to send',
       };
 
-      (mockProvider.sendEmail as any).mockResolvedValue(expectedResult);
+      (mockProvider.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue(expectedResult);
 
       const result = await service.sendEmail(options);
 
@@ -70,7 +70,7 @@ describe('EmailService', () => {
   describe('validateConfig', () => {
     it('should delegate to provider', async () => {
       const service = new EmailService(mockProvider);
-      (mockProvider.validateConfig as any).mockResolvedValue(true);
+      (mockProvider.validateConfig as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
       const result = await service.validateConfig();
 
@@ -80,7 +80,7 @@ describe('EmailService', () => {
 
     it('should return false when validation fails', async () => {
       const service = new EmailService(mockProvider);
-      (mockProvider.validateConfig as any).mockResolvedValue(false);
+      (mockProvider.validateConfig as ReturnType<typeof vi.fn>).mockResolvedValue(false);
 
       const result = await service.validateConfig();
 
@@ -122,7 +122,7 @@ describe('createEmailService', () => {
     const config = {
       provider: 'brevo' as const,
       from: 'test@example.com',
-      brevo: undefined as any,
+      brevo: undefined as unknown as { apiKey: string },
     };
 
     expect(() => createEmailService(config)).toThrow(
@@ -132,7 +132,7 @@ describe('createEmailService', () => {
 
   it('should throw error for unsupported provider', () => {
     const config = {
-      provider: 'unsupported' as any,
+      provider: 'unsupported' as 'brevo',
       from: 'test@example.com',
       brevo: { apiKey: 'test' },
     };

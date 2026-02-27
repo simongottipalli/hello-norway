@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { prisma } from "../lib/prisma";
 import type { User } from "../generated/prisma/models";
 
@@ -42,7 +42,7 @@ describe("User Model", () => {
       // Prisma should throw an error about the required field
       await expect(
         prisma.user.create({
-          data: testUser as any,
+          data: testUser as { email: string },
         })
       ).rejects.toThrow(/name/);
     });

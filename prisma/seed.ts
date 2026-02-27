@@ -1,5 +1,5 @@
 // prisma/seed.ts
-import { PrismaClient, TaskCategory, EmploymentStatus } from "../src/generated/prisma/client";
+import { PrismaClient, TaskCategory, EmploymentStatus, Prisma } from "../src/generated/prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -321,7 +321,7 @@ async function main() {
         shortDescription: t.shortDescription,
         body: t.body,
         category: t.category,
-        officialLinks: t.officialLinks as any,
+        officialLinks: t.officialLinks as Prisma.InputJsonValue,
         sortOrder: t.sortOrder,
 
         requiresEU: t.requiresEU ?? null,
@@ -336,7 +336,7 @@ async function main() {
         shortDescription: t.shortDescription,
         body: t.body,
         category: t.category,
-        officialLinks: t.officialLinks as any,
+        officialLinks: t.officialLinks as Prisma.InputJsonValue,
         sortOrder: t.sortOrder,
 
         requiresEU: t.requiresEU ?? null,

@@ -20,7 +20,7 @@ export async function GET(
 
     const data = await response.json();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to fetch task" },
       { status: 500 }
@@ -51,7 +51,7 @@ export async function PATCH(
     }
 
     return NextResponse.json(data);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to update task" },
       { status: 500 }
@@ -76,7 +76,7 @@ export async function DELETE(
     }
 
     return new NextResponse(null, { status: 204 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to delete task" },
       { status: 500 }

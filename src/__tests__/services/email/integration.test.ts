@@ -21,8 +21,8 @@ vi.mock('@getbrevo/brevo', () => {
 });
 
 describe('Email Service Integration', () => {
-  let getEmailService: any;
-  let emailService: any;
+  let getEmailService: () => { sendEmail: (options: unknown) => Promise<unknown>; validateConfig: () => Promise<boolean> };
+  let emailService: { sendEmail: (options: unknown) => Promise<unknown>; validateConfig: () => Promise<boolean> };
 
   beforeAll(async () => {
     process.env.EMAIL_PROVIDER = 'brevo';
@@ -57,7 +57,7 @@ describe('Email Service Integration', () => {
     it('should be able to send email', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockResolvedValue({ messageId: 'integration-test-id' });
 
@@ -75,7 +75,7 @@ describe('Email Service Integration', () => {
     it('should be able to validate config', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockGetAccount = (mockClient.account as any).getAccount;
+      const mockGetAccount = (mockClient.account as { getAccount: ReturnType<typeof vi.fn> }).getAccount;
 
       mockGetAccount.mockResolvedValue({ email: 'test@example.com' });
 
@@ -89,7 +89,7 @@ describe('Email Service Integration', () => {
     it('should send OTP email', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockResolvedValue({ messageId: 'otp-test-id' });
 
@@ -115,7 +115,7 @@ describe('Email Service Integration', () => {
     it('should send task reminder email', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockResolvedValue({ messageId: 'reminder-test-id' });
 
@@ -142,7 +142,7 @@ describe('Email Service Integration', () => {
     it('should send welcome email with custom sender', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockResolvedValue({ messageId: 'welcome-test-id' });
 
@@ -167,7 +167,7 @@ describe('Email Service Integration', () => {
     it('should handle bulk email sending', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockClear();
       mockSendTransacEmail.mockResolvedValue({ messageId: 'bulk-test-id' });
@@ -199,7 +199,7 @@ describe('Email Service Integration', () => {
     it('should handle network errors gracefully', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockRejectedValue(new Error('Network timeout'));
 
@@ -217,7 +217,7 @@ describe('Email Service Integration', () => {
     it('should handle invalid email addresses', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockRejectedValue(new Error('Invalid email address'));
 
@@ -235,7 +235,7 @@ describe('Email Service Integration', () => {
     it('should handle API rate limiting', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as any).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockRejectedValue(new Error('Rate limit exceeded'));
 

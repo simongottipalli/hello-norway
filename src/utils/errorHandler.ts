@@ -1,7 +1,9 @@
-export const handlePrismaError = (error: any): { status: number; message: string } | null => {
-  if (!error.code) return null;
+export const handlePrismaError = (error: unknown): { status: number; message: string } | null => {
+  if (!error || typeof error !== 'object' || !('code' in error)) return null;
 
-  switch (error.code) {
+  const code = (error as { code: string }).code;
+
+  switch (code) {
     case "P2002":
       return { status: 400, message: "Task with this slug already exists" };
     case "P2025":
