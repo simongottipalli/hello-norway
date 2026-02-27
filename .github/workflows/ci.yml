@@ -65,21 +65,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: hello_norway_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -88,6 +73,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '23'
+
+      - name: Start PostgreSQL with Docker Compose
+        run: docker compose -f docker-compose.test.yml up -d
+
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          timeout 30 bash -c 'until docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U postgres; do sleep 1; done'
 
       - name: Restore node_modules
         id: cache-restore
@@ -136,6 +128,10 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+
+      - name: Stop PostgreSQL
+        if: always()
+        run: docker compose -f docker-compose.test.yml down
 
   build:
     name: Build
