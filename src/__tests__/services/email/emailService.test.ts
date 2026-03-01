@@ -42,7 +42,7 @@ describe('EmailService', () => {
       const result = await service.sendEmail(options);
 
       expect(result).toEqual(expectedResult);
-      expect(mockProvider.sendEmail).toHaveBeenCalledWith(options);
+      expect(mockProvider.sendEmail).toHaveBeenCalledWith(options, undefined);
     });
 
     it('should handle provider errors', async () => {
