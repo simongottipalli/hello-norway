@@ -41,6 +41,7 @@ npx vitest run -t "should create"           # Run matching pattern
 ```
 src/__tests__/
 ├── setup.ts                      # Test configuration
+├── otp.test.ts                   # OTP API tests (consolidated)
 ├── tasks.test.ts                 # Task API tests
 ├── user.test.ts                  # User model tests
 └── services/
