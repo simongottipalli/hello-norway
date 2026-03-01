@@ -21,7 +21,7 @@ const GENERIC_MESSAGE = "If this email is valid, an OTP has been sent.";
 /**
  * Request OTP Controller
  * Validates email and delegates to OTP service
- * 
+ *
  * @param req - Express request with email in body
  * @param res - Express response
  */
@@ -31,17 +31,17 @@ export const requestOtp = async (req: Request, res: Response) => {
 
     // Validation errors: These occur before any email send attempt,
     // so we return just the error without the generic message
-    
+
     // Validate email presence
     if (!email || typeof email !== "string") {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Email is required"
       });
     }
 
     // Enforce max length
     if (email.length > MAX_EMAIL_LENGTH) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Email exceeds maximum length"
       });
     }
@@ -51,30 +51,30 @@ export const requestOtp = async (req: Request, res: Response) => {
 
     // Validate email format using RFC 5321 regex
     if (!EMAIL_REGEX.test(normalizedEmail)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Invalid email format"
       });
     }
 
     // From this point forward, we attempt to send the email
     // All responses include the generic message to prevent email enumeration
-    
+
     // Delegate to OTP service
     const result = await otpService.requestOtp(normalizedEmail);
 
     // Handle service errors with appropriate status codes
     if (!result.success) {
       const statusCode = result.statusCode || 500;
-      
+
       // Add Retry-After header for rate limit errors
       if (statusCode === 429 && result.retryAfter !== undefined) {
         res.set('Retry-After', result.retryAfter.toString());
       }
-      
+
       // Return generic message to prevent enumeration (email send was attempted)
-      return res.status(statusCode).json({ 
+      return res.status(statusCode).json({
         error: result.error || "An error occurred",
-        message: GENERIC_MESSAGE 
+        message: GENERIC_MESSAGE
       });
     }
 
@@ -84,9 +84,9 @@ export const requestOtp = async (req: Request, res: Response) => {
     // Handle unexpected errors
     // TODO: Replace console.error with structured logging service for production
     console.error("Error in requestOtp:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Internal server error",
-      message: GENERIC_MESSAGE 
+      message: GENERIC_MESSAGE
     });
   }
 };
@@ -94,7 +94,7 @@ export const requestOtp = async (req: Request, res: Response) => {
 /**
  * Verify OTP Controller
  * Validates OTP code and email
- * 
+ *
  * @param req - Express request with email and code in body
  * @param res - Express response
  */
@@ -104,15 +104,36 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
     // Validate email presence
     if (!email || typeof email !== "string") {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Email is required"
       });
     }
 
     // Validate code presence
-    if (!code || typeof code !== "number") {
-      return res.status(400).json({ 
+    if (code === undefined || code === null) {
+      return res.status(400).json({
         error: "OTP code is required"
+      });
+    }
+
+    // Validate code is a number
+    if (typeof code !== "number") {
+      return res.status(400).json({
+        error: "OTP code must be a number"
+      });
+    }
+
+    // Validate code is an integer
+    if (!Number.isInteger(code)) {
+      return res.status(400).json({
+        error: "OTP code must be an integer"
+      });
+    }
+
+    // Validate code is within 6-digit range (100000-999999)
+    if (code < 100000 || code > 999999) {
+      return res.status(400).json({
+        error: "OTP code must be a 6-digit number"
       });
     }
 
@@ -121,7 +142,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
     // Validate email format using RFC 5321 regex
     if (!EMAIL_REGEX.test(normalizedEmail)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Invalid email format"
       });
     }
@@ -131,21 +152,21 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
     if (!result.success) {
       const statusCode = result.statusCode || 500;
-      return res.status(statusCode).json({ 
+      return res.status(statusCode).json({
         error: result.error || "Verification failed"
       });
     }
 
     // Return success response
-    res.status(200).json({ 
+    res.status(200).json({
       message: "OTP verified successfully",
-      success: true 
+      success: true
     });
   } catch (error: unknown) {
     // Handle unexpected errors
     // TODO: Replace console.error with structured logging service for production
     console.error("Error in verifyOtp:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Internal server error"
     });
   }

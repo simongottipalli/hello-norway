@@ -167,7 +167,7 @@ export default function LoginPage() {
                   placeholder="your.email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onKeyPress={(e) => handleKeyPress(e, handleSendOtp)}
+                  onKeyDown={(e) => handleKeyPress(e, handleSendOtp)}
                   disabled={isLoading}
                   aria-label="Email address"
                   aria-required="true"
@@ -197,7 +197,7 @@ export default function LoginPage() {
                   placeholder="000000"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  onKeyPress={(e) => handleKeyPress(e, handleVerifyOtp)}
+                  onKeyDown={(e) => handleKeyPress(e, handleVerifyOtp)}
                   disabled={isLoading}
                   aria-label="One-time password"
                   aria-required="true"
