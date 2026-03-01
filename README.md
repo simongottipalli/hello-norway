@@ -44,8 +44,8 @@ npm run dev
 ```
 
 This will start:
-- **Frontend (Next.js)**: [http://localhost:3000](http://localhost:3000)
-- **Backend (Express API)**: [http://localhost:3000/api](http://localhost:3000/api) (or separate port if configured)
+- **Frontend (Next.js)**: [http://localhost:3001](http://localhost:3001)
+- **Backend (Express API)**: [http://localhost:3000/api](http://localhost:3000/api)
 
 ## UI Components
 
