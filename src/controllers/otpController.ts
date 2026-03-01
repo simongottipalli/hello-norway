@@ -14,6 +14,7 @@ const MAX_EMAIL_LENGTH = 320;
 
 /**
  * Generic response message to prevent email enumeration
+ * Used only when an email send attempt is made (success or service-level failure)
  */
 const GENERIC_MESSAGE = "If this email is valid, an OTP has been sent.";
 
@@ -28,19 +29,20 @@ export const requestOtp = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
+    // Validation errors: These occur before any email send attempt,
+    // so we return just the error without the generic message
+    
     // Validate email presence
     if (!email || typeof email !== "string") {
       return res.status(400).json({ 
-        error: "Email is required",
-        message: GENERIC_MESSAGE 
+        error: "Email is required"
       });
     }
 
     // Enforce max length
     if (email.length > MAX_EMAIL_LENGTH) {
       return res.status(400).json({ 
-        error: "Email exceeds maximum length",
-        message: GENERIC_MESSAGE 
+        error: "Email exceeds maximum length"
       });
     }
 
@@ -50,11 +52,13 @@ export const requestOtp = async (req: Request, res: Response) => {
     // Validate email format using RFC 5321 regex
     if (!EMAIL_REGEX.test(normalizedEmail)) {
       return res.status(400).json({ 
-        error: "Invalid email format",
-        message: GENERIC_MESSAGE 
+        error: "Invalid email format"
       });
     }
 
+    // From this point forward, we attempt to send the email
+    // All responses include the generic message to prevent email enumeration
+    
     // Delegate to OTP service
     const result = await otpService.requestOtp(normalizedEmail);
 
@@ -67,7 +71,7 @@ export const requestOtp = async (req: Request, res: Response) => {
         res.set('Retry-After', result.retryAfter.toString());
       }
       
-      // Return generic message even for errors to prevent enumeration
+      // Return generic message to prevent enumeration (email send was attempted)
       return res.status(statusCode).json({ 
         error: result.error || "An error occurred",
         message: GENERIC_MESSAGE 
