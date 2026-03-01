@@ -22,18 +22,19 @@ const badgeVariants = cva(
   }
 );
 
-function Badge({
-  className,
-  variant,
-  ...props
-}: React.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
+const Badge = React.forwardRef<
+  HTMLSpanElement,
+  React.ComponentProps<"span"> & VariantProps<typeof badgeVariants>
+>(({ className, variant, ...props }, ref) => {
   return (
     <span
+      ref={ref}
       data-slot="badge"
       className={cn(badgeVariants({ variant }), className)}
       {...props}
     />
   );
-}
+});
+Badge.displayName = "Badge";
 
 export { Badge, badgeVariants };
