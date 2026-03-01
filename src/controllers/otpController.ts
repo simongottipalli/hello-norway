@@ -62,6 +62,11 @@ export const requestOtp = async (req: Request, res: Response) => {
     if (!result.success) {
       const statusCode = result.statusCode || 500;
       
+      // Add Retry-After header for rate limit errors
+      if (statusCode === 429 && result.retryAfter !== undefined) {
+        res.set('Retry-After', result.retryAfter.toString());
+      }
+      
       // Return generic message even for errors to prevent enumeration
       return res.status(statusCode).json({ 
         error: result.error || "An error occurred",

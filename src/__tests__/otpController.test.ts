@@ -226,6 +226,7 @@ describe("OTP Controller", () => {
         success: false,
         error: "Rate limit exceeded",
         statusCode: 429,
+        retryAfter: 300,
       });
 
       const response = await request(app)
@@ -236,6 +237,7 @@ describe("OTP Controller", () => {
       expect(response.status).toBe(429);
       expect(response.body.error).toBe("Rate limit exceeded");
       expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.headers["retry-after"]).toBe("300");
     });
 
     it("should return 500 when service returns internal error", async () => {
