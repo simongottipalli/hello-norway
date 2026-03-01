@@ -69,3 +69,75 @@ Only skip testing when:
 - User explicitly requests no tests
 
 **Default behavior: Always include testing for backend changes.**
+
+---
+
+## UI Development Guidelines
+
+This project uses **shadcn/ui** with a **zinc** design system on top of Tailwind CSS v4.
+
+### Component Source
+
+All UI primitives live in `src/components/ui/`. **Always use these components** instead of writing raw HTML elements with manual Tailwind classes.
+
+| Component | File | Use for |
+|---|---|---|
+| `Button` | `ui/button.tsx` | All clickable actions |
+| `Card`, `CardHeader`, `CardContent`, `CardFooter`, `CardTitle`, `CardDescription` | `ui/card.tsx` | Content containers and panels |
+| `Input` | `ui/input.tsx` | All text inputs |
+| `Label` | `ui/label.tsx` | Form field labels (pair with `Input`) |
+| `Badge` | `ui/badge.tsx` | Status indicators and category tags |
+
+### Adding New Components
+
+When you need a component not yet in `src/components/ui/`:
+
+1. Check [ui.shadcn.com/docs/components](https://ui.shadcn.com/docs/components) first
+2. Copy the component source and place it in `src/components/ui/<name>.tsx`
+3. Use the `cn()` helper from `@/lib/utils` for className merging
+4. Follow the existing `data-slot` + `React.ComponentProps` pattern
+
+```bash
+# Or use the CLI to add a component automatically
+npx shadcn@latest add <component-name>
+```
+
+### Design Tokens
+
+All colors, spacing, and radii are defined as CSS variables in `src/app/globals.css`. Never hardcode raw color values — always use semantic tokens:
+
+| Token class | Meaning |
+|---|---|
+| `bg-background` / `text-foreground` | Page background and body text |
+| `bg-card` / `text-card-foreground` | Card surfaces |
+| `bg-primary` / `text-primary-foreground` | Primary actions (buttons) |
+| `bg-secondary` / `text-secondary-foreground` | Secondary/muted actions |
+| `bg-muted` / `text-muted-foreground` | Subtle text and disabled states |
+| `bg-accent` / `text-accent-foreground` | Hover states |
+| `text-destructive` / `bg-destructive` | Errors and destructive actions |
+| `border-border` | All borders |
+| `border-input` | Form input borders |
+| `ring-ring` | Focus rings |
+
+### Dark Mode
+
+Dark mode is automatic via `@media (prefers-color-scheme: dark)` — no class toggling needed. The CSS variables in `globals.css` switch automatically. Do **not** add manual `dark:bg-*` overrides when using the semantic token classes above.
+
+### File Structure
+
+```
+src/
+  components/
+    ui/              # shadcn/ui primitives — DO NOT add business logic here
+      button.tsx
+      card.tsx
+      input.tsx
+      label.tsx
+      badge.tsx
+    [Feature].tsx    # Feature components that compose ui/ primitives
+  lib/
+    utils.ts         # cn() helper for className merging
+  app/
+    globals.css      # Design tokens (CSS variables) — zinc theme
+components.json      # shadcn/ui configuration
+```

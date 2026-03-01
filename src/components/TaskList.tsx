@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface Task {
   id: string;
@@ -48,7 +50,7 @@ export default function TaskList({ tasks, onTaskDeleted }: TaskListProps) {
 
   if (tasks.length === 0) {
     return (
-      <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+      <div className="text-center py-12 text-muted-foreground">
         No tasks yet. Add your first task above!
       </div>
     );
@@ -59,21 +61,24 @@ export default function TaskList({ tasks, onTaskDeleted }: TaskListProps) {
       {tasks.map((task) => (
         <div
           key={task.id}
-          className="flex items-center justify-between p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-600 transition"
+          className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 transition-colors hover:bg-accent/30"
         >
-          <div className="flex-1">
-            <h3 className="text-base font-medium text-zinc-900 dark:text-white">
-              {task.title}
-            </h3>
+          <div className="flex flex-1 items-center gap-3">
+            <h3 className="text-sm font-medium">{task.title}</h3>
+            <Badge variant="secondary" className="hidden sm:inline-flex">
+              {task.category}
+            </Badge>
           </div>
 
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => handleDelete(task.id)}
             disabled={deletingId === task.id}
-            className="ml-4 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             {deletingId === task.id ? "Deleting..." : "Delete"}
-          </button>
+          </Button>
         </div>
       ))}
     </div>

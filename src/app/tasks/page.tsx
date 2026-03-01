@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Task {
   id: string;
@@ -52,35 +53,33 @@ export default function TasksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white dark:bg-zinc-950 px-6 py-12">
+    <main className="min-h-screen bg-background px-6 py-12">
       <div className="max-w-3xl mx-auto space-y-8">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
-            Tasks
-          </h1>
-          <p className="text-zinc-500 dark:text-zinc-400">
+          <h1 className="text-4xl font-bold tracking-tight">Tasks</h1>
+          <p className="text-muted-foreground">
             Manage your tasks with a simple interface.
           </p>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-6">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
-            Add New Task
-          </h2>
-          <TaskForm onTaskCreated={handleTaskCreated} />
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Task</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TaskForm onTaskCreated={handleTaskCreated} />
+          </CardContent>
+        </Card>
 
         <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
-            Your Tasks
-          </h2>
+          <h2 className="text-lg font-semibold mb-4">Your Tasks</h2>
           {error && (
-            <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
           {isLoading ? (
-            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+            <div className="text-center py-12 text-muted-foreground">
               Loading tasks...
             </div>
           ) : (

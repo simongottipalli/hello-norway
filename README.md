@@ -7,6 +7,7 @@ A Next.js application with Express API backend, helping newcomers navigate essen
 ### Frontend
 - **[Next.js 16](https://nextjs.org/)** — App Router, Server Components, file-based routing
 - **[Tailwind CSS v4](https://tailwindcss.com/)** — Utility-first CSS with dark mode
+- **[shadcn/ui](https://ui.shadcn.com/)** — Zinc-themed component library (Button, Card, Input, Label, Badge)
 - **[TypeScript](https://www.typescriptlang.org/)** — Type safety throughout
 - **[ESLint](https://eslint.org/)** — Code linting via `eslint-config-next`
 
@@ -45,6 +46,34 @@ npm run dev
 This will start:
 - **Frontend (Next.js)**: [http://localhost:3000](http://localhost:3000)
 - **Backend (Express API)**: [http://localhost:3000/api](http://localhost:3000/api) (or separate port if configured)
+
+## UI Components
+
+This project uses **[shadcn/ui](https://ui.shadcn.com/)** with a **zinc** color palette. All UI primitives are in `src/components/ui/` and should be used instead of writing raw elements with Tailwind classes.
+
+### Available Components
+
+| Component | Import | Description |
+|---|---|---|
+| `Button` | `@/components/ui/button` | Actions — supports `variant` (default, outline, ghost, destructive, secondary, link) and `size` (default, sm, lg, icon) |
+| `Card` + sub-components | `@/components/ui/card` | Content containers — use `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` |
+| `Input` | `@/components/ui/input` | Text inputs with consistent focus ring and border styling |
+| `Label` | `@/components/ui/label` | Accessible form labels, pair with `Input` using `htmlFor` |
+| `Badge` | `@/components/ui/badge` | Inline tags — supports `variant` (default, secondary, destructive, outline) |
+
+### Adding More Components
+
+```bash
+npx shadcn@latest add <component-name>
+```
+
+Browse available components at [ui.shadcn.com/docs/components](https://ui.shadcn.com/docs/components).
+
+### Theming
+
+Colors are defined as CSS variables in `src/app/globals.css`. Dark mode switches automatically via `prefers-color-scheme`. Customize the palette by editing the `:root` and `@media (prefers-color-scheme: dark)` blocks.
+
+---
 
 ## Project Structure
 
