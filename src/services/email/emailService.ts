@@ -1,6 +1,6 @@
 import type { EmailOptions, EmailResult, EmailProvider, EmailServiceConfig } from './types';
 import { BrevoProvider } from './providers/brevoProvider';
-import type { Logger } from '../logger';
+import type { Logger } from '../../lib/logger';
 
 export class EmailService {
   private provider: EmailProvider;

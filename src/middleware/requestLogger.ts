@@ -45,19 +45,17 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
 
   // Handle response end for non-JSON responses
   res.on('finish', () => {
-    // Only log if json() wasn't called
-    if (!res.headersSent || res.getHeader('content-type')?.toString().includes('json')) {
-      return;
+    // Only log if json() wasn't called (check if headers NOT sent or content-type does NOT include json)
+    if (res.headersSent && !res.getHeader('content-type')?.toString().includes('json')) {
+      const duration = Date.now() - startTime;
+      req.logger.info({
+        msg: 'Outgoing response',
+        method: req.method,
+        path: req.path,
+        statusCode: res.statusCode,
+        duration: `${duration}ms`,
+      });
     }
-    
-    const duration = Date.now() - startTime;
-    req.logger.info({
-      msg: 'Outgoing response',
-      method: req.method,
-      path: req.path,
-      statusCode: res.statusCode,
-      duration: `${duration}ms`,
-    });
   });
 
   next();
