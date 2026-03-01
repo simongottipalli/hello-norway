@@ -205,7 +205,7 @@ function getOtpServiceInstance(): OtpService {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { emailService } = require('./email');
       otpServiceInstance = new OtpService(emailService);
-    } catch (error) {
+    } catch {
       throw new Error(
         'OTP service not initialized. Call initializeOtpService() with an EmailService instance during application startup.'
       );

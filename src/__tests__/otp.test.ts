@@ -735,4 +735,152 @@ describe("OTP API", () => {
       expect(existingEmailResponse.body.message).toBe("If this email is valid, an OTP has been sent.");
     });
   });
+
+  describe("POST /otp/verify - OTP Verification", () => {
+    it("should verify valid OTP successfully", async () => {
+      const mockVerifyOtp = vi.spyOn(otpServiceModule.otpService, "verifyOtp");
+      mockVerifyOtp.mockResolvedValue({ success: true });
+
+      const response = await request(app)
+        .post("/otp/verify")
+        .send({ email: "user@example.com", code: 123456 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe("OTP verified successfully");
+      expect(mockVerifyOtp).toHaveBeenCalledWith("user@example.com", 123456);
+    });
+
+    it("should reject invalid OTP", async () => {
+      const mockVerifyOtp = vi.spyOn(otpServiceModule.otpService, "verifyOtp");
+      mockVerifyOtp.mockResolvedValue({ 
+        success: false, 
+        error: "Invalid or expired OTP",
+        statusCode: 401 
+      });
+
+      const response = await request(app)
+        .post("/otp/verify")
+        .send({ email: "user@example.com", code: 999999 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Invalid or expired OTP");
+    });
+
+    it("should require email field", async () => {
+      const response = await request(app)
+        .post("/otp/verify")
+        .send({ code: 123456 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe("Email is required");
+    });
+
+    it("should require code field", async () => {
+      const response = await request(app)
+        .post("/otp/verify")
+        .send({ email: "user@example.com" })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe("OTP code is required");
+    });
+
+    it("should validate email format", async () => {
+      const response = await request(app)
+        .post("/otp/verify")
+        .send({ email: "invalid-email", code: 123456 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe("Invalid email format");
+    });
+
+    it("should normalize email to lowercase", async () => {
+      const mockVerifyOtp = vi.spyOn(otpServiceModule.otpService, "verifyOtp");
+      mockVerifyOtp.mockResolvedValue({ success: true });
+
+      const response = await request(app)
+        .post("/otp/verify")
+        .send({ email: "User@EXAMPLE.COM", code: 123456 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(200);
+      expect(mockVerifyOtp).toHaveBeenCalledWith("user@example.com", 123456);
+    });
+
+    it("should handle expired OTP", async () => {
+      const mockVerifyOtp = vi.spyOn(otpServiceModule.otpService, "verifyOtp");
+      mockVerifyOtp.mockResolvedValue({ 
+        success: false, 
+        error: "Invalid or expired OTP",
+        statusCode: 401 
+      });
+
+      const response = await request(app)
+        .post("/otp/verify")
+        .send({ email: "user@example.com", code: 123456 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Invalid or expired OTP");
+    });
+  });
+
+  describe("OTP Service - verifyOtp method", () => {
+    it("should verify valid OTP and delete all OTPs for email", async () => {
+      const now = new Date("2024-01-01T12:00:00Z");
+      const futureExpiry = new Date("2024-01-01T12:10:00Z");
+
+      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: "test-id",
+        email: testEmail,
+        code: 123456,
+        expiresAt: futureExpiry,
+        createdAt: now,
+      });
+      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
+
+      const result = await otpService.verifyOtp(testEmail, 123456);
+
+      expect(result.success).toBe(true);
+      expect(prisma.oTPCode.findFirst).toHaveBeenCalledWith({
+        where: {
+          email: testEmail,
+          code: 123456,
+          expiresAt: {
+            gt: now,
+          },
+        },
+      });
+      expect(prisma.oTPCode.deleteMany).toHaveBeenCalledWith({
+        where: {
+          email: testEmail,
+        },
+      });
+    });
+
+    it("should reject expired OTP", async () => {
+      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      const result = await otpService.verifyOtp(testEmail, 123456);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid or expired OTP");
+      expect(result.statusCode).toBe(401);
+    });
+
+    it("should reject invalid OTP code", async () => {
+      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+      const result = await otpService.verifyOtp(testEmail, 999999);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid or expired OTP");
+      expect(result.statusCode).toBe(401);
+    });
+  });
 });

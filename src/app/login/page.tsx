@@ -80,7 +80,7 @@ export default function LoginPage() {
       } else {
         setError(data.error || "Failed to send OTP");
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
@@ -127,7 +127,7 @@ export default function LoginPage() {
       } else {
         setError(data.error || "Invalid or expired OTP");
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
