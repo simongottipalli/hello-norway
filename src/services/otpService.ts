@@ -17,10 +17,10 @@ export class OtpService {
    * @param email - Normalized email address
    * @returns Result indicating success or failure with status code
    */
-  async requestOtp(email: string): Promise<OtpServiceResult> {
+  async requestOtp(_email: string): Promise<OtpServiceResult> {
     // Stub implementation
     // This will be fully implemented in a separate task
-    console.log(`OTP requested for: ${email}`);
+    // TODO: Implement OTP generation, storage, and email sending
     
     return {
       success: true,

@@ -73,6 +73,7 @@ export const requestOtp = async (req: Request, res: Response) => {
     res.status(200).json({ message: GENERIC_MESSAGE });
   } catch (error: unknown) {
     // Handle unexpected errors
+    // TODO: Replace console.error with structured logging service for production
     console.error("Error in requestOtp:", error);
     res.status(500).json({ 
       error: "Internal server error",
