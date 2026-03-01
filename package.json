@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "tsx watch src/server.ts",
-    "dev:client": "next dev",
+    "dev:client": "next dev --port 3001",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
@@ -27,12 +27,18 @@
   "dependencies": {
     "@getbrevo/brevo": "^4.0.1",
     "@prisma/client": "^6.19.2",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "lucide-react": "^0.575.0",
     "next": "16.1.6",
     "prisma": "^6.19.2",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
