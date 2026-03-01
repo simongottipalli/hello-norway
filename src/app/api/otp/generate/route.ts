@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     return NextResponse.json(data, { status: response.status });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in OTP generate route:", error);
     return NextResponse.json(
       { error: "Failed to send OTP" },

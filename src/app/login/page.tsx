@@ -260,7 +260,7 @@ export default function LoginPage() {
 
           {successMessage && (
             <div
-              className="text-sm text-green-600 dark:text-green-400"
+              className="text-sm text-primary"
               role="status"
               aria-live="polite"
             >
