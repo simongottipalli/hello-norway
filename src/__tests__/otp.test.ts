@@ -153,7 +153,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Email is required");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for non-string email", async () => {
@@ -164,7 +164,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Email is required");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for email without @ symbol (missing @)", async () => {
@@ -175,7 +175,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Invalid email format");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for email without domain (no domain)", async () => {
@@ -186,7 +186,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Invalid email format");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for email without local part", async () => {
@@ -197,7 +197,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Invalid email format");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for email with spaces", async () => {
@@ -208,7 +208,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Invalid email format");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for email with multiple @ symbols", async () => {
@@ -219,7 +219,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Invalid email format");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for email exceeding 320 characters (too long)", async () => {
@@ -232,7 +232,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Email exceeds maximum length");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
 
     it("should return 400 for potential SQL injection attempt (injection attempt)", async () => {
@@ -243,7 +243,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toBe("Invalid email format");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+      expect(response.body.message).toBeUndefined();
     });
   });
 
@@ -684,25 +684,37 @@ describe("OTP API", () => {
   });
 
   describe("Security - Email Enumeration Prevention", () => {
-    it("should return generic message for all responses", async () => {
-      // Test various scenarios all return the same generic message
-      const testCases = [
+    it("should return generic message only for valid email attempts", async () => {
+      // Validation errors (before send attempt) should NOT have generic message
+      const validationErrors = [
         { email: "", expectedStatus: 400 },
         { email: "invalid-email", expectedStatus: 400 },
         { email: "a".repeat(330) + "@example.com", expectedStatus: 400 },
       ];
 
-      for (const testCase of testCases) {
+      for (const testCase of validationErrors) {
         const response = await request(app)
           .post("/otp/generate")
           .send({ email: testCase.email })
           .set("Content-Type", "application/json");
 
-        expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
+        expect(response.body.message).toBeUndefined();
+        expect(response.body.error).toBeDefined();
       }
+
+      // Valid emails (after send attempt) SHOULD have generic message
+      const mockRequestOtp = vi.spyOn(otpServiceModule.otpService, "requestOtp");
+      mockRequestOtp.mockResolvedValue({ success: true });
+
+      const validResponse = await request(app)
+        .post("/otp/generate")
+        .send({ email: "valid@example.com" })
+        .set("Content-Type", "application/json");
+
+      expect(validResponse.body.message).toBe("If this email is valid, an OTP has been sent.");
     });
 
-    it("should not reveal whether email exists in system", async () => {
+    it("should not reveal whether email exists in system (for valid emails)", async () => {
       const mockRequestOtp = vi.spyOn(otpServiceModule.otpService, "requestOtp");
       mockRequestOtp.mockResolvedValue({ success: true });
 
@@ -720,6 +732,7 @@ describe("OTP API", () => {
       expect(existingEmailResponse.status).toBe(200);
       expect(nonExistingEmailResponse.status).toBe(200);
       expect(existingEmailResponse.body.message).toBe(nonExistingEmailResponse.body.message);
+      expect(existingEmailResponse.body.message).toBe("If this email is valid, an OTP has been sent.");
     });
   });
 });
