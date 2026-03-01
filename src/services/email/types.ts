@@ -1,3 +1,5 @@
+import type { Logger } from '../../lib/logger';
+
 export interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -16,7 +18,7 @@ export interface EmailResult {
 }
 
 export interface EmailProvider {
-  sendEmail(options: EmailOptions): Promise<EmailResult>;
+  sendEmail(options: EmailOptions, logger?: Logger): Promise<EmailResult>;
   validateConfig(): Promise<boolean>;
 }
 
