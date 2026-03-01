@@ -90,3 +90,63 @@ export const requestOtp = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Verify OTP Controller
+ * Validates OTP code and email
+ * 
+ * @param req - Express request with email and code in body
+ * @param res - Express response
+ */
+export const verifyOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, code } = req.body;
+
+    // Validate email presence
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ 
+        error: "Email is required"
+      });
+    }
+
+    // Validate code presence
+    if (!code || typeof code !== "number") {
+      return res.status(400).json({ 
+        error: "OTP code is required"
+      });
+    }
+
+    // Normalize email to lowercase
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Validate email format using RFC 5321 regex
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({ 
+        error: "Invalid email format"
+      });
+    }
+
+    // Delegate to OTP service
+    const result = await otpService.verifyOtp(normalizedEmail, code);
+
+    if (!result.success) {
+      const statusCode = result.statusCode || 500;
+      return res.status(statusCode).json({ 
+        error: result.error || "Verification failed"
+      });
+    }
+
+    // Return success response
+    res.status(200).json({ 
+      message: "OTP verified successfully",
+      success: true 
+    });
+  } catch (error: unknown) {
+    // Handle unexpected errors
+    // TODO: Replace console.error with structured logging service for production
+    console.error("Error in verifyOtp:", error);
+    res.status(500).json({ 
+      error: "Internal server error"
+    });
+  }
+};

@@ -132,6 +132,54 @@ export class OtpService {
       };
     }
   }
+
+  /**
+   * Verify an OTP code for the given email
+   * @param email - Normalized email address
+   * @param code - OTP code to verify
+   * @returns Result indicating success or failure
+   */
+  async verifyOtp(email: string, code: number): Promise<OtpServiceResult> {
+    try {
+      // Find valid OTP for this email
+      const otpRecord = await prisma.oTPCode.findFirst({
+        where: {
+          email,
+          code,
+          expiresAt: {
+            gt: new Date(),
+          },
+        },
+      });
+
+      if (!otpRecord) {
+        return {
+          success: false,
+          error: 'Invalid or expired OTP',
+          statusCode: 401,
+        };
+      }
+
+      // Delete all OTP records for this email after successful verification
+      await prisma.oTPCode.deleteMany({
+        where: {
+          email,
+        },
+      });
+
+      return {
+        success: true,
+      };
+    } catch (error) {
+      // TODO: Replace console.error with structured logging service for production
+      console.error('Error in verifyOtp:', error);
+      return {
+        success: false,
+        error: 'Internal server error',
+        statusCode: 500,
+      };
+    }
+  }
 }
 
 // Singleton instance management
@@ -173,4 +221,5 @@ function getOtpServiceInstance(): OtpService {
  */
 export const otpService = {
   requestOtp: (email: string) => getOtpServiceInstance().requestOtp(email),
+  verifyOtp: (email: string, code: number) => getOtpServiceInstance().verifyOtp(email, code),
 };
