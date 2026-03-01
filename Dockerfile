@@ -41,11 +41,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Prisma schema + migrations (required for `prisma generate` / `migrate deploy` at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# Copy Express backend source files
+COPY --from=builder --chown=nextjs:nodejs /app/src ./src
+
 # (Optional) Ensure shell prints failing commands clearly
 USER nextjs
 
 EXPOSE 3000
-ENV PORT=3000
+EXPOSE 3001
+ENV PORT=3001
+ENV API_PORT=3000
+ENV API_BASE_URL=http://localhost:3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && node server.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && node node_modules/tsx/dist/cli.mjs src/server.ts & PORT=$PORT node server.js"]
