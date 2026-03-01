@@ -7,6 +7,12 @@ import type { EmailService } from './email/emailService';
  * Handles OTP generation, storage, rate limiting, and email delivery
  */
 
+// OTP Configuration Constants
+const OTP_EXPIRATION_MINUTES = 10;
+const OTP_RATE_LIMIT_MAX_ATTEMPTS = 3;
+const OTP_MIN_VALUE = 100000; // 6-digit OTP minimum
+const OTP_MAX_VALUE = 999999; // 6-digit OTP maximum
+
 export interface OtpServiceResult {
   success: boolean;
   error?: string;
@@ -28,24 +34,25 @@ export class OtpService {
    */
   async requestOtp(email: string): Promise<OtpServiceResult> {
     try {
-      // Check rate limiting - count OTPs created in last 10 minutes
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      // Check rate limiting - count OTPs created in last window
+      const rateLimitWindowMs = OTP_EXPIRATION_MINUTES * 60 * 1000;
+      const windowStartTime = new Date(Date.now() - rateLimitWindowMs);
       const recentOtpCount = await prisma.oTPCode.count({
         where: {
           email,
           createdAt: {
-            gte: tenMinutesAgo,
+            gte: windowStartTime,
           },
         },
       });
 
-      if (recentOtpCount >= 3) {
+      if (recentOtpCount >= OTP_RATE_LIMIT_MAX_ATTEMPTS) {
         // Calculate retry after in seconds (time until oldest OTP expires)
         const oldestOtp = await prisma.oTPCode.findFirst({
           where: {
             email,
             createdAt: {
-              gte: tenMinutesAgo,
+              gte: windowStartTime,
             },
           },
           orderBy: {
@@ -54,8 +61,8 @@ export class OtpService {
         });
 
         const retryAfter = oldestOtp
-          ? Math.ceil((oldestOtp.createdAt.getTime() + 10 * 60 * 1000 - Date.now()) / 1000)
-          : 600; // Default to 10 minutes if not found
+          ? Math.ceil((oldestOtp.createdAt.getTime() + rateLimitWindowMs - Date.now()) / 1000)
+          : OTP_EXPIRATION_MINUTES * 60; // Default to full window if not found
 
         return {
           success: false,
@@ -76,10 +83,10 @@ export class OtpService {
       });
 
       // Generate cryptographically secure 6-digit OTP
-      const code = randomInt(100000, 999999);
+      const code = randomInt(OTP_MIN_VALUE, OTP_MAX_VALUE);
 
-      // Store OTP with 10-minute expiration
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+      // Store OTP with configured expiration
+      const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
       await prisma.oTPCode.create({
         data: {
           email,
@@ -92,13 +99,13 @@ export class OtpService {
       const emailResult = await this.emailService.sendEmail({
         to: email,
         subject: 'Your Hello Norway Login Code',
-        text: `Your login code is: ${code}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please ignore this email.`,
+        text: `Your login code is: ${code}\n\nThis code will expire in ${OTP_EXPIRATION_MINUTES} minutes.\n\nIf you didn't request this code, please ignore this email.`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2>Your Hello Norway Login Code</h2>
             <p>Your login code is:</p>
             <h1 style="font-size: 32px; letter-spacing: 8px; color: #333;">${code}</h1>
-            <p>This code will expire in 10 minutes.</p>
+            <p>This code will expire in ${OTP_EXPIRATION_MINUTES} minutes.</p>
             <p style="color: #666; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
           </div>
         `,
@@ -116,6 +123,7 @@ export class OtpService {
         success: true,
       };
     } catch (error) {
+      // TODO: Replace console.error with structured logging service for production
       console.error('Error in requestOtp:', error);
       return {
         success: false,
@@ -126,29 +134,43 @@ export class OtpService {
   }
 }
 
-// Create and export singleton instance
-// Will be initialized on first import in production
-// Tests should mock this module
+// Singleton instance management
 let otpServiceInstance: OtpService | null = null;
 
+/**
+ * Initialize the OTP service with an email service
+ * This should be called during application startup
+ */
 export function initializeOtpService(emailService: EmailService): void {
   otpServiceInstance = new OtpService(emailService);
 }
 
+/**
+ * Get the initialized OTP service instance
+ * Lazy-loads on first call in production if not explicitly initialized
+ */
 function getOtpServiceInstance(): OtpService {
   if (!otpServiceInstance) {
-    // Lazy load email service to avoid initialization issues during import
+    // Lazy load email service for backward compatibility
+    // In production, prefer calling initializeOtpService() during startup
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { emailService } = require('./email');
       otpServiceInstance = new OtpService(emailService);
     } catch (error) {
-      throw new Error('OTP service not initialized. Call initializeOtpService() first.');
+      throw new Error(
+        'OTP service not initialized. Call initializeOtpService() with an EmailService instance during application startup.'
+      );
     }
   }
   return otpServiceInstance;
 }
 
-export const otpService: OtpService = {
+/**
+ * Exported OTP service singleton
+ * Provides lazy initialization for backward compatibility
+ * For new code, prefer calling initializeOtpService() during startup
+ */
+export const otpService = {
   requestOtp: (email: string) => getOtpServiceInstance().requestOtp(email),
 };
