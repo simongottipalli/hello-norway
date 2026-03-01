@@ -107,5 +107,5 @@ model OTPCode {
   expiresAt DateTime @db.Timestamptz(6)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 
-  @@index([email])
+  @@index([email, createdAt])
 }
