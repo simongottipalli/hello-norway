@@ -27,7 +27,7 @@ export async function GET(
     const duration = Date.now() - startTime;
     const data = await response.json();
 
-    logger.info({ 
+    logger.info({
       msg: 'Received response from Express',
       statusCode: response.status,
       duration: `${duration}ms`,
@@ -39,7 +39,7 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    logger.error({ msg: 'Failed to fetch task', error });
+    logger.error({ err: error, msg: 'Failed to fetch task' });
     return NextResponse.json(
       { error: "Failed to fetch task" },
       { status: 500 }
@@ -73,7 +73,7 @@ export async function PATCH(
     const duration = Date.now() - startTime;
     const data = await response.json();
 
-    logger.info({ 
+    logger.info({
       msg: 'Received response from Express',
       statusCode: response.status,
       duration: `${duration}ms`,
@@ -85,7 +85,7 @@ export async function PATCH(
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    logger.error({ msg: 'Failed to update task', error });
+    logger.error({ err: error, msg: 'Failed to update task' });
     return NextResponse.json(
       { error: "Failed to update task" },
       { status: 500 }
@@ -115,7 +115,7 @@ export async function DELETE(
 
     const duration = Date.now() - startTime;
 
-    logger.info({ 
+    logger.info({
       msg: 'Received response from Express',
       statusCode: response.status,
       duration: `${duration}ms`,
@@ -128,7 +128,7 @@ export async function DELETE(
 
     return new NextResponse(null, { status: 204 });
   } catch (error: unknown) {
-    logger.error({ msg: 'Failed to delete task', error });
+    logger.error({ err: error, msg: 'Failed to delete task' });
     return NextResponse.json(
       { error: "Failed to delete task" },
       { status: 500 }

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
     const data = await response.json();
 
-    logger.info({ 
+    logger.info({
       msg: 'Received response from Express',
       statusCode: response.status,
       duration: `${duration}ms`,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     return nextResponse;
   } catch (error: unknown) {
-    logger.error({ msg: "Error in OTP generate route", error });
+    logger.error({ err: error, msg: "Error in OTP generate route" });
     return NextResponse.json(
       { error: "Failed to send OTP" },
       { status: 500 }
