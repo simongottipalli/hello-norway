@@ -21,7 +21,7 @@ export async function GET() {
     const duration = Date.now() - startTime;
     const data = await response.json();
 
-    logger.info({ 
+    logger.info({
       msg: 'Received response from Express',
       statusCode: response.status,
       duration: `${duration}ms`,
@@ -30,7 +30,7 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error: unknown) {
-    logger.error({ msg: 'Failed to fetch tasks', error });
+    logger.error({ err: error, msg: 'Failed to fetch tasks' });
     return NextResponse.json(
       { error: "Failed to fetch tasks" },
       { status: 500 }
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
     const data = await response.json();
 
-    logger.info({ 
+    logger.info({
       msg: 'Received response from Express',
       statusCode: response.status,
       duration: `${duration}ms`,
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data, { status: 201 });
   } catch (error: unknown) {
-    logger.error({ msg: 'Failed to create task', error });
+    logger.error({ err: error, msg: 'Failed to create task' });
     return NextResponse.json(
       { error: "Failed to create task" },
       { status: 500 }

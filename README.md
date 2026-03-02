@@ -121,6 +121,9 @@ playwright.config.ts        # E2E test configuration
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | Public URL used for Open Graph metadata | `https://your-domain.com` |
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/myapp` |
+| `PORT` | Port the Next.js frontend server listens on | `3001` |
+| `API_PORT` | Port the Express backend server listens on | `3000` |
+| `API_BASE_URL` | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3000` |
 | `LOG_LEVEL` | Logging verbosity (debug, info, warn, error) | `debug` (dev), `info` (prod) |
 | `NODE_ENV` | Environment mode | `development` or `production` |
 
@@ -162,12 +165,12 @@ Set via `LOG_LEVEL` environment variable:
     requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
     method: "POST"
     path: "/api/otp/generate"
-    
+
 [14:23:45.456] INFO: OTP generated
     requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
     email: "u***@example.com"
     expiresIn: "10m"
-    
+
 [14:23:45.789] INFO: Outgoing response
     requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
     statusCode: 200
