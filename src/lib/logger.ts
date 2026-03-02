@@ -60,7 +60,7 @@ const createLogger = () => {
         target: 'pino-pretty',
         options: {
           colorize: true,
-          translateTime: 'HH:MM:ss.l',
+          translateTime: 'HH:mm:ss.l',
           ignore: 'pid,hostname',
           singleLine: false,
         },
