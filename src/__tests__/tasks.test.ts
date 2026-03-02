@@ -21,9 +21,9 @@ describe("Task API", () => {
     });
   });
 
-  describe("GET /tasks", () => {
+  describe("GET /api/tasks", () => {
     it("should return all tasks", async () => {
-      const response = await request(app).get("/tasks");
+      const response = await request(app).get("/api/tasks");
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
@@ -31,7 +31,7 @@ describe("Task API", () => {
     });
 
     it("should return tasks with correct structure", async () => {
-      const response = await request(app).get("/tasks");
+      const response = await request(app).get("/api/tasks");
 
       const task = response.body[0];
       expect(task).toHaveProperty("id");
@@ -44,13 +44,13 @@ describe("Task API", () => {
     });
 
     it("should return tasks ordered by category and sortOrder", async () => {
-      const response = await request(app).get("/tasks");
+      const response = await request(app).get("/api/tasks");
 
       const tasks = response.body;
       for (let i = 1; i < tasks.length; i++) {
         const prev = tasks[i - 1];
         const curr = tasks[i];
-        
+
         if (prev.category === curr.category) {
           expect(prev.sortOrder).toBeLessThanOrEqual(curr.sortOrder);
         }
@@ -58,7 +58,7 @@ describe("Task API", () => {
     });
   });
 
-  describe("POST /tasks", () => {
+  describe("POST /api/tasks", () => {
     it("should create a new task with all fields", async () => {
       const newTask = {
         slug: `test-task-${Date.now()}`,
@@ -74,7 +74,7 @@ describe("Task API", () => {
       };
 
       const response = await request(app)
-        .post("/tasks")
+        .post("/api/tasks")
         .send(newTask)
         .set("Content-Type", "application/json");
 
@@ -98,7 +98,7 @@ describe("Task API", () => {
       };
 
       const response = await request(app)
-        .post("/tasks")
+        .post("/api/tasks")
         .send(newTask)
         .set("Content-Type", "application/json");
 
@@ -116,7 +116,7 @@ describe("Task API", () => {
       };
 
       const response = await request(app)
-        .post("/tasks")
+        .post("/api/tasks")
         .send(incompleteTask)
         .set("Content-Type", "application/json");
 
@@ -127,7 +127,7 @@ describe("Task API", () => {
 
     it("should return 400 when slug already exists", async () => {
       const existingTask = await prisma.task.findFirst();
-      
+
       const duplicateTask = {
         slug: existingTask!.slug,
         title: "Duplicate Test",
@@ -138,7 +138,7 @@ describe("Task API", () => {
       };
 
       const response = await request(app)
-        .post("/tasks")
+        .post("/api/tasks")
         .send(duplicateTask)
         .set("Content-Type", "application/json");
 
@@ -147,7 +147,7 @@ describe("Task API", () => {
     });
   });
 
-  describe("PATCH /tasks/:id", () => {
+  describe("PATCH /api/tasks/:id", () => {
     it("should update a task", async () => {
       const updates = {
         title: "Updated Test Task",
@@ -156,7 +156,7 @@ describe("Task API", () => {
       };
 
       const response = await request(app)
-        .patch(`/tasks/${createdTaskId}`)
+        .patch(`/api/tasks/${createdTaskId}`)
         .send(updates)
         .set("Content-Type", "application/json");
 
@@ -169,7 +169,7 @@ describe("Task API", () => {
 
     it("should return 404 when task not found", async () => {
       const response = await request(app)
-        .patch("/tasks/00000000-0000-0000-0000-000000000000")
+        .patch("/api/tasks/00000000-0000-0000-0000-000000000000")
         .send({ title: "Updated" })
         .set("Content-Type", "application/json");
 
@@ -183,7 +183,7 @@ describe("Task API", () => {
       });
 
       const response = await request(app)
-        .patch(`/tasks/${createdTaskId}`)
+        .patch(`/api/tasks/${createdTaskId}`)
         .send({ slug: existingTask!.slug })
         .set("Content-Type", "application/json");
 
@@ -192,9 +192,9 @@ describe("Task API", () => {
     });
   });
 
-  describe("DELETE /tasks/:id", () => {
+  describe("DELETE /api/tasks/:id", () => {
     it("should delete a task", async () => {
-      const response = await request(app).delete(`/tasks/${createdTaskId}`);
+      const response = await request(app).delete(`/api/tasks/${createdTaskId}`);
 
       expect(response.status).toBe(204);
       expect(response.body).toEqual({});
@@ -207,7 +207,7 @@ describe("Task API", () => {
 
     it("should return 404 when task not found", async () => {
       const response = await request(app).delete(
-        "/tasks/00000000-0000-0000-0000-000000000000"
+        "/api/tasks/00000000-0000-0000-0000-000000000000"
       );
 
       expect(response.status).toBe(404);
