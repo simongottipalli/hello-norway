@@ -67,10 +67,10 @@ npx playwright show-report                      # View HTML report
 
 Configuration is defined in `playwright.config.ts`:
 
-- **Base URL**: http://localhost:3001 (Next.js frontend)
+- **Base URL**: <http://localhost:3000> (Next.js frontend)
 - **Test Directory**: `./e2e`
 - **Browser**: Chromium (can be extended to Firefox, WebKit)
-- **Auto-start servers**: Both backend (port 3000) and frontend (port 3001) are automatically started before tests run
+- **Auto-start servers**: Both backend (port 3001) and frontend (port 3000) are automatically started before tests run
 - **Retries**: 2 retries in CI, 0 locally
 - **Reporter**: HTML report (view with `npx playwright show-report`)
 

@@ -4,7 +4,7 @@ import { logger } from "./lib/logger";
 
 const app = createApp();
 
-const port = Number(process.env.API_PORT ?? process.env.PORT ?? 3000);
+const port = Number(process.env.API_PORT ?? process.env.PORT ?? 3001);
 app.listen(port, () => {
   logger.info(`Server listening on :${port}`);
 });
