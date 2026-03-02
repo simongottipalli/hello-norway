@@ -1,6 +1,6 @@
 import { BrevoClient } from '@getbrevo/brevo';
 import type { EmailOptions, EmailResult, EmailProvider } from '../types';
-import type { Logger } from '../../lib/logger';
+import type { Logger } from '../../../lib/logger';
 
 export class BrevoProvider implements EmailProvider {
   private client: BrevoClient;

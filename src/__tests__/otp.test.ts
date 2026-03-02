@@ -5,6 +5,7 @@ import otpRoutes from "../routes/otpRoutes";
 import * as otpServiceModule from "../services/otpService";
 import { OtpService } from "../services/otpService";
 import { prisma } from "../lib/prisma";
+import { requestLogger } from "../middleware/requestLogger";
 import type { EmailService } from "../services/email/emailService";
 import type { EmailResult } from "../services/email/types";
 
@@ -24,6 +25,7 @@ vi.mock("../lib/prisma", () => ({
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
+  app.use(requestLogger);
   app.use(otpRoutes);
   return app;
 };
@@ -36,17 +38,17 @@ describe("OTP API", () => {
 
   beforeEach(() => {
     app = createTestApp();
-    
+
     // Create mock email service
     mockEmailService = {
       sendEmail: vi.fn(),
       validateConfig: vi.fn(),
     } as unknown as EmailService;
-    
+
     otpService = new OtpService(mockEmailService);
-    
+
     vi.clearAllMocks();
-    
+
     // Set up time mocking
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
@@ -68,7 +70,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
-      expect(mockRequestOtp).toHaveBeenCalledWith("user@example.com");
+      expect(mockRequestOtp).toHaveBeenCalledWith("user@example.com", expect.anything());
     });
 
     it("should normalize email to lowercase", async () => {
@@ -81,7 +83,7 @@ describe("OTP API", () => {
         .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
-      expect(mockRequestOtp).toHaveBeenCalledWith("user@example.com");
+      expect(mockRequestOtp).toHaveBeenCalledWith("user@example.com", expect.anything());
     });
 
     it("should trim whitespace from email", async () => {
@@ -94,7 +96,7 @@ describe("OTP API", () => {
         .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
-      expect(mockRequestOtp).toHaveBeenCalledWith("user@example.com");
+      expect(mockRequestOtp).toHaveBeenCalledWith("user@example.com", expect.anything());
     });
 
     it("should accept email with plus addressing", async () => {
@@ -107,7 +109,7 @@ describe("OTP API", () => {
         .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
-      expect(mockRequestOtp).toHaveBeenCalledWith("user+tag@example.com");
+      expect(mockRequestOtp).toHaveBeenCalledWith("user+tag@example.com", expect.anything());
     });
 
     it("should accept email with subdomain", async () => {
@@ -120,7 +122,7 @@ describe("OTP API", () => {
         .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
-      expect(mockRequestOtp).toHaveBeenCalledWith("user@mail.example.com");
+      expect(mockRequestOtp).toHaveBeenCalledWith("user@mail.example.com", expect.anything());
     });
 
     it("should accept email at exactly 320 characters", async () => {
@@ -354,11 +356,11 @@ describe("OTP API", () => {
 
       // Move time forward to 12:00:30 (10 minutes and 30 seconds after first request)
       vi.setSystemTime(new Date("2024-01-01T12:00:30Z"));
-      
+
       // The OTP from 11:50:00 should now be outside the 10-minute window
       const windowStartTime = new Date(new Date("2024-01-01T12:00:30Z").getTime() - 10 * 60 * 1000);
       // windowStartTime = 11:50:30, so the OTP at 11:50:00 is outside the window
-      
+
       (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
       (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
       (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -370,7 +372,7 @@ describe("OTP API", () => {
       });
 
       result = await otpService.requestOtp(testEmail);
-      
+
       expect(result.success).toBe(true);
       // Verify rate limit window only counts OTPs from last 10 minutes
       expect(prisma.oTPCode.count).toHaveBeenCalledWith({
@@ -442,7 +444,7 @@ describe("OTP API", () => {
           },
         },
       });
-      
+
       // Verify deletion happens before creation
       const deleteManyCall = (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mock
         .invocationCallOrder[0];
@@ -492,11 +494,11 @@ describe("OTP API", () => {
       const result = await otpService.requestOtp(testEmail);
 
       expect(result.success).toBe(true);
-      
+
       // Verify the OTP is a 6-digit integer
       const createCall = (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
       const otpCode = createCall.data.code;
-      
+
       expect(Number.isInteger(otpCode)).toBe(true);
       expect(otpCode).toBeGreaterThanOrEqual(100000);
       expect(otpCode).toBeLessThan(1000000);
@@ -524,10 +526,10 @@ describe("OTP API", () => {
 
       const createCall = (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
       const expiresAt = createCall.data.expiresAt;
-      
+
       // Verify expiration is 10 minutes from now
       expect(expiresAt.getTime()).toBe(expectedExpiry.getTime());
-      
+
       // Verify it's exactly 10 minutes
       const diffInMinutes = (expiresAt.getTime() - now.getTime()) / (60 * 1000);
       expect(diffInMinutes).toBe(10);
@@ -579,13 +581,16 @@ describe("OTP API", () => {
       const result = await otpService.requestOtp(testEmail);
 
       expect(result.success).toBe(true);
-      expect(mockEmailService.sendEmail).toHaveBeenCalledWith({
-        to: testEmail,
-        subject: "Your Hello Norway Login Code",
-        text: expect.stringContaining("login code"),
-        html: expect.stringContaining("login code"),
-      });
-      
+      expect(mockEmailService.sendEmail).toHaveBeenCalledWith(
+        {
+          to: testEmail,
+          subject: "Your Hello Norway Login Code",
+          text: expect.stringContaining("login code"),
+          html: expect.stringContaining("login code"),
+        },
+        undefined,
+      );
+
       // Verify email service was mocked (not real send)
       expect(mockEmailService.sendEmail).toHaveBeenCalledTimes(1);
     });
@@ -609,7 +614,7 @@ describe("OTP API", () => {
 
       const emailCall = (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mock
         .calls[0][0];
-      
+
       // Extract the OTP code from the created record
       const createCall = (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
       const otpCode = createCall.data.code;
@@ -749,15 +754,15 @@ describe("OTP API", () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe("OTP verified successfully");
-      expect(mockVerifyOtp).toHaveBeenCalledWith("user@example.com", 123456);
+      expect(mockVerifyOtp).toHaveBeenCalledWith("user@example.com", 123456, expect.anything());
     });
 
     it("should reject invalid OTP", async () => {
       const mockVerifyOtp = vi.spyOn(otpServiceModule.otpService, "verifyOtp");
-      mockVerifyOtp.mockResolvedValue({ 
-        success: false, 
+      mockVerifyOtp.mockResolvedValue({
+        success: false,
         error: "Invalid or expired OTP",
-        statusCode: 401 
+        statusCode: 401
       });
 
       const response = await request(app)
@@ -809,15 +814,15 @@ describe("OTP API", () => {
         .set("Content-Type", "application/json");
 
       expect(response.status).toBe(200);
-      expect(mockVerifyOtp).toHaveBeenCalledWith("user@example.com", 123456);
+      expect(mockVerifyOtp).toHaveBeenCalledWith("user@example.com", 123456, expect.anything());
     });
 
     it("should handle expired OTP", async () => {
       const mockVerifyOtp = vi.spyOn(otpServiceModule.otpService, "verifyOtp");
-      mockVerifyOtp.mockResolvedValue({ 
-        success: false, 
+      mockVerifyOtp.mockResolvedValue({
+        success: false,
         error: "Invalid or expired OTP",
-        statusCode: 401 
+        statusCode: 401
       });
 
       const response = await request(app)
