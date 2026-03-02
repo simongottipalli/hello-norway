@@ -123,7 +123,7 @@ playwright.config.ts        # E2E test configuration
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/myapp` |
 | `PORT` | Port the Next.js frontend server listens on | `3001` |
 | `API_PORT` | Port the Express backend server listens on | `3000` |
-| `API_BASE_URL` | URL Next.js API routes use to forward requests to Express — must match `API_PORT` and include `/api` suffix | `http://localhost:3000/api` |
+| `API_BASE_URL` | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3000` |
 | `LOG_LEVEL` | Logging verbosity (debug, info, warn, error) | `debug` (dev), `info` (prod) |
 | `NODE_ENV` | Environment mode | `development` or `production` |
 
