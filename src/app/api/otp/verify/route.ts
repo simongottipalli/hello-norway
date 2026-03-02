@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import { createChildLogger } from "@/lib/logger";
 import { API_BASE_URL } from "@/lib/config";
 
+const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+
 export async function POST(request: NextRequest) {
   // Generate request ID for tracing
   const requestId = randomUUID();
@@ -33,7 +35,22 @@ export async function POST(request: NextRequest) {
     });
 
     // Create NextResponse with status
-    const nextResponse = NextResponse.json(data, { status: response.status });
+    const responseBody = { ...data };
+    if (response.ok && responseBody.success && responseBody.sessionToken) {
+      const sessionToken = responseBody.sessionToken;
+      delete responseBody.sessionToken;
+      const nextResponse = NextResponse.json(responseBody, { status: response.status });
+      nextResponse.cookies.set("session_token", sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: SESSION_MAX_AGE_SECONDS,
+      });
+      return nextResponse;
+    }
+
+    const nextResponse = NextResponse.json(responseBody, { status: response.status });
 
     // Propagate relevant headers from backend response
     const headersToPropagate = [

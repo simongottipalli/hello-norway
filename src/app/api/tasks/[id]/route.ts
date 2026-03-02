@@ -4,7 +4,7 @@ import { createChildLogger } from "@/lib/logger";
 import { API_BASE_URL } from "@/lib/config";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const requestId = randomUUID();
@@ -12,6 +12,7 @@ export async function GET(
 
   try {
     const { id } = await params;
+    const cookie = request.headers.get("cookie");
 
     logger.info({ msg: 'Fetching task by id', taskId: id });
     const startTime = Date.now();
@@ -20,6 +21,7 @@ export async function GET(
       method: "GET",
       headers: {
         "X-Request-ID": requestId,
+        ...(cookie ? { Cookie: cookie } : {}),
       },
     });
 
@@ -55,6 +57,7 @@ export async function PATCH(
 
   try {
     const { id } = await params;
+    const cookie = request.headers.get("cookie");
     const body = await request.json();
 
     logger.info({ msg: 'Updating task', taskId: id });
@@ -65,6 +68,7 @@ export async function PATCH(
       headers: {
         "Content-Type": "application/json",
         "X-Request-ID": requestId,
+        ...(cookie ? { Cookie: cookie } : {}),
       },
       body: JSON.stringify(body),
     });
@@ -93,7 +97,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const requestId = randomUUID();
@@ -101,6 +105,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+    const cookie = request.headers.get("cookie");
 
     logger.info({ msg: 'Deleting task', taskId: id });
     const startTime = Date.now();
@@ -109,6 +114,7 @@ export async function DELETE(
       method: "DELETE",
       headers: {
         "X-Request-ID": requestId,
+        ...(cookie ? { Cookie: cookie } : {}),
       },
     });
 

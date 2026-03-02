@@ -18,6 +18,13 @@ vi.mock("../lib/prisma", () => ({
       deleteMany: vi.fn(),
       create: vi.fn(),
     },
+    user: {
+      upsert: vi.fn(),
+    },
+    session: {
+      deleteMany: vi.fn(),
+      create: vi.fn(),
+    },
   },
 }));
 
@@ -48,6 +55,19 @@ describe("OTP API", () => {
     otpService = new OtpService(mockEmailService);
 
     vi.clearAllMocks();
+    vi.mocked(prisma.user.upsert).mockResolvedValue({
+      id: "user-1",
+      email: testEmail,
+      name: "test",
+    });
+    vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 0 });
+    vi.mocked(prisma.session.create).mockResolvedValue({
+      id: "session-1",
+      sessionToken: "token",
+      userId: "user-1",
+      expiresAt: new Date("2024-01-08T12:00:00Z"),
+      createdAt: new Date("2024-01-01T12:00:00Z"),
+    });
 
     // Set up time mocking
     vi.useFakeTimers();
@@ -744,7 +764,11 @@ describe("OTP API", () => {
   describe("POST /otp/verify - OTP Verification", () => {
     it("should verify valid OTP successfully", async () => {
       const mockVerifyOtp = vi.spyOn(otpServiceModule.otpService, "verifyOtp");
-      mockVerifyOtp.mockResolvedValue({ success: true });
+      mockVerifyOtp.mockResolvedValue({
+        success: true,
+        sessionToken: "session-token",
+        user: { id: "user-1", email: "user@example.com", name: "user" },
+      });
 
       const response = await request(app)
         .post("/otp/verify")
@@ -754,6 +778,7 @@ describe("OTP API", () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe("OTP verified successfully");
+      expect(response.body.sessionToken).toBe("session-token");
       expect(mockVerifyOtp).toHaveBeenCalledWith("user@example.com", 123456, expect.anything());
     });
 

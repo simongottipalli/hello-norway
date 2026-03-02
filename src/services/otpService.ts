@@ -1,4 +1,4 @@
-import { randomInt } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 import { prisma } from '../lib/prisma';
 import type { EmailService } from './email/emailService';
 import type { Logger } from '../lib/logger';
@@ -13,12 +13,20 @@ const OTP_EXPIRATION_MINUTES = 10;
 const OTP_RATE_LIMIT_MAX_ATTEMPTS = 3;
 const OTP_MIN_VALUE = 100000; // 6-digit OTP minimum
 const OTP_MAX_VALUE = 999999; // 6-digit OTP maximum
+const SESSION_EXPIRATION_DAYS = 7;
+const SESSION_TOKEN_BYTES = 64;
 
 export interface OtpServiceResult {
   success: boolean;
   error?: string;
   statusCode?: number;
   retryAfter?: number;
+  sessionToken?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }
 
 export class OtpService {
@@ -181,10 +189,43 @@ export class OtpService {
         },
       });
 
+      const user = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: {
+          email,
+          name: email.split('@')[0] || email,
+        },
+      });
+
+      await prisma.session.deleteMany({
+        where: {
+          userId: user.id,
+          expiresAt: {
+            lte: new Date(),
+          },
+        },
+      });
+
+      const sessionToken = randomBytes(SESSION_TOKEN_BYTES).toString('hex');
+      await prisma.session.create({
+        data: {
+          sessionToken,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + SESSION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
+        },
+      });
+
       logger?.info({ msg: 'OTP verified successfully', email });
 
       return {
         success: true,
+        sessionToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
       };
     } catch (error) {
       logger?.error({ msg: 'Error in verifyOtp', email, error });

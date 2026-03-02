@@ -3,17 +3,19 @@ import { randomUUID } from "crypto";
 import { createChildLogger } from "@/lib/logger";
 import { API_BASE_URL } from "@/lib/config";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const requestId = randomUUID();
   const logger = createChildLogger({ requestId, route: '/api/tasks', method: 'GET' });
 
   try {
+    const cookie = request.headers.get("cookie");
     logger.info({ msg: 'Fetching all tasks' });
     const startTime = Date.now();
 
     const response = await fetch(`${API_BASE_URL}/tasks`, {
       headers: {
         "X-Request-ID": requestId,
+        ...(cookie ? { Cookie: cookie } : {}),
       },
     });
 
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
   const logger = createChildLogger({ requestId, route: '/api/tasks', method: 'POST' });
 
   try {
+    const cookie = request.headers.get("cookie");
     const body = await request.json();
 
     logger.info({ msg: 'Creating new task', slug: body.slug });
@@ -52,6 +55,7 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/json",
         "X-Request-ID": requestId,
+        ...(cookie ? { Cookie: cookie } : {}),
       },
       body: JSON.stringify(body),
     });
