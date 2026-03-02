@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  verifySessionCookie,
+  SESSION_SIG_COOKIE_NAME,
+} from "@/lib/sessionCookieSig";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (
@@ -14,9 +18,21 @@ export function middleware(request: NextRequest) {
   }
 
   const sessionToken = request.cookies.get("session_token")?.value;
-  if (!sessionToken) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+  const sessionSig = request.cookies.get(SESSION_SIG_COOKIE_NAME)?.value;
+
+  if (!sessionToken || !sessionSig) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  const secret = process.env.SESSION_COOKIE_SECRET;
+  if (!secret) {
+    // Fail closed: without the secret we cannot verify anything.
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  const valid = await verifySessionCookie(sessionToken, sessionSig, secret);
+  if (!valid) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();

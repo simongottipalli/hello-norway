@@ -1,4 +1,5 @@
 import express from "express";
+import cookieParser from "cookie-parser";
 import taskRoutes from "./routes/taskRoutes";
 import otpRoutes from "./routes/otpRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -11,6 +12,7 @@ export const createApp = () => {
   const apiBaseUrl = "/api";
 
   app.use(express.json());
+  app.use(cookieParser());
 
   // Request logging middleware (before routes)
   app.use(requestLogger);

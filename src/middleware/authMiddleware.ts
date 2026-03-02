@@ -3,20 +3,9 @@ import { prisma } from "../lib/prisma";
 
 const SESSION_COOKIE_NAME = "session_token";
 
-const getSessionTokenFromCookie = (cookieHeader?: string): string | null => {
-  if (!cookieHeader) return null;
-
-  const cookies = cookieHeader.split(";").map((cookie) => cookie.trim());
-  const sessionCookie = cookies.find((cookie) => cookie.startsWith(`${SESSION_COOKIE_NAME}=`));
-  if (!sessionCookie) return null;
-
-  const [, value] = sessionCookie.split("=");
-  return value || null;
-};
-
 export const authenticateSession = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const sessionToken = getSessionTokenFromCookie(req.headers.cookie);
+    const sessionToken: string | undefined = req.cookies?.[SESSION_COOKIE_NAME];
     if (!sessionToken) {
       return res.status(401).json({ error: "Unauthorized" });
     }
