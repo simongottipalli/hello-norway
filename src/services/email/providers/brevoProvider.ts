@@ -1,5 +1,6 @@
 import { BrevoClient } from '@getbrevo/brevo';
 import type { EmailOptions, EmailResult, EmailProvider } from '../types';
+import type { Logger } from '../../../lib/logger';
 
 export class BrevoProvider implements EmailProvider {
   private client: BrevoClient;
@@ -17,8 +18,10 @@ export class BrevoProvider implements EmailProvider {
     this.client = new BrevoClient({ apiKey });
   }
 
-  async sendEmail(options: EmailOptions): Promise<EmailResult> {
+  async sendEmail(options: EmailOptions, logger?: Logger): Promise<EmailResult> {
     try {
+      logger?.info({ msg: 'Attempting to send email via Brevo', to: options.to });
+
       const response = await this.client.transactionalEmails.sendTransacEmail({
         sender: this.parseSender(options.from || this.defaultFrom),
         to: this.parseRecipients(options.to),
@@ -30,12 +33,14 @@ export class BrevoProvider implements EmailProvider {
         bcc: options.bcc && options.bcc.length > 0 ? this.parseRecipients(options.bcc) : undefined,
       });
 
+      logger?.info({ msg: 'Email sent successfully via Brevo', messageId: response.messageId });
+
       return {
         success: true,
         messageId: response.messageId,
       };
     } catch (error) {
-      console.error('Brevo email sending failed:', error);
+      logger?.error({ msg: 'Brevo email sending failed', error });
 
       let errorMessage = 'Failed to send email';
       if (error instanceof Error) {

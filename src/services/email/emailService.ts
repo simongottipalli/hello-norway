@@ -1,5 +1,6 @@
 import type { EmailOptions, EmailResult, EmailProvider, EmailServiceConfig } from './types';
 import { BrevoProvider } from './providers/brevoProvider';
+import type { Logger } from '../../lib/logger';
 
 export class EmailService {
   private provider: EmailProvider;
@@ -8,8 +9,8 @@ export class EmailService {
     this.provider = provider;
   }
 
-  async sendEmail(options: EmailOptions): Promise<EmailResult> {
-    return this.provider.sendEmail(options);
+  async sendEmail(options: EmailOptions, logger?: Logger): Promise<EmailResult> {
+    return this.provider.sendEmail(options, logger);
   }
 
   async validateConfig(): Promise<boolean> {

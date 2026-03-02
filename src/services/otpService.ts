@@ -1,6 +1,7 @@
 import { randomInt } from 'crypto';
 import { prisma } from '../lib/prisma';
 import type { EmailService } from './email/emailService';
+import type { Logger } from '../lib/logger';
 
 /**
  * OTP Service
@@ -30,9 +31,10 @@ export class OtpService {
   /**
    * Request an OTP for the given email
    * @param email - Normalized email address
+   * @param logger - Logger instance for request tracing
    * @returns Result indicating success or failure with status code
    */
-  async requestOtp(email: string): Promise<OtpServiceResult> {
+  async requestOtp(email: string, logger?: Logger): Promise<OtpServiceResult> {
     try {
       // Check rate limiting - count OTPs created in last window
       const rateLimitWindowMs = OTP_EXPIRATION_MINUTES * 60 * 1000;
@@ -63,6 +65,8 @@ export class OtpService {
         const retryAfter = oldestOtp
           ? Math.ceil((oldestOtp.createdAt.getTime() + rateLimitWindowMs - Date.now()) / 1000)
           : OTP_EXPIRATION_MINUTES * 60; // Default to full window if not found
+
+        logger?.warn({ msg: 'Rate limit exceeded', email, retryAfter });
 
         return {
           success: false,
@@ -95,6 +99,12 @@ export class OtpService {
         },
       });
 
+      logger?.info({ 
+        msg: 'OTP generated',
+        email,
+        expiresIn: `${OTP_EXPIRATION_MINUTES}m`,
+      });
+
       // Send OTP via email
       const emailResult = await this.emailService.sendEmail({
         to: email,
@@ -109,9 +119,10 @@ export class OtpService {
             <p style="color: #666; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
           </div>
         `,
-      });
+      }, logger);
 
       if (!emailResult.success) {
+        logger?.error({ msg: 'Failed to send OTP email', email, error: emailResult.error });
         return {
           success: false,
           error: 'Failed to send email',
@@ -119,12 +130,13 @@ export class OtpService {
         };
       }
 
+      logger?.info({ msg: 'OTP email sent successfully', email });
+
       return {
         success: true,
       };
     } catch (error) {
-      // TODO: Replace console.error with structured logging service for production
-      console.error('Error in requestOtp:', error);
+      logger?.error({ msg: 'Error in requestOtp', email, error });
       return {
         success: false,
         error: 'Internal server error',
@@ -137,9 +149,10 @@ export class OtpService {
    * Verify an OTP code for the given email
    * @param email - Normalized email address
    * @param code - OTP code to verify
+   * @param logger - Logger instance for request tracing
    * @returns Result indicating success or failure
    */
-  async verifyOtp(email: string, code: number): Promise<OtpServiceResult> {
+  async verifyOtp(email: string, code: number, logger?: Logger): Promise<OtpServiceResult> {
     try {
       // Find valid OTP for this email
       const otpRecord = await prisma.oTPCode.findFirst({
@@ -153,6 +166,7 @@ export class OtpService {
       });
 
       if (!otpRecord) {
+        logger?.warn({ msg: 'Invalid or expired OTP', email });
         return {
           success: false,
           error: 'Invalid or expired OTP',
@@ -167,12 +181,13 @@ export class OtpService {
         },
       });
 
+      logger?.info({ msg: 'OTP verified successfully', email });
+
       return {
         success: true,
       };
     } catch (error) {
-      // TODO: Replace console.error with structured logging service for production
-      console.error('Error in verifyOtp:', error);
+      logger?.error({ msg: 'Error in verifyOtp', email, error });
       return {
         success: false,
         error: 'Internal server error',
@@ -220,6 +235,6 @@ function getOtpServiceInstance(): OtpService {
  * For new code, prefer calling initializeOtpService() during startup
  */
 export const otpService = {
-  requestOtp: (email: string) => getOtpServiceInstance().requestOtp(email),
-  verifyOtp: (email: string, code: number) => getOtpServiceInstance().verifyOtp(email, code),
+  requestOtp: (email: string, logger?: Logger) => getOtpServiceInstance().requestOtp(email, logger),
+  verifyOtp: (email: string, code: number, logger?: Logger) => getOtpServiceInstance().verifyOtp(email, code, logger),
 };

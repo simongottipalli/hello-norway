@@ -121,6 +121,110 @@ playwright.config.ts        # E2E test configuration
 |---|---|---|
 | `NEXT_PUBLIC_SITE_URL` | Public URL used for Open Graph metadata | `https://your-domain.com` |
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/myapp` |
+| `LOG_LEVEL` | Logging verbosity (debug, info, warn, error) | `debug` (dev), `info` (prod) |
+| `NODE_ENV` | Environment mode | `development` or `production` |
+
+## Logging
+
+This project uses **[Pino](https://getpino.io/)** for structured logging with request tracing across Next.js and Express servers.
+
+### Key Features
+
+- **Structured JSON logs** in production for easy parsing and aggregation
+- **Pretty-printed logs** in development for better readability
+- **Request ID tracing** — Each request gets a unique `X-Request-ID` header that flows through the entire request lifecycle
+- **Automatic sanitization** — Sensitive data (emails, OTPs, passwords) are automatically masked in logs
+- **Performance metrics** — Request duration and timing information
+
+### Log Levels
+
+Set via `LOG_LEVEL` environment variable:
+
+- `debug` — Verbose logging, useful for development (default in development)
+- `info` — Standard logging (default in production)
+- `warn` — Warning messages only
+- `error` — Error messages only
+
+### Request Tracing Flow
+
+1. **Client → Next.js**: Request arrives at Next.js API route
+2. **Next.js generates ID**: `crypto.randomUUID()` → `X-Request-ID` header
+3. **Next.js → Express**: Forward request with `X-Request-ID` header
+4. **Express middleware**: Extract `X-Request-ID`, attach logger to `req.logger`
+5. **Controllers/Services**: Use `req.logger` for all logging
+6. **Response**: All logs include same `requestId` for easy tracing
+
+### Example: Tracing a Request
+
+**Development logs (pretty-printed):**
+```
+[14:23:45.123] INFO: Incoming request
+    requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
+    method: "POST"
+    path: "/api/otp/generate"
+    
+[14:23:45.456] INFO: OTP generated
+    requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
+    email: "u***@example.com"
+    expiresIn: "10m"
+    
+[14:23:45.789] INFO: Outgoing response
+    requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
+    statusCode: 200
+    duration: "666ms"
+```
+
+**Production logs (JSON):**
+```json
+{"level":30,"time":1709308800000,"requestId":"a1b2c3d4-5678-90ab-cdef-123456789abc","method":"POST","path":"/api/otp/generate","msg":"Incoming request"}
+{"level":30,"time":1709308800456,"requestId":"a1b2c3d4-5678-90ab-cdef-123456789abc","email":"u***@example.com","expiresIn":"10m","msg":"OTP generated"}
+{"level":30,"time":1709308800789,"requestId":"a1b2c3d4-5678-90ab-cdef-123456789abc","statusCode":200,"duration":"666ms","msg":"Outgoing response"}
+```
+
+### Data Sanitization
+
+Sensitive fields are automatically masked:
+
+- **Email**: `test@example.com` → `t***@example.com`
+- **OTP/Code/Password**: `123456` → `[REDACTED]`
+
+### Viewing Logs
+
+**In Docker/Kubernetes:**
+```bash
+# View container logs
+docker logs <container-id>
+
+# Follow logs in real-time
+kubectl logs -f <pod-name>
+```
+
+**Search logs by Request ID:**
+```bash
+# JSON logs (production)
+cat logs.json | grep "a1b2c3d4-5678-90ab-cdef-123456789abc"
+
+# With jq for better formatting
+cat logs.json | jq 'select(.requestId == "a1b2c3d4-5678-90ab-cdef-123456789abc")'
+```
+
+### Architecture
+
+```
+Client Request
+    ↓
+Next.js API Route (generates X-Request-ID)
+    ↓ [Forward with X-Request-ID header]
+Express Server
+    ↓ [Middleware extracts/generates ID]
+Request Logger Middleware (attaches req.logger)
+    ↓
+Router → Controller → Service
+    ↓ [All use req.logger with requestId context]
+Response (logged with duration, status)
+```
+
+All logs from the same request share the same `requestId`, making it easy to trace a request through the entire system.
 
 ## Scripts
 

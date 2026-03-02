@@ -60,7 +60,7 @@ export const requestOtp = async (req: Request, res: Response) => {
     // All responses include the generic message to prevent email enumeration
 
     // Delegate to OTP service
-    const result = await otpService.requestOtp(normalizedEmail);
+    const result = await otpService.requestOtp(normalizedEmail, req.logger);
 
     // Handle service errors with appropriate status codes
     if (!result.success) {
@@ -79,11 +79,11 @@ export const requestOtp = async (req: Request, res: Response) => {
     }
 
     // Always return generic success message
+    req.logger.info({ msg: 'OTP request processed', email: normalizedEmail });
     res.status(200).json({ message: GENERIC_MESSAGE });
   } catch (error: unknown) {
     // Handle unexpected errors
-    // TODO: Replace console.error with structured logging service for production
-    console.error("Error in requestOtp:", error);
+    req.logger.error({ msg: 'Error in requestOtp', error });
     res.status(500).json({
       error: "Internal server error",
       message: GENERIC_MESSAGE
@@ -148,7 +148,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
     }
 
     // Delegate to OTP service
-    const result = await otpService.verifyOtp(normalizedEmail, code);
+    const result = await otpService.verifyOtp(normalizedEmail, code, req.logger);
 
     if (!result.success) {
       const statusCode = result.statusCode || 500;
@@ -158,14 +158,14 @@ export const verifyOtp = async (req: Request, res: Response) => {
     }
 
     // Return success response
+    req.logger.info({ msg: 'OTP verified successfully', email: normalizedEmail });
     res.status(200).json({
       message: "OTP verified successfully",
       success: true
     });
   } catch (error: unknown) {
     // Handle unexpected errors
-    // TODO: Replace console.error with structured logging service for production
-    console.error("Error in verifyOtp:", error);
+    req.logger.error({ msg: 'Error in verifyOtp', error });
     res.status(500).json({
       error: "Internal server error"
     });

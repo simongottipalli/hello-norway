@@ -2,13 +2,15 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
 
-export const getAllTasks = async (_req: Request, res: Response) => {
+export const getAllTasks = async (req: Request, res: Response) => {
   try {
     const tasks = await prisma.task.findMany({
       orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
     });
+    req.logger.info({ msg: 'Fetched all tasks', count: tasks.length });
     res.json(tasks);
-  } catch {
+  } catch (error: unknown) {
+    req.logger.error({ msg: 'Failed to fetch tasks', error });
     res.status(500).json({ error: "Failed to fetch tasks" });
   }
 };
@@ -22,15 +24,18 @@ export const getTaskById = async (req: Request, res: Response) => {
     });
 
     if (!task) {
+      req.logger.info({ msg: 'Task not found', taskId: id });
       return res.status(404).json({ error: "Task not found" });
     }
 
+    req.logger.info({ msg: 'Fetched task by id', taskId: id });
     res.json(task);
   } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error);
+    const errorResponse = handlePrismaError(error, req.logger);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
     }
+    req.logger.error({ msg: 'Failed to fetch task', error });
     res.status(500).json({ error: "Failed to fetch task" });
   }
 };
@@ -53,6 +58,7 @@ export const createTask = async (req: Request, res: Response) => {
     } = req.body;
 
     if (!slug || !title || !shortDescription || !body || !category || sortOrder === undefined) {
+      req.logger.info({ msg: 'Task creation failed - missing required fields' });
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -73,12 +79,14 @@ export const createTask = async (req: Request, res: Response) => {
       },
     });
 
+    req.logger.info({ msg: 'Task created', taskId: task.id, slug });
     res.status(201).json(task);
   } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error);
+    const errorResponse = handlePrismaError(error, req.logger);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
     }
+    req.logger.error({ msg: 'Failed to create task', error });
     res.status(500).json({ error: "Failed to create task" });
   }
 };
@@ -93,12 +101,14 @@ export const updateTask = async (req: Request, res: Response) => {
       data: updateData,
     });
 
+    req.logger.info({ msg: 'Task updated', taskId: id });
     res.json(task);
   } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error);
+    const errorResponse = handlePrismaError(error, req.logger);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
     }
+    req.logger.error({ msg: 'Failed to update task', error });
     res.status(500).json({ error: "Failed to update task" });
   }
 };
@@ -111,12 +121,14 @@ export const deleteTask = async (req: Request, res: Response) => {
       where: { id },
     });
 
+    req.logger.info({ msg: 'Task deleted', taskId: id });
     res.status(204).send();
   } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error);
+    const errorResponse = handlePrismaError(error, req.logger);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
     }
+    req.logger.error({ msg: 'Failed to delete task', error });
     res.status(500).json({ error: "Failed to delete task" });
   }
 };
