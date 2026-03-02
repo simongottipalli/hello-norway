@@ -57,13 +57,13 @@ This project uses **[shadcn/ui](https://ui.shadcn.com/)** with a **zinc** color 
 
 ### Available Components
 
-| Component | Import | Description |
-|---|---|---|
-| `Button` | `@/components/ui/button` | Actions — supports `variant` (default, outline, ghost, destructive, secondary, link) and `size` (default, sm, lg, icon) |
-| `Card` + sub-components | `@/components/ui/card` | Content containers — use `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` |
-| `Input` | `@/components/ui/input` | Text inputs with consistent focus ring and border styling |
-| `Label` | `@/components/ui/label` | Accessible form labels, pair with `Input` using `htmlFor` |
-| `Badge` | `@/components/ui/badge` | Inline tags — supports `variant` (default, secondary, destructive, outline) |
+| Component               | Import                   | Description                                                                                                             |
+| ----------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `Button`                | `@/components/ui/button` | Actions — supports `variant` (default, outline, ghost, destructive, secondary, link) and `size` (default, sm, lg, icon) |
+| `Card` + sub-components | `@/components/ui/card`   | Content containers — use `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`                      |
+| `Input`                 | `@/components/ui/input`  | Text inputs with consistent focus ring and border styling                                                               |
+| `Label`                 | `@/components/ui/label`  | Accessible form labels, pair with `Input` using `htmlFor`                                                               |
+| `Badge`                 | `@/components/ui/badge`  | Inline tags — supports `variant` (default, secondary, destructive, outline)                                             |
 
 ### Adding More Components
 
@@ -81,7 +81,7 @@ Colors are defined as CSS variables in `src/app/globals.css`. Dark mode switches
 
 ## Project Structure
 
-```
+```code
 src/
   app/                      # Next.js frontend
     layout.tsx              # Root layout with metadata and fonts
@@ -165,7 +165,7 @@ Set via `LOG_LEVEL` environment variable:
 
 **Development logs (pretty-printed):**
 
-```
+```code
 [14:23:45.123] INFO: Incoming request
     requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
     method: "POST"
@@ -221,7 +221,7 @@ cat logs.json | jq 'select(.requestId == "a1b2c3d4-5678-90ab-cdef-123456789abc")
 
 ### Architecture
 
-```
+```code
 Client Request
     ↓
 Next.js API Route (generates X-Request-ID)
@@ -239,21 +239,21 @@ All logs from the same request share the same `requestId`, making it easy to tra
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start both frontend and backend in development mode |
-| `npm run dev:server` | Start only the Express API server |
-| `npm run dev:client` | Start only the Next.js frontend |
-| `npm run build` | Production build |
-| `npm run start` | Start production server locally |
-| `npm run lint` | Run ESLint |
-| `npm test` | Run unit tests once |
-| `npm run test:watch` | Run unit tests in watch mode |
-| `npm run test:e2e` | Run end-to-end tests |
-| `npm run test:e2e:ui` | Run E2E tests with interactive UI |
-| `npm run test:e2e:headed` | Run E2E tests with visible browser |
-| `npm run test:e2e:debug` | Debug E2E tests step-by-step |
-| `npm run test:all` | Run all tests (unit + E2E) |
+| Command                   | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| `npm run dev`             | Start both frontend and backend in development mode |
+| `npm run dev:server`      | Start only the Express API server                   |
+| `npm run dev:client`      | Start only the Next.js frontend                     |
+| `npm run build`           | Production build                                    |
+| `npm run start`           | Start production server locally                     |
+| `npm run lint`            | Run ESLint                                          |
+| `npm test`                | Run unit tests once                                 |
+| `npm run test:watch`      | Run unit tests in watch mode                        |
+| `npm run test:e2e`        | Run end-to-end tests                                |
+| `npm run test:e2e:ui`     | Run E2E tests with interactive UI                   |
+| `npm run test:e2e:headed` | Run E2E tests with visible browser                  |
+| `npm run test:e2e:debug`  | Debug E2E tests step-by-step                        |
+| `npm run test:all`        | Run all tests (unit + E2E)                          |
 
 ## API Endpoints
 
@@ -275,87 +275,6 @@ All logs from the same request share the same `requestId`, making it easy to tra
 
 See [API Tests](src/__tests__/README.md) for detailed endpoint documentation and examples.
 
-## Testing
-
-We have comprehensive testing at multiple levels:
-
-### Unit & Integration Tests (Vitest + Supertest)
-
-Test the backend API endpoints and business logic:
-
-```bash
-# Run unit tests
-npm test
-
-# Run tests in watch mode (auto-rerun on changes)
-npm run test:watch
-
-# Run with verbose output
-npx vitest run --reporter=verbose
-```
-
-**Coverage:**
-
-- ✅ 13 test cases covering all CRUD operations
-- ✅ Happy path scenarios (create, read, update, delete)
-- ✅ Error handling (missing fields, duplicates, not found)
-- ✅ Data validation and integrity checks
-
 See [Unit Test Documentation](src/__tests__/README.md) for more details.
 
-### End-to-End Tests (Playwright)
-
-Test complete user workflows through the browser:
-
-```bash
-# Run E2E tests
-npm run test:e2e
-
-# Run with interactive UI (recommended for development)
-npm run test:e2e:ui
-
-# Run with visible browser
-npm run test:e2e:headed
-
-# Debug tests step-by-step
-npm run test:e2e:debug
-```
-
-**Coverage:**
-
-- ✅ UI interactions (forms, buttons, navigation)
-- ✅ Task creation, deletion, and listing
-- ✅ Form validation and error handling
-- ✅ API endpoint testing (GET, POST, PUT, DELETE)
-- ✅ Data persistence and page reloads
-- ✅ Multiple task operations
-
 See [E2E Test Documentation](e2e/README.md) for more details.
-
-### Run All Tests
-
-```bash
-npm run test:all
-```
-
-This runs both unit tests and E2E tests sequentially.
-
-For a comprehensive testing guide, see [TESTING.md](TESTING.md).
-
-## Database
-
-### Migrations
-
-1. Edit `prisma/schema.prisma`
-2. Run `npx prisma migrate dev --name <migration-name>` locally
-3. Commit `prisma/migrations/` and `prisma/schema.prisma`
-4. On deploy, run `prisma migrate deploy`
-
-### Seeding
-
-```bash
-# Seed the database with sample data
-npx prisma db seed
-```
-
-The seed file (`prisma/seed.ts`) contains sample tasks for testing and development.
