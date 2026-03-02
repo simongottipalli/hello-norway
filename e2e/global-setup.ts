@@ -42,7 +42,7 @@ export default async function globalSetup(_config: FullConfig) {
   }
 
   // Late-import Prisma so it only loads after the env check above.
-  const { PrismaClient } = await import("../src/generated/prisma/index.js");
+  const { PrismaClient } = await import("../src/generated/prisma/client.js");
   const prisma = new PrismaClient();
 
   try {
