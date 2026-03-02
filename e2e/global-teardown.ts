@@ -1,7 +1,7 @@
 import { TEST_USER_EMAIL } from "./global-setup";
 
 export default async function globalTeardown() {
-  const { PrismaClient } = await import("@prisma/client");
+  const { PrismaClient } = await import("../src/generated/prisma/client.ts");
   const prisma = new PrismaClient();
 
   try {
