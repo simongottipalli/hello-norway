@@ -51,7 +51,7 @@ EXPOSE 3000
 EXPOSE 3001
 ENV PORT=3001
 ENV API_PORT=3000
-ENV API_BASE_URL=http://localhost:3000
+ENV API_BASE_URL=http://localhost:3000/api
 ENV HOSTNAME="0.0.0.0"
 
 CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && node node_modules/tsx/dist/cli.mjs src/server.ts & PORT=$PORT node server.js"]

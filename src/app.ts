@@ -6,6 +6,7 @@ import { errorLogger } from "./middleware/errorLogger";
 
 export const createApp = () => {
   const app = express();
+  const apiBaseUrl = "/api";
 
   app.use(express.json());
 
@@ -14,8 +15,8 @@ export const createApp = () => {
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
-  app.use(taskRoutes);
-  app.use(otpRoutes);
+  app.use(apiBaseUrl, taskRoutes);
+  app.use(apiBaseUrl, otpRoutes);
 
   // Error logging middleware (after routes)
   app.use(errorLogger);

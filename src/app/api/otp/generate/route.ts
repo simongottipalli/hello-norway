@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createChildLogger } from "@/lib/logger";
-
-const API_URL = process.env.API_BASE_URL || "http://localhost:3000";
+import { API_BASE_URL } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   // Generate request ID for tracing
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
     logger.info({ msg: 'Forwarding OTP generation request to Express', email: body.email });
     const startTime = Date.now();
 
-    const response = await fetch(`${API_URL}/otp/generate`, {
+    const response = await fetch(`${API_BASE_URL}/otp/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -5,6 +5,7 @@ A Next.js application with Express API backend, helping newcomers navigate essen
 ## Stack
 
 ### Frontend
+
 - **[Next.js 16](https://nextjs.org/)** — App Router, Server Components, file-based routing
 - **[Tailwind CSS v4](https://tailwindcss.com/)** — Utility-first CSS with dark mode
 - **[shadcn/ui](https://ui.shadcn.com/)** — Zinc-themed component library (Button, Card, Input, Label, Badge)
@@ -12,10 +13,12 @@ A Next.js application with Express API backend, helping newcomers navigate essen
 - **[ESLint](https://eslint.org/)** — Code linting via `eslint-config-next`
 
 ### Backend
+
 - **[Express](https://expressjs.com/)** — Fast, minimalist web framework
 - **[Prisma](https://www.prisma.io/)** — Type-safe ORM with PostgreSQL
 
 ### Testing
+
 - **[Vitest](https://vitest.dev/)** — Fast unit testing with TypeScript support
 - **[Supertest](https://github.com/ladjs/supertest)** — HTTP assertion library for API testing
 - **[Playwright](https://playwright.dev/)** — End-to-end testing for UI and API workflows
@@ -44,6 +47,7 @@ npm run dev
 ```
 
 This will start:
+
 - **Frontend (Next.js)**: [http://localhost:3001](http://localhost:3001)
 - **Backend (Express API)**: [http://localhost:3000/api](http://localhost:3000/api)
 
@@ -160,6 +164,7 @@ Set via `LOG_LEVEL` environment variable:
 ### Example: Tracing a Request
 
 **Development logs (pretty-printed):**
+
 ```
 [14:23:45.123] INFO: Incoming request
     requestId: "a1b2c3d4-5678-90ab-cdef-123456789abc"
@@ -178,6 +183,7 @@ Set via `LOG_LEVEL` environment variable:
 ```
 
 **Production logs (JSON):**
+
 ```json
 {"level":30,"time":1709308800000,"requestId":"a1b2c3d4-5678-90ab-cdef-123456789abc","method":"POST","path":"/api/otp/generate","msg":"Incoming request"}
 {"level":30,"time":1709308800456,"requestId":"a1b2c3d4-5678-90ab-cdef-123456789abc","email":"u***@example.com","expiresIn":"10m","msg":"OTP generated"}
@@ -194,6 +200,7 @@ Sensitive fields are automatically masked:
 ### Viewing Logs
 
 **In Docker/Kubernetes:**
+
 ```bash
 # View container logs
 docker logs <container-id>
@@ -203,6 +210,7 @@ kubectl logs -f <pod-name>
 ```
 
 **Search logs by Request ID:**
+
 ```bash
 # JSON logs (production)
 cat logs.json | grep "a1b2c3d4-5678-90ab-cdef-123456789abc"
@@ -250,12 +258,19 @@ All logs from the same request share the same `requestId`, making it easy to tra
 ## API Endpoints
 
 ### Tasks
-- `GET /tasks` - Fetch all tasks (ordered by category and sortOrder)
-- `POST /tasks` - Create a new task
-- `PATCH /tasks/:id` - Update an existing task
-- `DELETE /tasks/:id` - Delete a task
+
+- `GET /api/tasks` - Fetch all tasks (ordered by category and sortOrder)
+- `POST /api/tasks` - Create a new task
+- `PATCH /api/tasks/:id` - Update an existing task
+- `DELETE /api/tasks/:id` - Delete a task
+
+### OTP
+
+- `POST /api/otp/generate` - Generate and send an OTP
+- `POST /api/otp/verify` - Verify a submitted OTP
 
 ### Health
+
 - `GET /health` - API health check
 
 See [API Tests](src/__tests__/README.md) for detailed endpoint documentation and examples.
@@ -280,6 +295,7 @@ npx vitest run --reporter=verbose
 ```
 
 **Coverage:**
+
 - ✅ 13 test cases covering all CRUD operations
 - ✅ Happy path scenarios (create, read, update, delete)
 - ✅ Error handling (missing fields, duplicates, not found)
@@ -306,6 +322,7 @@ npm run test:e2e:debug
 ```
 
 **Coverage:**
+
 - ✅ UI interactions (forms, buttons, navigation)
 - ✅ Task creation, deletion, and listing
 - ✅ Form validation and error handling
