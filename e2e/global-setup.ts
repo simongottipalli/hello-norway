@@ -2,6 +2,11 @@ import { chromium, FullConfig } from "@playwright/test";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
+import { config as loadDotenv } from "dotenv";
+
+// Load .env so the script picks up vars whether it is run
+// directly or via `playwright test` (which doesn't go through Next.js).
+loadDotenv({ path: path.join(process.cwd(), ".env") });
 
 // Inline the HMAC signing so this file has no runtime import from src/
 async function signSessionCookie(
