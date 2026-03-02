@@ -11,7 +11,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
   },
 
@@ -25,14 +25,14 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run dev:server',
-      url: 'http://localhost:3000/health',
+      url: 'http://localhost:3001/health',
       reuseExistingServer: true,
       stdout: 'ignore',
       stderr: 'pipe',
     },
     {
       command: 'npm run dev:client',
-      url: 'http://localhost:3001',
+      url: 'http://localhost:3000',
       reuseExistingServer: true,
       stdout: 'ignore',
       stderr: 'pipe',

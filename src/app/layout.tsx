@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   description: "A Next.js boilerplate with App Router, Tailwind CSS, and TypeScript.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001"
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   ),
   openGraph: {
     title: "Hello Norway",

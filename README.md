@@ -48,8 +48,8 @@ npm run dev
 
 This will start:
 
-- **Frontend (Next.js)**: [http://localhost:3001](http://localhost:3001)
-- **Backend (Express API)**: [http://localhost:3000/api](http://localhost:3000/api)
+- **Frontend (Next.js)**: [http://localhost:3000](http://localhost:3000)
+- **Backend (Express API)**: [http://localhost:3001/api](http://localhost:3001/api)
 
 ## UI Components
 
@@ -125,9 +125,9 @@ playwright.config.ts        # E2E test configuration
 | ---------------------- | --------------------------------------------------------------------------------- | --------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL` | Public URL used for Open Graph metadata                                           | `https://your-domain.com`                     |
 | `DATABASE_URL`         | PostgreSQL connection string                                                      | `postgresql://user:pass@localhost:5432/myapp` |
-| `PORT`                 | Port the Next.js frontend server listens on                                       | `3001`                                        |
-| `API_PORT`             | Port the Express backend server listens on                                        | `3000`                                        |
-| `API_BASE_URL`         | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3000`                       |
+| `PORT`                 | Port the Next.js frontend server listens on                                       | `3000`                                        |
+| `API_PORT`             | Port the Express backend server listens on                                        | `3001`                                        |
+| `API_BASE_URL`         | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3001`                       |
 | `LOG_LEVEL`            | Logging verbosity (debug, info, warn, error)                                      | `debug` (dev), `info` (prod)                  |
 | `NODE_ENV`             | Environment mode                                                                  | `development` or `production`                 |
 
