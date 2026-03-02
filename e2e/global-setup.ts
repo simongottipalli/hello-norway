@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { config as loadDotenv } from "dotenv";
+import { PrismaClient } from "../src/generated/prisma/client.js";
 
 // Load .env so the script picks up vars whether it is run
 // directly or via `playwright test` (which doesn't go through Next.js).
@@ -46,8 +47,6 @@ export default async function globalSetup(_config: FullConfig) {
     );
   }
 
-  // Late-import Prisma so it only loads after the env check above.
-  const { PrismaClient } = await import("../src/generated/prisma/client.ts");
   const prisma = new PrismaClient();
 
   try {
