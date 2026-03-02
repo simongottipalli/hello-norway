@@ -107,7 +107,7 @@ export class OtpService {
         },
       });
 
-      logger?.info({ 
+      logger?.info({
         msg: 'OTP generated',
         email,
         expiresIn: `${OTP_EXPIRATION_MINUTES}m`,
@@ -201,9 +201,6 @@ export class OtpService {
       await prisma.session.deleteMany({
         where: {
           userId: user.id,
-          expiresAt: {
-            lte: new Date(),
-          },
         },
       });
 

@@ -895,9 +895,6 @@ describe("OTP API", () => {
       expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: {
           userId: "user-1",
-          expiresAt: {
-            lte: now,
-          },
         },
       });
       const sessionCreateArg = vi.mocked(prisma.session.create).mock.calls[0]?.[0];
