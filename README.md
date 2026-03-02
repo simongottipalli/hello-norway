@@ -250,10 +250,14 @@ All logs from the same request share the same `requestId`, making it easy to tra
 ## API Endpoints
 
 ### Tasks
-- `GET /tasks` - Fetch all tasks (ordered by category and sortOrder)
-- `POST /tasks` - Create a new task
-- `PATCH /tasks/:id` - Update an existing task
-- `DELETE /tasks/:id` - Delete a task
+- `GET /api/tasks` - Fetch all tasks (ordered by category and sortOrder)
+- `POST /api/tasks` - Create a new task
+- `PATCH /api/tasks/:id` - Update an existing task
+- `DELETE /api/tasks/:id` - Delete a task
+
+### OTP
+- `POST /api/otp/generate` - Generate and send an OTP
+- `POST /api/otp/verify` - Verify a submitted OTP
 
 ### Health
 - `GET /health` - API health check
