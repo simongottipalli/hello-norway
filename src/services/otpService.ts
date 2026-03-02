@@ -194,7 +194,7 @@ export class OtpService {
         update: {},
         create: {
           email,
-          name: email.split('@')[0] || email,
+          name: email.split('@')[0],
         },
       });
 

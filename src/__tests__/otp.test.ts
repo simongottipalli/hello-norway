@@ -55,6 +55,11 @@ describe("OTP API", () => {
     otpService = new OtpService(mockEmailService);
 
     vi.clearAllMocks();
+
+    // Set up time mocking
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
+
     vi.mocked(prisma.user.upsert).mockResolvedValue({
       id: "user-1",
       email: testEmail,
@@ -65,13 +70,9 @@ describe("OTP API", () => {
       id: "session-1",
       sessionToken: "token",
       userId: "user-1",
-      expiresAt: new Date("2024-01-08T12:00:00Z"),
-      createdAt: new Date("2024-01-01T12:00:00Z"),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
     });
-
-    // Set up time mocking
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
   });
 
   afterEach(() => {
@@ -891,6 +892,17 @@ describe("OTP API", () => {
           email: testEmail,
         },
       });
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+        where: {
+          userId: "user-1",
+          expiresAt: {
+            lte: now,
+          },
+        },
+      });
+      const sessionCreateArg = vi.mocked(prisma.session.create).mock.calls[0]?.[0];
+      expect(sessionCreateArg).toBeDefined();
+      expect(sessionCreateArg?.data.sessionToken).toHaveLength(128);
     });
 
     it("should reject expired OTP", async () => {
