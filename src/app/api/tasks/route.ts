@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createChildLogger } from "@/lib/logger";
-
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
+import { API_BASE_URL } from "@/lib/config";
 
 export async function GET() {
   const requestId = randomUUID();
