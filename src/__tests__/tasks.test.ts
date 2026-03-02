@@ -1,7 +1,16 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect, afterAll, vi } from "vitest";
 import request from "supertest";
+import type { Request, Response, NextFunction } from "express";
 import { createApp } from "../app";
 import { prisma } from "../lib/prisma";
+
+vi.mock("../middleware/authMiddleware", () => ({
+  authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
+    req.user = { id: "test-user-id", email: "test@example.com", name: "Test User" };
+    req.session = { id: "test-session-id", token: "test-token", expiresAt: new Date(Date.now() + 60_000) };
+    next();
+  },
+}));
 
 const app = createApp();
 

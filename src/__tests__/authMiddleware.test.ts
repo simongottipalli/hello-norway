@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
+import cookieParser from "cookie-parser";
 import request from "supertest";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
@@ -16,6 +17,7 @@ vi.mock("../lib/prisma", () => ({
 
 const createTestApp = () => {
   const app = express();
+  app.use(cookieParser());
   app.use(requestLogger);
   app.get("/protected", authenticateSession, (req, res) => {
     res.status(200).json({ user: req.user });
