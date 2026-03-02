@@ -11,7 +11,9 @@ E2E tests verify the complete user flow from the browser perspective, focusing o
 ## Test Files
 
 ### `tasks.spec.ts`
+
 Tests for the Tasks page UI functionality:
+
 - Page rendering and layout
 - Task form validation
 - Creating new tasks
@@ -25,7 +27,9 @@ Tests for the Tasks page UI functionality:
 ## Running Tests
 
 ### Prerequisites
+
 Make sure you have installed dependencies:
+
 ```bash
 npm install
 npx playwright install  # Install browser binaries
@@ -67,7 +71,7 @@ npx playwright show-report                      # View HTML report
 
 Configuration is defined in `playwright.config.ts`:
 
-- **Base URL**: http://localhost:3001 (Next.js frontend)
+- **Base URL**: <http://localhost:3001> (Next.js frontend)
 - **Test Directory**: `./e2e`
 - **Browser**: Chromium (can be extended to Firefox, WebKit)
 - **Auto-start servers**: Both backend (port 3000) and frontend (port 3001) are automatically started before tests run
@@ -77,6 +81,7 @@ Configuration is defined in `playwright.config.ts`:
 ## Writing Tests
 
 ### Basic Test Structure
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
@@ -99,6 +104,7 @@ test.describe('Feature Name', () => {
 ```
 
 ### UI Interaction Testing
+
 ```typescript
 test('should interact with form elements', async ({ page }) => {
   // Fill form
@@ -124,25 +130,33 @@ test('should interact with form elements', async ({ page }) => {
 ## Debugging Tips
 
 ### View Test Reports
+
 After running tests, view the HTML report:
+
 ```bash
 npx playwright show-report
 ```
 
 ### Generate Trace
+
 Run with trace on:
+
 ```bash
 npx playwright test --trace on
 ```
 
 ### Take Screenshots
+
 Add to your test:
+
 ```typescript
 await page.screenshot({ path: 'screenshot.png' });
 ```
 
 ### Pause Execution
+
 Add to your test for debugging:
+
 ```typescript
 await page.pause();
 ```
@@ -150,12 +164,14 @@ await page.pause();
 ## CI/CD Integration
 
 The tests are configured to run in CI environments:
+
 - Servers start automatically
 - Retries are enabled (2 attempts)
 - Single worker to avoid port conflicts
 - HTML report is generated
 
 Example GitHub Actions workflow:
+
 ```yaml
 - name: Install dependencies
   run: npm ci
@@ -177,7 +193,9 @@ Example GitHub Actions workflow:
 ## Troubleshooting
 
 ### Port Already in Use
+
 If tests fail because ports 3000 or 3001 are in use:
+
 ```bash
 # Kill processes on those ports
 lsof -ti:3000 | xargs kill -9
@@ -185,7 +203,9 @@ lsof -ti:3001 | xargs kill -9
 ```
 
 ### Tests Timing Out
+
 Increase timeout in test:
+
 ```typescript
 test('slow test', async ({ page }) => {
   test.setTimeout(60000); // 60 seconds
@@ -194,7 +214,9 @@ test('slow test', async ({ page }) => {
 ```
 
 ### Database State
+
 Tests use the same database as development. Consider:
+
 - Using a separate test database
 - Cleaning up test data after runs
 - Using transactions that rollback
