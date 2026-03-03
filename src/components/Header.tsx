@@ -13,10 +13,16 @@ export function Header() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      const response = await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      if (!response.ok) {
+        console.error("Failed to logout");
+        return;
+      }
       await refreshSession();
       router.push("/login");
       router.refresh();
+    } catch (error: unknown) {
+      console.error("Failed to logout", error);
     } finally {
       setIsLoggingOut(false);
     }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -17,11 +18,16 @@ router.get("/auth/session", authenticateSession, (req, res) => {
 router.post("/auth/logout", async (req, res) => {
   const sessionToken = req.cookies.session_token;
 
-  if (sessionToken) {
-    await prisma.session.deleteMany({ where: { sessionToken } });
-  }
+  try {
+    if (sessionToken) {
+      await prisma.session.deleteMany({ where: { sessionToken } });
+    }
 
-  return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true });
+  } catch (error: unknown) {
+    logger.error({ err: error, sessionToken, msg: "Failed to logout user session" });
+    return res.status(500).json({ error: "Failed to logout" });
+  }
 });
 
 export default router;
