@@ -11,6 +11,6 @@ describe("Onboarding page", () => {
     expect(html).toContain("What citizenships do you have?");
     expect(html).toContain("What are you applying as?");
     expect(html).toContain("How old are you?");
-    expect(html).toContain("h-2 w-full overflow-hidden rounded-full bg-muted");
+    expect(html).toContain('role="progressbar"');
   });
 });

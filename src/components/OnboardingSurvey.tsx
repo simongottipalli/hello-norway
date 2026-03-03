@@ -76,7 +76,10 @@ function isAnswered(question: Question, answers: AnswerMap) {
   if (!value) return false;
   if (question.type === "country") return countries.includes(value);
   if (question.type === "country-list") return isCountryListValid(value);
-  if (question.type === "number") return Number(value) > 0;
+  if (question.type === "number") {
+    const numericValue = Number(value);
+    return value.trim() !== "" && Number.isInteger(numericValue) && numericValue > 0;
+  }
   return true;
 }
 
@@ -89,13 +92,14 @@ export function OnboardingSurvey() {
     () => questions.filter((question) => !question.shouldShow || question.shouldShow(answers)),
     [answers]
   );
+  const safeQuestionIndex = Math.min(currentQuestion, Math.max(0, visibleQuestions.length - 1));
 
   const progress = visibleQuestions.length
     ? (visibleQuestions.filter((question) => isAnswered(question, answers)).length / visibleQuestions.length) * 100
     : 0;
 
   const handleNext = () => {
-    if (currentQuestion >= visibleQuestions.length - 1) {
+    if (safeQuestionIndex >= visibleQuestions.length - 1) {
       setCompleted(true);
       return;
     }
@@ -107,7 +111,7 @@ export function OnboardingSurvey() {
     setCurrentQuestion((previous) => Math.max(0, previous - 1));
   };
 
-  const question = visibleQuestions[currentQuestion];
+  const question = visibleQuestions[safeQuestionIndex];
   const canContinue = question ? isAnswered(question, answers) : false;
 
   return (
@@ -120,9 +124,15 @@ export function OnboardingSurvey() {
 
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <BadgeHeader />
+        <p className="sr-only" aria-live="polite">
+          {completed ? "Questionnaire completed" : question ? `Current question: ${question.title}` : ""}
+        </p>
 
         <Card className="overflow-hidden">
-          <div className="flex transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentQuestion * 100}%)` }}>
+          <div
+            className="flex transition-transform duration-300 ease-out motion-reduce:transition-none"
+            style={{ transform: `translateX(-${safeQuestionIndex * 100}%)` }}
+          >
             {visibleQuestions.map((item) => (
               <CardContent key={item.id} className="min-w-full p-6">
                 <CardHeader className="px-0 pt-0">
@@ -140,6 +150,9 @@ export function OnboardingSurvey() {
                       onChange={(event) => setAnswers((previous) => ({ ...previous, [item.id]: event.target.value }))}
                       placeholder="Start typing a country"
                     />
+                    {answers[item.id] && !countries.includes(answers[item.id]) && (
+                      <p className="text-sm text-destructive">Please select a listed country.</p>
+                    )}
                   </div>
                 )}
 
@@ -153,6 +166,9 @@ export function OnboardingSurvey() {
                       onChange={(event) => setAnswers((previous) => ({ ...previous, [item.id]: event.target.value }))}
                       placeholder="India, Norway"
                     />
+                    {answers[item.id] && !isCountryListValid(answers[item.id]) && (
+                      <p className="text-sm text-destructive">Use only countries from the list, separated by commas.</p>
+                    )}
                   </div>
                 )}
 
@@ -163,6 +179,7 @@ export function OnboardingSurvey() {
                       id={item.id}
                       type="number"
                       min={1}
+                      step={1}
                       value={answers[item.id] ?? ""}
                       onChange={(event) => setAnswers((previous) => ({ ...previous, [item.id]: event.target.value }))}
                     />
@@ -204,11 +221,20 @@ export function OnboardingSurvey() {
           </Card>
         ) : (
           <div className="flex items-center justify-between">
-            <Button variant="outline" onClick={handleBack} disabled={currentQuestion === 0}>
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={safeQuestionIndex === 0}
+              aria-label="Go to previous question"
+            >
               Back
             </Button>
-            <Button onClick={handleNext} disabled={!canContinue}>
-              {currentQuestion === visibleQuestions.length - 1 ? "Finish" : "Next"}
+            <Button
+              onClick={handleNext}
+              disabled={!canContinue}
+              aria-label={safeQuestionIndex === visibleQuestions.length - 1 ? "Finish questionnaire" : "Go to next question"}
+            >
+              {safeQuestionIndex === visibleQuestions.length - 1 ? "Finish" : "Next"}
             </Button>
           </div>
         )}
@@ -217,7 +243,14 @@ export function OnboardingSurvey() {
       <div className="sticky bottom-0 mt-8 border-t border-border bg-background/95 py-4 backdrop-blur-sm">
         <div className="mx-auto w-full max-w-2xl">
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress)}
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
       </div>
