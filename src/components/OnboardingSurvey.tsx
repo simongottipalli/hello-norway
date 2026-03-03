@@ -80,6 +80,9 @@ function isAnswered(question: Question, answers: AnswerMap) {
     const numericValue = Number(value);
     return value.trim() !== "" && Number.isInteger(numericValue) && numericValue > 0;
   }
+  if (question.type === "choice") {
+    return (question.options ?? []).includes(value);
+  }
   return true;
 }
 
@@ -149,9 +152,15 @@ export function OnboardingSurvey() {
                       value={answers[item.id] ?? ""}
                       onChange={(event) => setAnswers((previous) => ({ ...previous, [item.id]: event.target.value }))}
                       placeholder="Start typing a country"
+                      aria-invalid={Boolean(answers[item.id]) && !countries.includes(answers[item.id])}
+                      aria-describedby={
+                        answers[item.id] && !countries.includes(answers[item.id])
+                          ? `${item.id}-error`
+                          : undefined
+                      }
                     />
                     {answers[item.id] && !countries.includes(answers[item.id]) && (
-                      <p className="text-sm text-destructive">Please select a listed country.</p>
+                      <p id={`${item.id}-error`} className="text-sm text-destructive">Please select a listed country.</p>
                     )}
                   </div>
                 )}
@@ -165,9 +174,15 @@ export function OnboardingSurvey() {
                       value={answers[item.id] ?? ""}
                       onChange={(event) => setAnswers((previous) => ({ ...previous, [item.id]: event.target.value }))}
                       placeholder="India, Norway"
+                      aria-invalid={Boolean(answers[item.id]) && !isCountryListValid(answers[item.id] ?? "")}
+                      aria-describedby={
+                        answers[item.id] && !isCountryListValid(answers[item.id] ?? "")
+                          ? `${item.id}-error`
+                          : undefined
+                      }
                     />
                     {answers[item.id] && !isCountryListValid(answers[item.id]) && (
-                      <p className="text-sm text-destructive">Use only countries from the list, separated by commas.</p>
+                      <p id={`${item.id}-error`} className="text-sm text-destructive">Use only countries from the list, separated by commas.</p>
                     )}
                   </div>
                 )}
@@ -187,13 +202,14 @@ export function OnboardingSurvey() {
                 )}
 
                 {item.type === "choice" && (
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div role="group" aria-label={item.title} className="grid gap-2 sm:grid-cols-2">
                     {(item.options ?? []).map((option) => {
                       const selected = answers[item.id] === option;
                       return (
                         <Button
                           key={option}
                           variant={selected ? "default" : "outline"}
+                          aria-pressed={selected}
                           onClick={() => setAnswers((previous) => ({ ...previous, [item.id]: option }))}
                         >
                           {option}
@@ -246,6 +262,7 @@ export function OnboardingSurvey() {
             <div
               className="h-full bg-primary transition-all duration-300"
               role="progressbar"
+              aria-label="Onboarding progress"
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(progress)}
