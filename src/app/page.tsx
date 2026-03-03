@@ -37,7 +37,7 @@ export default function Home() {
             Your first steps in Norway, in one clear plan.
           </p>
           <Button asChild size="lg">
-            <Link href="/signup">Start</Link>
+            <Link href="/onboarding">Start</Link>
           </Button>
         </section>
 
@@ -82,8 +82,8 @@ export default function Home() {
         </section>
 
         <section aria-label="Call to action" className="flex justify-center">
-          <Button asChild size="lg">
-            <Link href="/signup">Start</Link>
+          <Button asChild size="lg" className="h-14 px-10 text-lg shadow-lg">
+            <Link href="/onboarding">Start</Link>
           </Button>
         </section>
       </div>
