@@ -8,7 +8,7 @@ import {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const publicPaths = ["/", "/login", "/signup", "/favicon.ico"];
+  const publicPaths = ["/", "/login", "/signup", "/onboarding", "/favicon.ico"];
 
   if (
     publicPaths.includes(pathname) ||
