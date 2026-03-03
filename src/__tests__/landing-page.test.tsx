@@ -1,20 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import path from "path";
+import { renderToStaticMarkup } from "react-dom/server";
+import Home from "../app/page";
 
 describe("Landing page", () => {
-  it("contains required sections and signup call-to-actions", () => {
-    const pageSource = readFileSync(
-      path.join(process.cwd(), "src/app/page.tsx"),
-      "utf-8"
-    );
+  it("renders required sections and signup call-to-actions", () => {
+    const html = renderToStaticMarkup(<Home />);
 
-    expect(pageSource).toContain("Settle in, faster.");
-    expect(pageSource).toContain("The problem");
-    expect(pageSource).toContain("The solution");
-    expect(pageSource).toContain("Key features");
-    expect(pageSource).toContain('href="/login"');
-    expect(pageSource).toContain('href="/signup"');
-    expect(pageSource).toContain(">Start<");
+    expect(html).toContain("Settle in, faster.");
+    expect(html).toContain("The problem");
+    expect(html).toContain("The solution");
+    expect(html).toContain("Key features");
+    expect(html).toContain('href="/login"');
+    expect(html).toContain('href="/signup"');
+    expect((html.match(/href="\/signup"/g) ?? []).length).toBe(3);
+    expect((html.match(/>Start</g) ?? []).length).toBe(2);
   });
 });
