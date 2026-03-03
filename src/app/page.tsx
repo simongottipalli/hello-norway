@@ -1,63 +1,102 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 const features = [
   {
-    title: "App Router",
-    description:
-      "File-based routing with layouts, loading states, and server components.",
+    title: "Step-by-step tasks",
+    description: "Know what to do next.",
   },
   {
-    title: "Tailwind CSS v4",
-    description: "Utility-first styling with dark mode support out of the box.",
+    title: "Trusted guidance",
+    description: "Built for Norway newcomers.",
   },
   {
-    title: "Self-Hostable",
-    description:
-      "Runs anywhere Node.js is supported — Docker, VPS, or any cloud provider.",
+    title: "Simple progress tracking",
+    description: "Save and complete essentials.",
   },
 ];
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
-      <div className="max-w-2xl w-full text-center space-y-8">
-        <div className="space-y-3">
-          <Badge variant="secondary" className="uppercase tracking-wide">
-            Next.js · Tailwind · TypeScript
-          </Badge>
-          <h1 className="text-5xl font-bold tracking-tight">
-            Hello, Norway 🇳🇴
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            A clean Next.js boilerplate with App Router, Tailwind CSS, and
-            TypeScript.
+    <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+        <nav className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold tracking-tight">Hello Norway</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" asChild>
+              <a href="/login">Login</a>
+            </Button>
+            <Button asChild>
+              <a href="/signup">Sign up</a>
+            </Button>
+          </div>
+        </nav>
+
+        <section className="space-y-4">
+          <Badge variant="secondary">For new immigrants in Norway</Badge>
+          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            Settle in, faster.
+          </h2>
+          <p className="max-w-2xl text-muted-foreground">
+            Your first steps in Norway, in one clear plan.
           </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button asChild>
-            <a
-              href="https://nextjs.org/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Read the Docs →
-            </a>
+          <Button asChild size="lg">
+            <a href="/signup">Start</a>
           </Button>
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-          {features.map((feature) => (
-            <Card key={feature.title}>
-              <CardHeader>
-                <CardTitle className="text-sm">{feature.title}</CardTitle>
-                <CardDescription>{feature.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+        <section aria-labelledby="problem-title">
+          <Card>
+            <CardHeader>
+              <CardTitle id="problem-title">The problem</CardTitle>
+              <CardDescription>
+                Paperwork and systems are hard to navigate alone.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </section>
+
+        <section aria-labelledby="solution-title">
+          <Card>
+            <CardHeader>
+              <CardTitle id="solution-title">The solution</CardTitle>
+              <CardDescription>
+                Hello Norway gives you a simple checklist with guidance.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </section>
+
+        <section aria-labelledby="features-title">
+          <Card>
+            <CardHeader>
+              <CardTitle id="features-title">Key features</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              {features.map((feature) => (
+                <Card key={feature.title}>
+                  <CardHeader>
+                    <CardTitle className="text-sm">{feature.title}</CardTitle>
+                    <CardDescription>{feature.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section aria-label="Call to action" className="flex justify-center">
+          <Button asChild size="lg">
+            <a href="/signup">Start</a>
+          </Button>
+        </section>
       </div>
     </main>
   );
