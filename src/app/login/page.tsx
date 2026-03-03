@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -120,6 +122,7 @@ export default function LoginPage() {
 
       if (response.ok && data.success) {
         setSuccessMessage("Login successful! Redirecting...");
+        await refreshSession();
         // Redirect to dashboard after short delay
         setTimeout(() => {
           router.push("/");

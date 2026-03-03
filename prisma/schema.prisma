@@ -59,6 +59,7 @@ model User {
   createdAt           DateTime          @default(now()) @db.Timestamptz(6)
   updatedAt           DateTime          @updatedAt @db.Timestamptz(6)
   userTasks           UserTask[]
+  sessions            Session[]
 }
 
 model Task {
@@ -108,4 +109,16 @@ model OTPCode {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([email, createdAt])
+}
+
+model Session {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken String   @unique @db.VarChar(128)
+  userId       String   @db.Uuid
+  expiresAt    DateTime @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionToken, expiresAt])
+  @@index([userId])
 }

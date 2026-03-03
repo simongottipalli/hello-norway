@@ -161,7 +161,9 @@ export const verifyOtp = async (req: Request, res: Response) => {
     req.logger.info({ msg: 'OTP verified successfully', email: normalizedEmail });
     res.status(200).json({
       message: "OTP verified successfully",
-      success: true
+      success: true,
+      sessionToken: result.sessionToken,
+      user: result.user,
     });
   } catch (error: unknown) {
     // Handle unexpected errors

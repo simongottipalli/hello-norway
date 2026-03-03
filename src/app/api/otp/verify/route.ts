@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createChildLogger } from "@/lib/logger";
 import { API_BASE_URL } from "@/lib/config";
+import {
+  signSessionCookie,
+  SESSION_SIG_COOKIE_NAME,
+} from "@/lib/sessionCookieSig";
+
+const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
 export async function POST(request: NextRequest) {
   // Generate request ID for tracing
@@ -33,7 +39,30 @@ export async function POST(request: NextRequest) {
     });
 
     // Create NextResponse with status
-    const nextResponse = NextResponse.json(data, { status: response.status });
+    const responseBody = { ...data };
+    if (response.ok && responseBody.success && responseBody.sessionToken) {
+      const sessionToken = responseBody.sessionToken;
+      delete responseBody.sessionToken;
+      const nextResponse = NextResponse.json(responseBody, { status: response.status });
+
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax" as const,
+        path: "/",
+        maxAge: SESSION_MAX_AGE_SECONDS,
+      };
+
+      nextResponse.cookies.set("session_token", sessionToken, cookieOptions);
+
+      const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
+      const sessionSig = await signSessionCookie(sessionToken, expiresAt);
+      nextResponse.cookies.set(SESSION_SIG_COOKIE_NAME, sessionSig, cookieOptions);
+
+      return nextResponse;
+    }
+
+    const nextResponse = NextResponse.json(responseBody, { status: response.status });
 
     // Propagate relevant headers from backend response
     const headersToPropagate = [
