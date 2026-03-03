@@ -77,7 +77,7 @@ test.describe('Onboarding survey', () => {
     await page.getByRole('button', { name: 'Go to next question' }).click();
 
     // Q5 should now be visible
-    await expect(page.getByText('Do you already have a job offer in Norway?')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Do you already have a job offer in Norway?' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Yes' }).click();
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
