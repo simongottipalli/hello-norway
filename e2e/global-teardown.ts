@@ -1,13 +1,18 @@
+import path from "path";
+import { execSync } from "child_process";
 import { TEST_USER_EMAIL } from "./global-setup";
-import { PrismaClient } from "../src/generated/prisma/client.js";
 
 export default async function globalTeardown() {
-  const prisma = new PrismaClient();
-
+  // Run Prisma operations in a tsx subprocess (see global-setup.ts).
+  const helperScript = path.join(__dirname, "helpers", "db-teardown.ts");
   try {
-    // Deleting the user cascades to their sessions automatically.
-    await prisma.user.deleteMany({ where: { email: TEST_USER_EMAIL } });
-  } finally {
-    await prisma.$disconnect();
+    execSync(`npx tsx "${helperScript}" "${TEST_USER_EMAIL}"`, {
+      encoding: "utf-8",
+      env: { ...process.env },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`E2E global-teardown: db-teardown helper failed: ${msg}`);
   }
 }

@@ -1,9 +1,8 @@
 import { chromium, FullConfig } from "@playwright/test";
 import path from "path";
 import fs from "fs";
-import crypto from "crypto";
+import { execSync } from "child_process";
 import { config as loadDotenv } from "dotenv";
-import { PrismaClient } from "../src/generated/prisma/client.js";
 
 // Load .env so the script picks up vars whether it is run
 // directly or via `playwright test` (which doesn't go through Next.js).
@@ -47,59 +46,56 @@ export default async function globalSetup(_config: FullConfig) {
     );
   }
 
-  const prisma = new PrismaClient();
-
+  // Run Prisma operations in a tsx subprocess because the Prisma 6
+  // generated client is ESM TypeScript (uses `import.meta.url`) which
+  // is incompatible with Playwright's esbuild CJS transpilation.
+  const helperScript = path.join(__dirname, "helpers", "db-setup.ts");
+  let raw: string;
   try {
-    // Upsert a stable test user so re-runs don't create duplicates.
-    const user = await prisma.user.upsert({
-      where: { email: TEST_USER_EMAIL },
-      update: {},
-      create: {
-        email: TEST_USER_EMAIL,
-        name: "E2E Test User",
-      },
-    });
-
-    // Create a fresh session that lives for 24 hours.
-    const sessionToken = crypto.randomBytes(48).toString("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await prisma.session.create({
-      data: { sessionToken, userId: user.id, expiresAt },
-    });
-
-    const sessionSig = await signSessionCookie(sessionToken, expiresAt, secret);
-
-    // Persist cookies as Playwright storageState so every test starts authed.
-    fs.mkdirSync(path.dirname(AUTH_STATE_PATH), { recursive: true });
-
-    const browser = await chromium.launch();
-    const context = await browser.newContext();
-
-    await context.addCookies([
-      {
-        name: "session_token",
-        value: sessionToken,
-        domain: "localhost",
-        path: "/",
-        httpOnly: true,
-        secure: false,
-        sameSite: "Lax",
-      },
-      {
-        name: "session_sig",
-        value: sessionSig,
-        domain: "localhost",
-        path: "/",
-        httpOnly: true,
-        secure: false,
-        sameSite: "Lax",
-      },
-    ]);
-
-    await context.storageState({ path: AUTH_STATE_PATH });
-    await browser.close();
-  } finally {
-    await prisma.$disconnect();
+    raw = execSync(`npx tsx "${helperScript}" "${TEST_USER_EMAIL}"`, {
+      encoding: "utf-8",
+      env: { ...process.env },
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`E2E global-setup: db-setup helper failed: ${msg}`);
   }
+
+  // The helper prints exactly one JSON line to stdout.
+  const jsonLine = raw.split("\n").pop()!.trim();
+  const { sessionToken, expiresAt: expiresAtISO } = JSON.parse(jsonLine);
+  const expiresAt = new Date(expiresAtISO);
+
+  const sessionSig = await signSessionCookie(sessionToken, expiresAt, secret);
+
+  // Persist cookies as Playwright storageState so every test starts authed.
+  fs.mkdirSync(path.dirname(AUTH_STATE_PATH), { recursive: true });
+
+  const browser = await chromium.launch();
+  const context = await browser.newContext();
+
+  await context.addCookies([
+    {
+      name: "session_token",
+      value: sessionToken,
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    },
+    {
+      name: "session_sig",
+      value: sessionSig,
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    },
+  ]);
+
+  await context.storageState({ path: AUTH_STATE_PATH });
+  await browser.close();
 }
