@@ -17,6 +17,7 @@ vi.mock("../lib/prisma", () => ({
     session: {
       findUnique: vi.fn().mockResolvedValue(null),
       delete: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
   },
 }));
@@ -57,6 +58,14 @@ describe("API route auth policy", () => {
       // 200 = route was reached and service returned success.
       // Any auth-middleware block would return { error: "Unauthorized" } instead.
       expect(response.status).toBe(200);
+      expect(response.body.error).not.toBe("Unauthorized");
+    });
+
+    it("POST /api/auth/logout is NOT blocked with 401", async () => {
+      const response = await request(app).post("/api/auth/logout");
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
       expect(response.body.error).not.toBe("Unauthorized");
     });
   });

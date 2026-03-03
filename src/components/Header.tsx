@@ -1,9 +1,26 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading, refreshSession } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+      await refreshSession();
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-sm">
@@ -13,9 +30,14 @@ export function Header() {
         </span>
 
         {!isLoading && isAuthenticated && user && (
-          <span className="text-sm text-muted-foreground">
-            Hey {user.email} 👋
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">
+              Hey {user.email} 👋
+            </span>
+            <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoggingOut}>
+              {isLoggingOut ? "Logging out..." : "Logout"}
+            </Button>
+          </div>
         )}
       </div>
     </header>
