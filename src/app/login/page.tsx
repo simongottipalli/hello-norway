@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,17 @@ import {
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromOnboarding = searchParams.get("from") === "onboarding";
   const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -154,7 +164,9 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle>Welcome to Hello Norway</CardTitle>
           <CardDescription>
-            {step === "email"
+            {fromOnboarding && step === "email"
+              ? "Log in to save your answers and follow up on your application later."
+              : step === "email"
               ? "Enter your email to receive a login code"
               : "Enter the 6-digit code sent to your email"}
           </CardDescription>

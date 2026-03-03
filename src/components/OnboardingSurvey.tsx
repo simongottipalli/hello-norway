@@ -213,12 +213,17 @@ export function OnboardingSurvey() {
         {completed ? (
           <Card>
             <CardHeader>
-              <CardTitle>Great! You&apos;re all set.</CardTitle>
-              <CardDescription>We will use these answers to guide your next steps.</CardDescription>
+              <CardTitle>One last step</CardTitle>
+              <CardDescription>
+                Log in to save your answers and follow up on your application later. You can also skip this step.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex justify-end">
+            <CardContent className="flex flex-col sm:flex-row justify-between gap-2">
+              <Button variant="ghost" asChild>
+                <Link href="/">Skip for now</Link>
+              </Button>
               <Button asChild>
-                <Link href="/signup">Continue</Link>
+                <Link href="/login?from=onboarding">Continue to login</Link>
               </Button>
             </CardContent>
           </Card>

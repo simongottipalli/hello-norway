@@ -60,7 +60,7 @@ test.describe('Onboarding survey', () => {
     await expect(page.getByRole('button', { name: 'Finish questionnaire' })).toBeEnabled();
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
 
-    await expect(page.getByText("You're all set")).toBeVisible();
+    await expect(page.getByText("One last step")).toBeVisible();
   });
 
   test('jobOffer question appears when applying as Skilled worker', async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe('Onboarding survey', () => {
     await page.getByRole('button', { name: 'Yes' }).click();
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
 
-    await expect(page.getByText("You're all set")).toBeVisible();
+    await expect(page.getByText("One last step")).toBeVisible();
   });
 
   test('completing all questions shows the completion card with a Continue link', async ({ page }) => {
@@ -98,7 +98,8 @@ test.describe('Onboarding survey', () => {
     await page.getByRole('spinbutton').fill('25');
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
 
-    await expect(page.getByText("You're all set")).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Continue' })).toBeVisible();
+    await expect(page.getByText("One last step")).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Continue to login' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Skip for now' })).toBeVisible();
   });
 });
