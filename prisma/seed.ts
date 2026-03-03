@@ -1,6 +1,6 @@
 // prisma/seed.ts
 import { PrismaClient, TaskCategory, EmploymentStatus, Prisma } from "../src/generated/prisma/client";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL } from "url";
 
 const prisma = new PrismaClient();
 
