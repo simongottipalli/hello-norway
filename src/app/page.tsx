@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,18 +28,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-        <nav className="flex items-center justify-between">
-          <div className="text-lg font-semibold tracking-tight">Hello Norway</div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <a href="/login">Login</a>
-            </Button>
-            <Button asChild>
-              <a href="/signup">Sign up</a>
-            </Button>
-          </div>
-        </nav>
-
         <section className="space-y-4">
           <Badge variant="secondary">For new immigrants in Norway</Badge>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
@@ -48,7 +37,7 @@ export default function Home() {
             Your first steps in Norway, in one clear plan.
           </p>
           <Button asChild size="lg">
-            <a href="/signup">Start</a>
+            <Link href="/signup">Start</Link>
           </Button>
         </section>
 
@@ -83,7 +72,7 @@ export default function Home() {
               {features.map((feature) => (
                 <Card key={feature.title}>
                   <CardHeader>
-                    <CardTitle className="text-sm">{feature.title}</CardTitle>
+                    <CardTitle as="h3" className="text-sm">{feature.title}</CardTitle>
                     <CardDescription>{feature.description}</CardDescription>
                   </CardHeader>
                 </Card>
@@ -94,7 +83,7 @@ export default function Home() {
 
         <section aria-label="Call to action" className="flex justify-center">
           <Button asChild size="lg">
-            <a href="/signup">Start</a>
+            <Link href="/signup">Start</Link>
           </Button>
         </section>
       </div>
