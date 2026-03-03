@@ -35,10 +35,10 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = React.forwardRef<
   HTMLHeadingElement,
-  React.ComponentProps<"h2">
->(({ className, ...props }, ref) => {
+  React.ComponentProps<"h2"> & { as?: "h2" | "h3" | "h4" | "p" | "span" }
+>(({ className, as: Tag = "h2", ...props }, ref) => {
   return (
-    <h2
+    <Tag
       ref={ref}
       data-slot="card-title"
       className={cn("leading-none font-semibold", className)}
