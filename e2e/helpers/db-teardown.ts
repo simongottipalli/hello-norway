@@ -8,16 +8,20 @@
  */
 import { PrismaClient } from "../../src/generated/prisma/client.js";
 
-const email = process.argv[2];
-if (!email) {
-  console.error("Usage: tsx db-teardown.ts <email>");
-  process.exit(1);
+async function main() {
+  const email = process.argv[2];
+  if (!email) {
+    console.error("Usage: tsx db-teardown.ts <email>");
+    process.exit(1);
+  }
+
+  const prisma = new PrismaClient();
+
+  try {
+    await prisma.user.deleteMany({ where: { email } });
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-const prisma = new PrismaClient();
-
-try {
-  await prisma.user.deleteMany({ where: { email } });
-} finally {
-  await prisma.$disconnect();
-}
+main();
