@@ -5,7 +5,7 @@ import {
   SESSION_SIG_COOKIE_NAME,
 } from "@/lib/sessionCookieSig";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const publicPaths = ["/", "/login", "/signup", "/onboarding", "/favicon.ico"];
