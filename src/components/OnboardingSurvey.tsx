@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { countries } from "@/data/countries";
 
 type AnswerMap = Record<string, string>;
 
@@ -18,20 +19,6 @@ type Question = {
   shouldShow?: (answers: AnswerMap) => boolean;
 };
 
-const countries = [
-  "Norway",
-  "Sweden",
-  "Denmark",
-  "Finland",
-  "Germany",
-  "France",
-  "Spain",
-  "United Kingdom",
-  "United States",
-  "India",
-  "Pakistan",
-  "Ukraine",
-];
 
 const questions: Question[] = [
   {
