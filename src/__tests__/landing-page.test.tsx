@@ -10,9 +10,11 @@ describe("Landing page", () => {
     expect(html).toContain("The problem");
     expect(html).toContain("The solution");
     expect(html).toContain("Key features");
-    expect(html).toContain('href="/login"');
+    // Login/signup nav links live in the global Header, not in the page itself
+    expect(html).not.toContain('href="/login"');
     expect(html).toContain('href="/signup"');
-    expect((html.match(/href="\/signup"/g) ?? []).length).toBe(3);
+    // Hero CTA + bottom CTA (the old inline nav "Sign up" has moved to the Header)
+    expect((html.match(/href="\/signup"/g) ?? []).length).toBe(2);
     expect((html.match(/>Start</g) ?? []).length).toBe(2);
   });
 });
