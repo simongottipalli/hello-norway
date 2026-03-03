@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export function Header() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading, refreshSession } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -15,10 +15,9 @@ export function Header() {
     try {
       const response = await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       if (!response.ok) {
-        console.error("Failed to logout");
+        console.error(`Failed to logout: ${response.status} ${response.statusText}`);
         return;
       }
-      await refreshSession();
       router.push("/login");
       router.refresh();
     } catch (error: unknown) {
