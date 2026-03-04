@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import type { NextFunction, Request, Response } from "express";
+import type { Task, UserTask } from "@prisma/client";
 import { createApp } from "../app";
 import { prisma } from "../lib/prisma";
 
@@ -32,14 +33,14 @@ describe("Task status updates", () => {
   });
 
   it("updates task status for the authenticated user", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-1" } as never);
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-1" } as unknown as Task);
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-1",
       userId: "test-user-id",
       taskId: "task-1",
       status: "DONE",
       completedAt: new Date("2026-03-04T00:00:00.000Z"),
-    } as never);
+    } as unknown as UserTask);
 
     const response = await request(app)
       .patch("/api/tasks/task-1")
@@ -58,14 +59,14 @@ describe("Task status updates", () => {
   });
 
   it("clears completedAt when status is not DONE", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-2" } as never);
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-2" } as unknown as Task);
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-2",
       userId: "test-user-id",
       taskId: "task-2",
       status: "SAVED",
       completedAt: null,
-    } as never);
+    } as unknown as UserTask);
 
     const response = await request(app)
       .patch("/api/tasks/task-2")
