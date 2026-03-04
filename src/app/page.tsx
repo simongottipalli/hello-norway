@@ -114,11 +114,19 @@ export default function Home() {
             aria-label="Footer links"
             className="mt-4 flex flex-wrap justify-center gap-2"
           >
-            {footerLinks.map((footerLink) => (
-              <Button key={footerLink.label} asChild variant="link" size="sm">
-                <Link href={footerLink.href}>{footerLink.label}</Link>
-              </Button>
-            ))}
+            {footerLinks.map((footerLink) => {
+              const [emoji, ...textParts] = String(footerLink.label).split(" ");
+              const textLabel = textParts.join(" ") || String(footerLink.label);
+
+              return (
+                <Button key={footerLink.label} asChild variant="link" size="sm">
+                  <Link href={footerLink.href} aria-label={textLabel}>
+                    <span aria-hidden="true">{emoji}</span>
+                    {textParts.length > 0 && ` ${textLabel}`}
+                  </Link>
+                </Button>
+              );
+            })}
           </nav>
         </footer>
       </div>
