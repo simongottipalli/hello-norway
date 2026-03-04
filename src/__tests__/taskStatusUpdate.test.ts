@@ -108,6 +108,8 @@ describe("Task status updates", () => {
     expect(upsertArg).toBeDefined();
     expect(upsertArg.update.dueDate).toBeInstanceOf(Date);
     expect((upsertArg.update.dueDate as Date).toISOString().split("T")[0]).toBe("2026-03-15");
+    expect(upsertArg.create.dueDate).toBeInstanceOf(Date);
+    expect((upsertArg.create.dueDate as Date).toISOString().split("T")[0]).toBe("2026-03-15");
   });
 
   it("clears dueDate when null is provided", async () => {
@@ -132,6 +134,7 @@ describe("Task status updates", () => {
     const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
     expect(upsertArg).toBeDefined();
     expect(upsertArg.update.dueDate).toBeNull();
+    expect(upsertArg.create.dueDate).toBeNull();
   });
 
   it("returns 400 for invalid dueDate values", async () => {
