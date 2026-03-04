@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
 
@@ -151,11 +152,11 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid status. 'status' must be a string value" });
     }
 
-    const allowedStatuses = ["TODO", "SAVED", "DONE"];
-    if (!allowedStatuses.includes(rawStatus)) {
+    if (!Object.values(UserTaskStatus).includes(rawStatus as UserTaskStatus)) {
       req.logger.info({ msg: 'Task status update failed - invalid status', taskId: id, status: rawStatus });
       return res.status(400).json({ error: "Invalid status. Must be one of TODO, SAVED, DONE" });
     }
+    const status = rawStatus as UserTaskStatus;
 
     const task = await prisma.task.findUnique({
       where: { id },
@@ -175,18 +176,18 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
         },
       },
       update: {
-        status: rawStatus,
-        completedAt: rawStatus === "DONE" ? new Date() : null,
+        status,
+        completedAt: status === UserTaskStatus.DONE ? new Date() : null,
       },
       create: {
         userId: req.user!.id,
         taskId: id,
-        status: rawStatus,
-        completedAt: rawStatus === "DONE" ? new Date() : null,
+        status,
+        completedAt: status === UserTaskStatus.DONE ? new Date() : null,
       },
     });
 
-    req.logger.info({ msg: 'User task status updated', taskId: id, status: rawStatus, userId: req.user!.id });
+    req.logger.info({ msg: 'User task status updated', taskId: id, status, userId: req.user!.id });
     return res.json(userTask);
   } catch (error: unknown) {
     const errorResponse = handlePrismaError(error, req.logger);
