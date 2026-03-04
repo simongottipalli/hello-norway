@@ -19,7 +19,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hello_norway_test
-      SESSION_COOKIE_SECRET: ${{ secrets.SESSION_COOKIE_SECRET }}
+      SESSION_COOKIE_SECRET: test-session-cookie-secret
       EMAIL_PROVIDER: brevo
       EMAIL_FROM: test@example.com
       BREVO_API_KEY: test-api-key-for-ci
