@@ -73,7 +73,7 @@ const isApiErrorResponse = (value: unknown): value is ApiErrorResponse => {
 
 export default function TaskList({ tasks, onTaskDeleted, onTaskUpdated }: TaskListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingByTaskId, setSavingByTaskId] = useState<Record<string, boolean>>({});
   const [trackingByTaskId, setTrackingByTaskId] = useState<Record<string, TaskTrackingState>>({});
   const [errorByTaskId, setErrorByTaskId] = useState<Record<string, string>>({});
 
@@ -130,8 +130,9 @@ export default function TaskList({ tasks, onTaskDeleted, onTaskUpdated }: TaskLi
       return;
     }
 
-    setSavingId(taskId);
+    setSavingByTaskId((current) => ({ ...current, [taskId]: true }));
     setErrorByTaskId((current) => ({ ...current, [taskId]: "" }));
+    const trimmedPersonalNotes = trackingState.personalNotes.trim();
 
     try {
       const response = await fetch(`/api/tasks/${taskId}/status`, {
@@ -142,7 +143,7 @@ export default function TaskList({ tasks, onTaskDeleted, onTaskUpdated }: TaskLi
         body: JSON.stringify({
           status: trackingState.status,
           dueDate: trackingState.dueDate || null,
-          personalNotes: trackingState.personalNotes.trim() ? trackingState.personalNotes : null,
+          personalNotes: trimmedPersonalNotes || null,
         }),
       });
 
@@ -160,7 +161,7 @@ export default function TaskList({ tasks, onTaskDeleted, onTaskUpdated }: TaskLi
         [taskId]: error instanceof Error ? error.message : "Failed to update task tracking",
       }));
     } finally {
-      setSavingId(null);
+      setSavingByTaskId((current) => ({ ...current, [taskId]: false }));
     }
   };
 
@@ -251,8 +252,12 @@ export default function TaskList({ tasks, onTaskDeleted, onTaskUpdated }: TaskLi
             {errorByTaskId[task.id] && <p className="text-sm text-destructive">{errorByTaskId[task.id]}</p>}
 
             <div>
-              <Button size="sm" onClick={() => handleTrackingSave(task.id)} disabled={savingId === task.id}>
-                {savingId === task.id ? "Saving..." : "Save progress"}
+              <Button
+                size="sm"
+                onClick={() => handleTrackingSave(task.id)}
+                disabled={Boolean(savingByTaskId[task.id])}
+              >
+                {savingByTaskId[task.id] ? "Saving..." : "Save progress"}
               </Button>
             </div>
           </div>
