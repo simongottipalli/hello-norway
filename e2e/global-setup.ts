@@ -1,4 +1,4 @@
-import { chromium, FullConfig } from "@playwright/test";
+import { chromium } from "@playwright/test";
 import path from "path";
 import fs from "fs";
 import { execSync } from "child_process";
@@ -37,7 +37,7 @@ async function signSessionCookie(
 export const TEST_USER_EMAIL = "e2e-test@example.com";
 export const AUTH_STATE_PATH = path.join(__dirname, ".auth", "user.json");
 
-export default async function globalSetup(_config: FullConfig) {
+export default async function globalSetup() {
   // Require a session secret — same var the app uses.
   const secret = process.env.SESSION_COOKIE_SECRET;
   if (!secret) {
