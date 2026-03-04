@@ -4,7 +4,7 @@ import { handlePrismaError } from "../utils/errorHandler";
 
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
-    let tasks;
+    let tasks: Record<string, unknown>[] | null = null;
 
     if (req.user?.id) {
       const assignedUserTasks = await prisma.userTask.findMany({
