@@ -24,6 +24,25 @@ const features = [
   },
 ];
 
+const footerLinks = [
+  {
+    label: "🤝 Contribute",
+    href: "https://github.com/simongottipalli/hello-norway/pulls",
+  },
+  {
+    label: "🐛 Report an issue",
+    href: "https://github.com/simongottipalli/hello-norway/issues/new/choose",
+  },
+  {
+    label: "🧠 Collaborate",
+    href: "https://github.com/simongottipalli/hello-norway/discussions",
+  },
+  {
+    label: "💖 Donate",
+    href: "https://github.com/sponsors/simongottipalli",
+  },
+] as const;
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
@@ -86,6 +105,30 @@ export default function Home() {
             <Link href="/onboarding">Start</Link>
           </Button>
         </section>
+
+        <footer className="border-t border-border pt-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            🏙️ Made in Oslo 🇳🇴
+          </p>
+          <nav
+            aria-label="Footer links"
+            className="mt-4 flex flex-wrap justify-center gap-2"
+          >
+            {footerLinks.map((footerLink) => {
+              const [emoji, ...textParts] = String(footerLink.label).split(" ");
+              const textLabel = textParts.join(" ") || String(footerLink.label);
+
+              return (
+                <Button key={footerLink.label} asChild variant="link" size="sm">
+                  <Link href={footerLink.href} aria-label={textLabel}>
+                    <span aria-hidden="true">{emoji}</span>
+                    {textParts.length > 0 && ` ${textLabel}`}
+                  </Link>
+                </Button>
+              );
+            })}
+          </nav>
+        </footer>
       </div>
     </main>
   );
