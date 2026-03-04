@@ -4,9 +4,39 @@ import { handlePrismaError } from "../utils/errorHandler";
 
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
-    const tasks = await prisma.task.findMany({
-      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-    });
+    let tasks;
+
+    if (req.user?.id) {
+      const assignedUserTasks = await prisma.userTask.findMany({
+        where: { userId: req.user.id },
+        include: { task: true },
+      });
+
+      tasks = assignedUserTasks.length
+        ? assignedUserTasks
+            .map(({ task, id, status, dueDate, personalNotes, completedAt }) => ({
+              ...task,
+              userTaskId: id,
+              status,
+              dueDate,
+              personalNotes,
+              completedAt,
+            }))
+            .sort((a, b) => {
+              if (a.category === b.category) {
+                return a.sortOrder - b.sortOrder;
+              }
+              return a.category.localeCompare(b.category);
+            })
+        : null;
+    }
+
+    if (!tasks) {
+      tasks = await prisma.task.findMany({
+        orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      });
+    }
+
     req.logger.info({ msg: 'Fetched all tasks', count: tasks.length });
     res.json(tasks);
   } catch (error: unknown) {

@@ -4,9 +4,11 @@ import type { Request, Response, NextFunction } from "express";
 import { createApp } from "../app";
 import { prisma } from "../lib/prisma";
 
+const AUTH_USER_ID = "00000000-0000-0000-0000-000000000001";
+
 vi.mock("../middleware/authMiddleware", () => ({
   authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
-    req.user = { id: "test-user-id", email: "test@example.com", name: "Test User" };
+    req.user = { id: AUTH_USER_ID, email: "test@example.com", name: "Test User" };
     req.session = { id: "test-session-id", token: "test-token", expiresAt: new Date(Date.now() + 60_000) };
     next();
   },
@@ -64,6 +66,61 @@ describe("Task API", () => {
           expect(prev.sortOrder).toBeLessThanOrEqual(curr.sortOrder);
         }
       }
+    });
+
+    it("should return assigned tasks for the authenticated user when assignments exist", async () => {
+      await prisma.user.upsert({
+        where: { id: AUTH_USER_ID },
+        update: {},
+        create: {
+          id: AUTH_USER_ID,
+          email: "test@example.com",
+          name: "Test User",
+        },
+      });
+
+      const assignedTask = await prisma.task.create({
+        data: {
+          slug: `assigned-task-${Date.now()}`,
+          title: "Assigned Task",
+          shortDescription: "Assigned task description",
+          body: "Assigned task body",
+          category: "OTHER",
+          sortOrder: 5001,
+          officialLinks: {},
+        },
+      });
+
+      const unassignedTask = await prisma.task.create({
+        data: {
+          slug: `unassigned-task-${Date.now()}`,
+          title: "Unassigned Task",
+          shortDescription: "Unassigned task description",
+          body: "Unassigned task body",
+          category: "OTHER",
+          sortOrder: 5002,
+          officialLinks: {},
+        },
+      });
+
+      await prisma.userTask.create({
+        data: {
+          userId: AUTH_USER_ID,
+          taskId: assignedTask.id,
+          status: "TODO",
+        },
+      });
+
+      const response = await request(app).get("/api/tasks");
+      const taskIds = response.body.map((task: { id: string }) => task.id);
+
+      expect(response.status).toBe(200);
+      expect(taskIds).toContain(assignedTask.id);
+      expect(taskIds).not.toContain(unassignedTask.id);
+
+      await prisma.userTask.deleteMany({ where: { userId: AUTH_USER_ID, taskId: assignedTask.id } });
+      await prisma.task.deleteMany({ where: { id: { in: [assignedTask.id, unassignedTask.id] } } });
+      await prisma.user.deleteMany({ where: { id: AUTH_USER_ID } });
     });
   });
 
