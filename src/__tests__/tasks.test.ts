@@ -119,10 +119,18 @@ describe("Task API", () => {
 
         const response = await request(app).get("/api/tasks");
         const taskIds = response.body.map((task: { id: string }) => task.id);
+        const assignedResponseTask = response.body.find((task: { id: string }) => task.id === assignedTask.id);
 
         expect(response.status).toBe(200);
         expect(taskIds).toContain(assignedTask.id);
         expect(taskIds).not.toContain(unassignedTask.id);
+        expect(assignedResponseTask).toMatchObject({
+          userTaskId: expect.any(String),
+          status: "TODO",
+          dueDate: null,
+          personalNotes: null,
+          completedAt: null,
+        });
       } finally {
         if (assignedTaskId) {
           await prisma.userTask.deleteMany({ where: { userId: AUTH_USER_ID, taskId: assignedTaskId } });
