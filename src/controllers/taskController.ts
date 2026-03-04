@@ -10,6 +10,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
       const assignedUserTasks = await prisma.userTask.findMany({
         where: { userId: req.user.id },
         include: { task: true },
+        orderBy: [{ task: { category: "asc" } }, { task: { sortOrder: "asc" } }],
       });
 
       tasks = assignedUserTasks.length
@@ -22,12 +23,6 @@ export const getAllTasks = async (req: Request, res: Response) => {
               personalNotes,
               completedAt,
             }))
-            .sort((a, b) => {
-              if (a.category === b.category) {
-                return a.sortOrder - b.sortOrder;
-              }
-              return a.category.localeCompare(b.category);
-            })
         : null;
     }
 
