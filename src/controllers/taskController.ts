@@ -146,6 +146,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const rawStatus = req.body?.status;
+    const rawDueDate = req.body?.dueDate;
     const rawPersonalNotes = req.body?.personalNotes;
 
     if (typeof rawStatus !== "string") {
@@ -158,6 +159,38 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid status. Must be one of TODO, SAVED, DONE" });
     }
     const status = rawStatus as UserTaskStatus;
+    let dueDate: Date | null | undefined;
+
+    if (rawDueDate !== undefined) {
+      if (rawDueDate === null) {
+        dueDate = null;
+      } else if (typeof rawDueDate === "string") {
+        const dueDateMatch = rawDueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!dueDateMatch) {
+          req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
+          return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
+        }
+
+        const [, yearRaw, monthRaw, dayRaw] = dueDateMatch;
+        const year = Number(yearRaw);
+        const month = Number(monthRaw);
+        const day = Number(dayRaw);
+        const parsedDueDate = new Date(Date.UTC(year, month - 1, day));
+        if (
+          parsedDueDate.getUTCFullYear() !== year ||
+          parsedDueDate.getUTCMonth() !== month - 1 ||
+          parsedDueDate.getUTCDate() !== day
+        ) {
+          req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
+          return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
+        }
+
+        dueDate = parsedDueDate;
+      } else {
+        req.logger.info({ msg: 'Task status update failed - invalid due date type', taskId: id, dueDate: rawDueDate });
+        return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
+      }
+    }
 
     if (rawPersonalNotes !== undefined && rawPersonalNotes !== null && typeof rawPersonalNotes !== "string") {
       req.logger.info({ msg: 'Task status update failed - invalid personal notes type', taskId: id });
@@ -185,6 +218,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
         status,
         ...(rawPersonalNotes !== undefined ? { personalNotes: rawPersonalNotes } : {}),
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
+        ...(dueDate !== undefined ? { dueDate } : {}),
       },
       create: {
         userId: req.user!.id,
@@ -192,6 +226,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
         status,
         personalNotes: rawPersonalNotes ?? null,
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
+        ...(dueDate !== undefined ? { dueDate } : {}),
       },
     });
 
