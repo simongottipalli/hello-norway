@@ -250,4 +250,27 @@ describe("Task status updates", () => {
     expect(prisma.userTask.upsert).not.toHaveBeenCalled();
     expect(prisma.task.update).not.toHaveBeenCalled();
   });
+
+  it("accepts product status aliases and maps them to persisted enum values", async () => {
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-5" } as unknown as Task);
+    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+      id: "user-task-5",
+      userId: "test-user-id",
+      taskId: "task-5",
+      status: "SAVED",
+      completedAt: null,
+    } as unknown as UserTask);
+
+    const response = await request(app)
+      .patch("/api/tasks/task-5/status")
+      .send({ status: "in_progress" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(200);
+    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
+
+    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
+    expect(upsertArg.update.status).toBe("SAVED");
+    expect(upsertArg.create.status).toBe("SAVED");
+  });
 });
