@@ -183,14 +183,14 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       },
       update: {
         status,
-        personalNotes: rawPersonalNotes,
+        ...(rawPersonalNotes !== undefined ? { personalNotes: rawPersonalNotes } : {}),
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
       },
       create: {
         userId: req.user!.id,
         taskId: id,
         status,
-        personalNotes: rawPersonalNotes,
+        personalNotes: rawPersonalNotes ?? null,
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
       },
     });
