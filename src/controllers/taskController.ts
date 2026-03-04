@@ -146,6 +146,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const rawStatus = req.body?.status;
+    const rawDueDate = req.body?.dueDate;
 
     if (typeof rawStatus !== "string") {
       req.logger.info({ msg: 'Task status update failed - invalid status type', taskId: id, status: rawStatus });
@@ -157,6 +158,23 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid status. Must be one of TODO, SAVED, DONE" });
     }
     const status = rawStatus as UserTaskStatus;
+    let dueDate: Date | null | undefined;
+
+    if (rawDueDate !== undefined) {
+      if (rawDueDate === null) {
+        dueDate = null;
+      } else if (typeof rawDueDate === "string") {
+        const parsedDueDate = new Date(rawDueDate);
+        if (Number.isNaN(parsedDueDate.getTime())) {
+          req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
+          return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
+        }
+        dueDate = parsedDueDate;
+      } else {
+        req.logger.info({ msg: 'Task status update failed - invalid due date type', taskId: id, dueDate: rawDueDate });
+        return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
+      }
+    }
 
     const task = await prisma.task.findUnique({
       where: { id },
@@ -178,12 +196,14 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       update: {
         status,
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
+        ...(dueDate !== undefined ? { dueDate } : {}),
       },
       create: {
         userId: req.user!.id,
         taskId: id,
         status,
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
+        ...(dueDate !== undefined ? { dueDate } : {}),
       },
     });
 

@@ -83,6 +83,68 @@ describe("Task status updates", () => {
     expect(upsertArg.update.status).toBe("SAVED");
     expect(upsertArg.update.completedAt == null).toBe(true);
   });
+
+  it("sets dueDate when a valid dueDate is provided", async () => {
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-3" } as unknown as Task);
+    const expectedDueDate = new Date("2026-03-15");
+    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+      id: "user-task-3",
+      userId: "test-user-id",
+      taskId: "task-3",
+      status: "TODO",
+      dueDate: expectedDueDate,
+      completedAt: null,
+    } as unknown as UserTask);
+
+    const response = await request(app)
+      .patch("/api/tasks/task-3/status")
+      .send({ status: "TODO", dueDate: "2026-03-15" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(200);
+    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
+
+    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
+    expect(upsertArg).toBeDefined();
+    expect(upsertArg.update.dueDate).toBeInstanceOf(Date);
+    expect((upsertArg.update.dueDate as Date).toISOString().split("T")[0]).toBe("2026-03-15");
+  });
+
+  it("clears dueDate when null is provided", async () => {
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-4" } as unknown as Task);
+    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+      id: "user-task-4",
+      userId: "test-user-id",
+      taskId: "task-4",
+      status: "TODO",
+      dueDate: null,
+      completedAt: null,
+    } as unknown as UserTask);
+
+    const response = await request(app)
+      .patch("/api/tasks/task-4/status")
+      .send({ status: "TODO", dueDate: null })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(200);
+    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
+
+    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
+    expect(upsertArg).toBeDefined();
+    expect(upsertArg.update.dueDate).toBeNull();
+  });
+
+  it("returns 400 for invalid dueDate values", async () => {
+    const response = await request(app)
+      .patch("/api/tasks/task-1/status")
+      .send({ status: "TODO", dueDate: "not-a-date" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("Invalid dueDate");
+    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+  });
+
   it("returns 400 for invalid task status", async () => {
     const response = await request(app)
       .patch("/api/tasks/task-1/status")
