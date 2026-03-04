@@ -3,6 +3,17 @@ import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
 
+const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
+  // Canonical API values:
+  not_started: UserTaskStatus.TODO,
+  in_progress: UserTaskStatus.SAVED,
+  completed: UserTaskStatus.DONE,
+  // Backward-compatible aliases:
+  todo: UserTaskStatus.TODO,
+  saved: UserTaskStatus.SAVED,
+  done: UserTaskStatus.DONE,
+};
+
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
     let tasks: Record<string, unknown>[] | null = null;
@@ -154,11 +165,19 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid status. 'status' must be a string value" });
     }
 
-    if (!Object.values(UserTaskStatus).includes(rawStatus as UserTaskStatus)) {
+    const normalizedStatus = rawStatus.trim().toLowerCase();
+    const mappedStatus = STATUS_ALIAS_MAP[normalizedStatus];
+
+    if (!mappedStatus) {
       req.logger.info({ msg: 'Task status update failed - invalid status', taskId: id, status: rawStatus });
-      return res.status(400).json({ error: "Invalid status. Must be one of TODO, SAVED, DONE" });
+      return res
+        .status(400)
+        .json({
+          error:
+            "Invalid status. Use one of: not_started, in_progress, completed (legacy aliases: todo, saved, done)",
+        });
     }
-    const status = rawStatus as UserTaskStatus;
+    const status = mappedStatus;
     let dueDate: Date | null | undefined;
 
     if (rawDueDate !== undefined) {

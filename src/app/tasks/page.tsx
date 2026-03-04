@@ -15,6 +15,11 @@ interface Task {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  userTaskId?: string;
+  status?: "TODO" | "SAVED" | "DONE";
+  dueDate?: string | null;
+  personalNotes?: string | null;
+  completedAt?: string | null;
 }
 
 export default function TasksPage() {
@@ -32,6 +37,9 @@ export default function TasksPage() {
       }
 
       const data = await response.json();
+      if (!Array.isArray(data)) {
+        throw new Error("Unexpected response while loading tasks");
+      }
       setTasks(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tasks");
@@ -49,6 +57,10 @@ export default function TasksPage() {
   };
 
   const handleTaskDeleted = () => {
+    fetchTasks();
+  };
+
+  const handleTaskUpdated = () => {
     fetchTasks();
   };
 
@@ -83,7 +95,11 @@ export default function TasksPage() {
               Loading tasks...
             </div>
           ) : (
-            <TaskList tasks={tasks} onTaskDeleted={handleTaskDeleted} />
+            <TaskList
+              tasks={tasks}
+              onTaskDeleted={handleTaskDeleted}
+              onTaskUpdated={handleTaskUpdated}
+            />
           )}
         </div>
       </div>
