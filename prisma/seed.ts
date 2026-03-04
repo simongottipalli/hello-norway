@@ -1,6 +1,5 @@
 // prisma/seed.ts
 import { PrismaClient, TaskCategory, EmploymentStatus, Prisma } from "../src/generated/prisma/client";
-import { pathToFileURL } from "url";
 
 const prisma = new PrismaClient();
 
@@ -290,7 +289,7 @@ async function main() {
   }
 }
 
-const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+const isDirectRun = process.argv.some((arg) => arg === "prisma/seed.ts" || arg.endsWith("/prisma/seed.ts") || arg.endsWith("\\prisma\\seed.ts"));
 
 if (isDirectRun) {
   main()
