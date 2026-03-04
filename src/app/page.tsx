@@ -26,19 +26,19 @@ const features = [
 
 const footerLinks = [
   {
-    label: "Contribute",
+    label: "🤝 Contribute",
     href: "https://github.com/simongottipalli/hello-norway/pulls",
   },
   {
-    label: "Report an issue",
+    label: "🐛 Report an issue",
     href: "https://github.com/simongottipalli/hello-norway/issues/new/choose",
   },
   {
-    label: "Collaborate",
+    label: "🧠 Collaborate",
     href: "https://github.com/simongottipalli/hello-norway/discussions",
   },
   {
-    label: "Donate",
+    label: "💖 Donate",
     href: "https://github.com/sponsors/simongottipalli",
   },
 ] as const;
@@ -108,7 +108,7 @@ export default function Home() {
 
         <footer className="border-t border-border pt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Proudly 100% built by and in European technology.
+            🏙️ Made in Oslo 🇳🇴
           </p>
           <nav
             aria-label="Footer links"
