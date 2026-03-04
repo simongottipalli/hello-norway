@@ -95,6 +95,47 @@ export const updateTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const updateData = req.body;
+    const status = typeof updateData?.status === "string" ? updateData.status : undefined;
+
+    if (status !== undefined) {
+      const allowedStatuses = ["TODO", "SAVED", "DONE"];
+      if (!allowedStatuses.includes(status)) {
+        req.logger.info({ msg: 'Task status update failed - invalid status', taskId: id, status });
+        return res.status(400).json({ error: "Invalid status. Must be one of TODO, SAVED, DONE" });
+      }
+
+      const task = await prisma.task.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+
+      if (!task) {
+        req.logger.info({ msg: 'Task not found', taskId: id });
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      const userTask = await prisma.userTask.upsert({
+        where: {
+          userId_taskId: {
+            userId: req.user!.id,
+            taskId: id,
+          },
+        },
+        update: {
+          status,
+          completedAt: status === "DONE" ? new Date() : null,
+        },
+        create: {
+          userId: req.user!.id,
+          taskId: id,
+          status,
+          completedAt: status === "DONE" ? new Date() : null,
+        },
+      });
+
+      req.logger.info({ msg: 'User task status updated', taskId: id, status, userId: req.user!.id });
+      return res.json(userTask);
+    }
 
     const task = await prisma.task.update({
       where: { id },
