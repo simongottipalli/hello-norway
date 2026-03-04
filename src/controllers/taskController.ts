@@ -147,6 +147,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const rawStatus = req.body?.status;
     const rawDueDate = req.body?.dueDate;
+    const rawPersonalNotes = req.body?.personalNotes;
 
     if (typeof rawStatus !== "string") {
       req.logger.info({ msg: 'Task status update failed - invalid status type', taskId: id, status: rawStatus });
@@ -191,6 +192,11 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       }
     }
 
+    if (rawPersonalNotes !== undefined && rawPersonalNotes !== null && typeof rawPersonalNotes !== "string") {
+      req.logger.info({ msg: 'Task status update failed - invalid personal notes type', taskId: id });
+      return res.status(400).json({ error: "Invalid personalNotes. 'personalNotes' must be a string or null" });
+    }
+
     const task = await prisma.task.findUnique({
       where: { id },
       select: { id: true },
@@ -210,6 +216,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       },
       update: {
         status,
+        ...(rawPersonalNotes !== undefined ? { personalNotes: rawPersonalNotes } : {}),
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
         ...(dueDate !== undefined ? { dueDate } : {}),
       },
@@ -217,6 +224,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
         userId: req.user!.id,
         taskId: id,
         status,
+        personalNotes: rawPersonalNotes ?? null,
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
         ...(dueDate !== undefined ? { dueDate } : {}),
       },

@@ -187,6 +187,42 @@ describe("Task status updates", () => {
     expect(prisma.userTask.upsert).not.toHaveBeenCalled();
   });
 
+  it("updates task status with private notes", async () => {
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-3" } as unknown as Task);
+    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+      id: "user-task-3",
+      userId: "test-user-id",
+      taskId: "task-3",
+      status: "SAVED",
+      personalNotes: "Bring all paperwork copies",
+      completedAt: null,
+    } as unknown as UserTask);
+
+    const response = await request(app)
+      .patch("/api/tasks/task-3/status")
+      .send({ status: "SAVED", personalNotes: "Bring all paperwork copies" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(200);
+    expect(response.body.personalNotes).toBe("Bring all paperwork copies");
+    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
+
+    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
+    expect(upsertArg.update.personalNotes).toBe("Bring all paperwork copies");
+    expect(upsertArg.create.personalNotes).toBe("Bring all paperwork copies");
+  });
+
+  it("returns 400 for invalid personalNotes type", async () => {
+    const response = await request(app)
+      .patch("/api/tasks/task-1/status")
+      .send({ status: "SAVED", personalNotes: 123 })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("Invalid personalNotes");
+    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when task does not exist", async () => {
     vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
 
