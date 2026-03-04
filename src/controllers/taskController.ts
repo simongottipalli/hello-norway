@@ -164,11 +164,26 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       if (rawDueDate === null) {
         dueDate = null;
       } else if (typeof rawDueDate === "string") {
-        const parsedDueDate = new Date(rawDueDate);
-        if (Number.isNaN(parsedDueDate.getTime())) {
+        const dueDateMatch = rawDueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!dueDateMatch) {
           req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
           return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
         }
+
+        const [, yearRaw, monthRaw, dayRaw] = dueDateMatch;
+        const year = Number(yearRaw);
+        const month = Number(monthRaw);
+        const day = Number(dayRaw);
+        const parsedDueDate = new Date(Date.UTC(year, month - 1, day));
+        if (
+          parsedDueDate.getUTCFullYear() !== year ||
+          parsedDueDate.getUTCMonth() !== month - 1 ||
+          parsedDueDate.getUTCDate() !== day
+        ) {
+          req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
+          return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
+        }
+
         dueDate = parsedDueDate;
       } else {
         req.logger.info({ msg: 'Task status update failed - invalid due date type', taskId: id, dueDate: rawDueDate });

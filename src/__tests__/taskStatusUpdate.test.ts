@@ -145,6 +145,37 @@ describe("Task status updates", () => {
     expect(prisma.userTask.upsert).not.toHaveBeenCalled();
   });
 
+  it("returns 400 for invalid-but-parsable dueDate values", async () => {
+    const response = await request(app)
+      .patch("/api/tasks/task-1/status")
+      .send({ status: "TODO", dueDate: "2026-02-30" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("Invalid dueDate");
+    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for non-string dueDate types", async () => {
+    const numericResponse = await request(app)
+      .patch("/api/tasks/task-1/status")
+      .send({ status: "TODO", dueDate: 1234567890 })
+      .set("Content-Type", "application/json");
+
+    expect(numericResponse.status).toBe(400);
+    expect(numericResponse.body.error).toContain("Invalid dueDate");
+    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+
+    const objectResponse = await request(app)
+      .patch("/api/tasks/task-1/status")
+      .send({ status: "TODO", dueDate: { date: "2026-01-01" } })
+      .set("Content-Type", "application/json");
+
+    expect(objectResponse.status).toBe(400);
+    expect(objectResponse.body.error).toContain("Invalid dueDate");
+    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+  });
+
   it("returns 400 for invalid task status", async () => {
     const response = await request(app)
       .patch("/api/tasks/task-1/status")
