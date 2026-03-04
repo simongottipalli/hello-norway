@@ -43,7 +43,7 @@ describe("Task status updates", () => {
     } as unknown as UserTask);
 
     const response = await request(app)
-      .patch("/api/tasks/task-1")
+      .patch("/api/tasks/task-1/status")
       .send({ status: "DONE" })
       .set("Content-Type", "application/json");
 
@@ -69,7 +69,7 @@ describe("Task status updates", () => {
     } as unknown as UserTask);
 
     const response = await request(app)
-      .patch("/api/tasks/task-2")
+      .patch("/api/tasks/task-2/status")
       .send({ status: "SAVED" })
       .set("Content-Type", "application/json");
 
@@ -85,7 +85,7 @@ describe("Task status updates", () => {
   });
   it("returns 400 for invalid task status", async () => {
     const response = await request(app)
-      .patch("/api/tasks/task-1")
+      .patch("/api/tasks/task-1/status")
       .send({ status: "INVALID" })
       .set("Content-Type", "application/json");
 
@@ -98,12 +98,24 @@ describe("Task status updates", () => {
     vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
 
     const response = await request(app)
-      .patch("/api/tasks/missing-task")
+      .patch("/api/tasks/missing-task/status")
       .send({ status: "SAVED" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(404);
     expect(response.body.error).toBe("Task not found");
     expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when status is sent to task metadata endpoint", async () => {
+    const response = await request(app)
+      .patch("/api/tasks/task-1")
+      .send({ status: "DONE" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("/api/tasks/:id/status");
+    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(prisma.task.update).not.toHaveBeenCalled();
   });
 });

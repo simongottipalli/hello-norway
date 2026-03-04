@@ -119,58 +119,14 @@ export const createTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const updateData = req.body;
-    const rawStatus = updateData?.status;
-
-    if ("status" in (updateData || {}) && typeof rawStatus !== "string") {
-      req.logger.info({ msg: 'Task status update failed - invalid status type', taskId: id, status: rawStatus });
-      return res.status(400).json({ error: "Invalid status. 'status' must be a string value" });
-    }
-
-    const status = typeof rawStatus === "string" ? rawStatus : undefined;
-    if (status !== undefined) {
-      const allowedStatuses = ["TODO", "SAVED", "DONE"];
-      if (!allowedStatuses.includes(status)) {
-        req.logger.info({ msg: 'Task status update failed - invalid status', taskId: id, status });
-        return res.status(400).json({ error: "Invalid status. Must be one of TODO, SAVED, DONE" });
-      }
-
-      const task = await prisma.task.findUnique({
-        where: { id },
-        select: { id: true },
-      });
-
-      if (!task) {
-        req.logger.info({ msg: 'Task not found', taskId: id });
-        return res.status(404).json({ error: "Task not found" });
-      }
-
-      const userTask = await prisma.userTask.upsert({
-        where: {
-          userId_taskId: {
-            userId: req.user!.id,
-            taskId: id,
-          },
-        },
-        update: {
-          status,
-          completedAt: status === "DONE" ? new Date() : null,
-        },
-        create: {
-          userId: req.user!.id,
-          taskId: id,
-          status,
-          completedAt: status === "DONE" ? new Date() : null,
-        },
-      });
-
-      req.logger.info({ msg: 'User task status updated', taskId: id, status, userId: req.user!.id });
-      return res.json(userTask);
+    if ("status" in (req.body || {})) {
+      req.logger.info({ msg: 'Task update failed - status requires dedicated endpoint', taskId: id });
+      return res.status(400).json({ error: "Use PATCH /api/tasks/:id/status to update task status" });
     }
 
     const task = await prisma.task.update({
       where: { id },
-      data: updateData,
+      data: req.body,
     });
 
     req.logger.info({ msg: 'Task updated', taskId: id });
@@ -182,6 +138,63 @@ export const updateTask = async (req: Request, res: Response) => {
     }
     req.logger.error({ msg: 'Failed to update task', error });
     res.status(500).json({ error: "Failed to update task" });
+  }
+};
+
+export const updateTaskStatus = async (req: Request, res: Response) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const rawStatus = req.body?.status;
+
+    if (typeof rawStatus !== "string") {
+      req.logger.info({ msg: 'Task status update failed - invalid status type', taskId: id, status: rawStatus });
+      return res.status(400).json({ error: "Invalid status. 'status' must be a string value" });
+    }
+
+    const allowedStatuses = ["TODO", "SAVED", "DONE"];
+    if (!allowedStatuses.includes(rawStatus)) {
+      req.logger.info({ msg: 'Task status update failed - invalid status', taskId: id, status: rawStatus });
+      return res.status(400).json({ error: "Invalid status. Must be one of TODO, SAVED, DONE" });
+    }
+
+    const task = await prisma.task.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!task) {
+      req.logger.info({ msg: 'Task not found', taskId: id });
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    const userTask = await prisma.userTask.upsert({
+      where: {
+        userId_taskId: {
+          userId: req.user!.id,
+          taskId: id,
+        },
+      },
+      update: {
+        status: rawStatus,
+        completedAt: rawStatus === "DONE" ? new Date() : null,
+      },
+      create: {
+        userId: req.user!.id,
+        taskId: id,
+        status: rawStatus,
+        completedAt: rawStatus === "DONE" ? new Date() : null,
+      },
+    });
+
+    req.logger.info({ msg: 'User task status updated', taskId: id, status: rawStatus, userId: req.user!.id });
+    return res.json(userTask);
+  } catch (error: unknown) {
+    const errorResponse = handlePrismaError(error, req.logger);
+    if (errorResponse) {
+      return res.status(errorResponse.status).json({ error: errorResponse.message });
+    }
+    req.logger.error({ msg: 'Failed to update task status', error });
+    res.status(500).json({ error: "Failed to update task status" });
   }
 };
 
