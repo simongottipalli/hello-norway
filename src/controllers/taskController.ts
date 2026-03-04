@@ -120,8 +120,14 @@ export const updateTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const updateData = req.body;
-    const status = typeof updateData?.status === "string" ? updateData.status : undefined;
+    const rawStatus = updateData?.status;
 
+    if ("status" in (updateData || {}) && typeof rawStatus !== "string") {
+      req.logger.info({ msg: 'Task status update failed - invalid status type', taskId: id, status: rawStatus });
+      return res.status(400).json({ error: "Invalid status. 'status' must be a string value" });
+    }
+
+    const status = typeof rawStatus === "string" ? rawStatus : undefined;
     if (status !== undefined) {
       const allowedStatuses = ["TODO", "SAVED", "DONE"];
       if (!allowedStatuses.includes(status)) {
