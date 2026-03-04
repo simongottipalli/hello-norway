@@ -1,14 +1,19 @@
-import { describe, it, expect, afterAll, vi } from "vitest";
+import { describe, it, expect, afterAll, beforeEach, vi } from "vitest";
 import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
+import { randomUUID } from "node:crypto";
 import { createApp } from "../app";
 import { prisma } from "../lib/prisma";
 
-const AUTH_USER_ID = "00000000-0000-0000-0000-000000000001";
+let authUserId: string;
+let authUserEmail: string;
+
+const generateUniqueTestEmail = () =>
+  `test+${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
 
 vi.mock("../middleware/authMiddleware", () => ({
   authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
-    req.user = { id: AUTH_USER_ID, email: "test@example.com", name: "Test User" };
+    req.user = { id: authUserId, email: authUserEmail, name: "Test User" };
     req.session = { id: "test-session-id", token: "test-token", expiresAt: new Date(Date.now() + 60_000) };
     next();
   },
@@ -18,6 +23,11 @@ const app = createApp();
 
 describe("Task API", () => {
   let createdTaskId: string;
+
+  beforeEach(() => {
+    authUserId = randomUUID();
+    authUserEmail = generateUniqueTestEmail();
+  });
 
   afterAll(async () => {
     await prisma.$disconnect();
@@ -70,11 +80,11 @@ describe("Task API", () => {
 
     it("should return assigned tasks for the authenticated user when assignments exist", async () => {
       await prisma.user.upsert({
-        where: { id: AUTH_USER_ID },
+        where: { id: authUserId },
         update: {},
         create: {
-          id: AUTH_USER_ID,
-          email: "test@example.com",
+          id: authUserId,
+          email: authUserEmail,
           name: "Test User",
         },
       });
@@ -111,7 +121,7 @@ describe("Task API", () => {
 
         await prisma.userTask.create({
           data: {
-            userId: AUTH_USER_ID,
+            userId: authUserId,
             taskId: assignedTask.id,
             status: "TODO",
           },
@@ -133,10 +143,10 @@ describe("Task API", () => {
         });
       } finally {
         if (assignedTaskId) {
-          await prisma.userTask.deleteMany({ where: { userId: AUTH_USER_ID, taskId: assignedTaskId } });
+          await prisma.userTask.deleteMany({ where: { userId: authUserId, taskId: assignedTaskId } });
         }
         await prisma.task.deleteMany({ where: { id: { in: [assignedTaskId, unassignedTaskId].filter(Boolean) } } });
-        await prisma.user.deleteMany({ where: { id: AUTH_USER_ID } });
+        await prisma.user.deleteMany({ where: { id: authUserId } });
       }
     });
   });
