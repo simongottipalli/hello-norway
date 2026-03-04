@@ -1,5 +1,7 @@
 // prisma/seed.ts
 import { PrismaClient, TaskCategory, EmploymentStatus, Prisma } from "../src/generated/prisma/client";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const prisma = new PrismaClient();
 
@@ -289,7 +291,9 @@ async function main() {
   }
 }
 
-const isDirectRun = process.argv.some((arg) => arg === "prisma/seed.ts" || arg.endsWith("/prisma/seed.ts") || arg.endsWith("\\prisma\\seed.ts"));
+const currentFilePath = fileURLToPath(import.meta.url);
+// argv[1] covers direct tsx execution; argv[2] covers wrappers that pass seed path as second arg.
+const isDirectRun = [process.argv[1], process.argv[2]].some((arg) => arg && path.resolve(arg) === currentFilePath);
 
 if (isDirectRun) {
   main()
