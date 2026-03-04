@@ -1,12 +1,19 @@
-import { describe, it, expect, afterAll, vi } from "vitest";
+import { describe, it, expect, afterAll, beforeEach, vi } from "vitest";
 import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
+import { randomUUID } from "node:crypto";
 import { createApp } from "../app";
 import { prisma } from "../lib/prisma";
 
+let authUserId: string;
+let authUserEmail: string;
+
+const generateUniqueTestEmail = () =>
+  `test+${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+
 vi.mock("../middleware/authMiddleware", () => ({
   authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
-    req.user = { id: "test-user-id", email: "test@example.com", name: "Test User" };
+    req.user = { id: authUserId, email: authUserEmail, name: "Test User" };
     req.session = { id: "test-session-id", token: "test-token", expiresAt: new Date(Date.now() + 60_000) };
     next();
   },
@@ -16,6 +23,11 @@ const app = createApp();
 
 describe("Task API", () => {
   let createdTaskId: string;
+
+  beforeEach(() => {
+    authUserId = randomUUID();
+    authUserEmail = generateUniqueTestEmail();
+  });
 
   afterAll(async () => {
     await prisma.$disconnect();
@@ -63,6 +75,78 @@ describe("Task API", () => {
         if (prev.category === curr.category) {
           expect(prev.sortOrder).toBeLessThanOrEqual(curr.sortOrder);
         }
+      }
+    });
+
+    it("should return assigned tasks for the authenticated user when assignments exist", async () => {
+      await prisma.user.upsert({
+        where: { id: authUserId },
+        update: {},
+        create: {
+          id: authUserId,
+          email: authUserEmail,
+          name: "Test User",
+        },
+      });
+
+      let assignedTaskId = "";
+      let unassignedTaskId = "";
+
+      try {
+        const assignedTask = await prisma.task.create({
+          data: {
+            slug: `assigned-task-${Date.now()}`,
+            title: "Assigned Task",
+            shortDescription: "Assigned task description",
+            body: "Assigned task body",
+            category: "OTHER",
+            sortOrder: 5001,
+            officialLinks: {},
+          },
+        });
+        assignedTaskId = assignedTask.id;
+
+        const unassignedTask = await prisma.task.create({
+          data: {
+            slug: `unassigned-task-${Date.now()}`,
+            title: "Unassigned Task",
+            shortDescription: "Unassigned task description",
+            body: "Unassigned task body",
+            category: "OTHER",
+            sortOrder: 5002,
+            officialLinks: {},
+          },
+        });
+        unassignedTaskId = unassignedTask.id;
+
+        await prisma.userTask.create({
+          data: {
+            userId: authUserId,
+            taskId: assignedTask.id,
+            status: "TODO",
+          },
+        });
+
+        const response = await request(app).get("/api/tasks");
+        const taskIds = response.body.map((task: { id: string }) => task.id);
+        const assignedResponseTask = response.body.find((task: { id: string }) => task.id === assignedTask.id);
+
+        expect(response.status).toBe(200);
+        expect(taskIds).toContain(assignedTask.id);
+        expect(taskIds).not.toContain(unassignedTask.id);
+        expect(assignedResponseTask).toMatchObject({
+          userTaskId: expect.any(String),
+          status: "TODO",
+          dueDate: null,
+          personalNotes: null,
+          completedAt: null,
+        });
+      } finally {
+        if (assignedTaskId) {
+          await prisma.userTask.deleteMany({ where: { userId: authUserId, taskId: assignedTaskId } });
+        }
+        await prisma.task.deleteMany({ where: { id: { in: [assignedTaskId, unassignedTaskId].filter(Boolean) } } });
+        await prisma.user.deleteMany({ where: { id: authUserId } });
       }
     });
   });
