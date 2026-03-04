@@ -7,14 +7,16 @@ vi.mock('@getbrevo/brevo', () => {
   const mockGetAccount = vi.fn();
 
   return {
-    BrevoClient: vi.fn().mockImplementation(() => ({
-      transactionalEmails: {
-        sendTransacEmail: mockSendTransacEmail,
-      },
-      account: {
-        getAccount: mockGetAccount,
-      },
-    })),
+    BrevoClient: vi.fn().mockImplementation(function () {
+      return {
+        transactionalEmails: {
+          sendTransacEmail: mockSendTransacEmail,
+        },
+        account: {
+          getAccount: mockGetAccount,
+        },
+      };
+    }),
     __mockSendTransacEmail: mockSendTransacEmail,
     __mockGetAccount: mockGetAccount,
   };
