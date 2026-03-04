@@ -1,5 +1,7 @@
 // prisma/seed.ts
 import { PrismaClient, TaskCategory, EmploymentStatus, Prisma } from "../src/generated/prisma/client";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const prisma = new PrismaClient();
 
@@ -13,6 +15,7 @@ type SeedTask = {
   category: TaskCategory;
   officialLinks: Link[];
   sortOrder: number;
+  recurrenceType: "ONCE" | "YEARLY" | "CUSTOM";
 
   // Eligibility (nullable)
   requiresEU?: boolean | null;
@@ -25,76 +28,78 @@ type SeedTask = {
   maxDaysFromArrival?: number | null;
 };
 
-const tasks: SeedTask[] = [
-  // -----------------
-  // BEFORE ARRIVAL / EARLY ARRIVAL
-  // -----------------
+export const tasks: SeedTask[] = [
   {
-    slug: "prepare-documents",
-    title: "Prepare key documents",
-    shortDescription: "Collect IDs and paperwork you'll likely need for banking, tax, and registration.",
+    slug: "book-sua-or-authority-appointments",
+    title: "Book appointments with SUA or the right authorities early",
+    shortDescription: "Reserve time with SUA, police, and/or Skatteetaten as soon as you know your move date.",
     body:
-      "Prepare passports/IDs, residence permit documents (if relevant), work contract, marriage/birth certificates (if relevant), and any other paperwork required by authorities or banks.",
+      "Use SUA if available (Oslo, Stavanger, Bergen, Trondheim, Kirkenes). If not, book directly with the police and Tax Administration. Why it matters: appointment availability can delay ID number, tax card, and work onboarding.",
+    recurrenceType: "ONCE",
     category: "ARRIVAL",
-    officialLinks: [{ label: "Want to apply (UDI)", url: "https://www.udi.no/en/want-to-apply/" }],
-    minDaysFromArrival: -90,
-    maxDaysFromArrival: 7,
+    officialLinks: [
+      { label: "Service Centre for Foreign Workers (SUA)", url: "https://www.sua.no/en/" },
+      { label: "Book tax office appointment (Skatteetaten)", url: "https://www.skatteetaten.no/en/contact/offices/book/" },
+    ],
+    minDaysFromArrival: -60,
+    maxDaysFromArrival: 30,
     sortOrder: 10,
   },
   {
-    slug: "check-residence-rules",
-    title: "Check residence rules that apply to you (EU/EEA vs non-EU/EEA)",
-    shortDescription: "Confirm what you must do to live/work in Norway legally.",
+    slug: "register-with-police-eu-eea",
+    title: "Register with police (EU/EEA nationals)",
+    shortDescription: "If you are an EU/EEA national staying in Norway, register once with police.",
     body:
-      "Rules differ depending on citizenship and purpose of stay (work, family, study). Identify your path and required steps before arriving.",
+      "Complete the EU/EEA registration process and keep your registration certificate. Why it matters: this is the documented first immigration step for many EU/EEA newcomers.",
+    recurrenceType: "ONCE",
     category: "ARRIVAL",
-    officialLinks: [{ label: "Want to apply (UDI)", url: "https://www.udi.no/en/want-to-apply/" }],
-    minDaysFromArrival: -120,
-    maxDaysFromArrival: 14,
+    officialLinks: [{ label: "Registration certificate for EU/EEA nationals (UDI)", url: "https://www.udi.no/en/word-definitions/registration-certificate-for-eueea-nationals/" }],
+    requiresEU: true,
+    minDaysFromArrival: -14,
+    maxDaysFromArrival: 90,
     sortOrder: 20,
   },
-
-  // -----------------
-  // ARRIVAL
-  // -----------------
   {
-    slug: "register-with-police-eu-eea",
-    title: "Register (EU/EEA) if staying over 3 months",
-    shortDescription: "EU/EEA citizens may need to register if living in Norway longer than 3 months.",
+    slug: "apply-residence-permit-non-eu",
+    title: "Apply for a residence permit (non-EU/EEA nationals)",
+    shortDescription: "Apply through UDI for your skilled worker or relevant permit before/after arrival as instructed.",
     body:
-      "If you are an EU/EEA citizen and will live in Norway for more than 3 months, you must register and receive a registration certificate.",
+      "Follow the permit path that matches your citizenship and purpose of stay. Why it matters: legal residence and work rights depend on an approved permit.",
+    recurrenceType: "CUSTOM",
     category: "ARRIVAL",
     officialLinks: [
-      { label: "Registration certificate (UDI)", url: "https://www.udi.no/en/word-definitions/registration-certificate-for-eueea-nationals/" },
-      { label: "Residence / registration info (Police)", url: "https://www.politiet.no/en/english/residence-permits-and-protection/residence-permit-registration-or-visitor-visa/" },
+      { label: "Residence permit information (Norway.no)", url: "https://www.norway.no/en/central-content/en/service-info/visitors-visa-res-permit/res-permit/" },
+      { label: "Work in Norway - Apply for residence permit", url: "https://workinnorway.no/en/Guide%2Bfor%2Bcitizens%2Bfrom%2Bcountries%2Boutside%2BEU%2Band%2BEEA/Get%2Bstarted%2Bin%2BNorway/Apply%2Bfor%2Ba%2Bresidence%2Bpermit" },
     ],
-    requiresEU: true,
-    minDaysFromArrival: 0,
+    requiresEU: false,
+    minDaysFromArrival: -120,
     maxDaysFromArrival: 120,
     sortOrder: 30,
   },
   {
-    slug: "apply-residence-permit-non-eu",
-    title: "Apply for residence permit (non-EU/EEA) for long stay/work",
-    shortDescription: "Non-EU/EEA citizens usually need a permit to work or stay long-term.",
+    slug: "obtain-residence-card-non-eu",
+    title: "Attend police appointment to obtain residence card (non-EU/EEA)",
+    shortDescription: "Book and attend your police appointment so your residence card can be produced.",
     body:
-      "Non-EU/EEA citizens generally need a residence permit to work or stay longer than 90 days. Follow UDI’s steps for your permit type and any police appointment requirements.",
+      "After permit approval, attend the required police appointment for card processing. Why it matters: the residence card is practical proof of your permit status in Norway.",
+    recurrenceType: "ONCE",
     category: "ARRIVAL",
     officialLinks: [
-      { label: "Want to apply (UDI)", url: "https://www.udi.no/en/want-to-apply/" },
-      { label: "Residence / registration info (Police)", url: "https://www.politiet.no/en/english/residence-permits-and-protection/residence-permit-registration-or-visitor-visa/" },
+      { label: "Booking and attending appointments (Police)", url: "https://www.politiet.no/en/english/residence-permits-and-protection/booking-and-attending/" },
+      { label: "Residence cards (UDI)", url: "https://www.udi.no/en/word-definitions/-residence-cards/" },
     ],
     requiresEU: false,
-    minDaysFromArrival: -90,
-    maxDaysFromArrival: 90,
+    minDaysFromArrival: 0,
+    maxDaysFromArrival: 120,
     sortOrder: 40,
   },
   {
-    slug: "notify-move-to-norway-national-registry",
-    title: "Notify the National Population Register when moving to Norway",
-    shortDescription: "If staying more than 6 months, report the move (Folkeregisteret).",
+    slug: "register-address-folkeregisteret",
+    title: "Register your address with Folkeregisteret",
+    shortDescription: "If you stay more than 6 months, report your move to the National Population Register.",
     body:
-      "If you are moving to Norway for more than 6 months, you must notify the National Population Register. This is often necessary for getting a national identity number.",
+      "Report your move to Norway and provide valid address documentation. Why it matters: registered address affects mail, GP rights, and other public services.",
+    recurrenceType: "ONCE",
     category: "ARRIVAL",
     officialLinks: [{ label: "Move to Norway (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/national-registry/moving/to-Norway/" }],
     minDaysFromArrival: 0,
@@ -102,98 +107,75 @@ const tasks: SeedTask[] = [
     sortOrder: 50,
   },
   {
-    slug: "get-d-number",
-    title: "Get a D-number (temporary ID number) if you need it early",
-    shortDescription: "Often needed for tax, salary, banking, or other services.",
+    slug: "get-id-number-and-complete-id-check",
+    title: "Get a Norwegian ID number and complete ID check",
+    shortDescription: "Get a national identity number or D-number depending on your stay and status.",
     body:
-      "A D-number is a temporary Norwegian ID number. Some agencies can requisition it for you when you need to use a service and you don’t have a national identity number yet.",
+      "Complete your ID check at a tax office when required and ensure your identifier is issued. Why it matters: your ID number unlocks banking, tax setup, and e-ID.",
+    recurrenceType: "ONCE",
     category: "ARRIVAL",
-    officialLinks: [{ label: "D-number (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/national-registry/identitetsnummer-og-elektronisk-id/d-nummer/" }],
+    officialLinks: [
+      { label: "National identity numbers (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/national-registry/identitetsnummer-og-elektronisk-id/fodselsnummer/" },
+      { label: "D number (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/national-registry/identitetsnummer-og-elektronisk-id/d-nummer/" },
+      { label: "Tax offices that carry out ID checks (Skatteetaten)", url: "https://www.skatteetaten.no/en/contact/offices/id-check/" },
+    ],
     minDaysFromArrival: 0,
     maxDaysFromArrival: 90,
     sortOrder: 60,
   },
   {
     slug: "report-change-of-address",
-    title: "Report change of address when you move",
-    shortDescription: "Keep your registered address updated for official mail and services.",
+    title: "Report change of address if you move within Norway",
+    shortDescription: "Notify Folkeregisteret no later than 8 days after moving.",
     body:
-      "When you move within Norway, notify the National Population Register. Many agencies rely on your registered address.",
+      "Submit change-of-address notification online or through approved channels. Why it matters: official letters and public-service records depend on your correct address.",
+    recurrenceType: "CUSTOM",
     category: "ARRIVAL",
-    officialLinks: [{ label: "Moving (Skatteetaten)", url: "https://www.skatteetaten.no/en/Person/National-Registry/Moving/" }],
+    officialLinks: [{ label: "Moving within Norway (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/national-registry/moving/within-norway/" }],
     minDaysFromArrival: 0,
     maxDaysFromArrival: 3650,
     sortOrder: 70,
   },
-
-  // -----------------
-  // IDENTITY / BANKING
-  // -----------------
   {
-    slug: "open-bank-account",
-    title: "Open a Norwegian bank account",
-    shortDescription: "Needed for salary and many payments; banks may require ID number and documentation.",
+    slug: "open-bank-account-and-get-bankid",
+    title: "Open a bank account and get BankID",
+    shortDescription: "After receiving an ID number, set up your bank account and request BankID.",
     body:
-      "Banks have varying requirements. Expect identity checks and documentation. A bank account is often needed before you can get BankID.",
-    category: "IDENTITY_BANKING",
-    officialLinks: [{ label: "BankID (BankID.no)", url: "https://bankid.no/en" }],
-    minDaysFromArrival: 0,
-    maxDaysFromArrival: 120,
-    sortOrder: 10,
-  },
-  {
-    slug: "get-bankid",
-    title: "Get BankID (electronic ID)",
-    shortDescription: "Used to log in and sign digitally across public and private services.",
-    body:
-      "BankID is issued by your bank. Once you have it, you can use it to access many services (tax, healthcare, banking, etc.).",
+      "Use your Norwegian identification number to open an account and request BankID through your bank. Why it matters: BankID is needed for most digital public and private services.",
+    recurrenceType: "ONCE",
     category: "IDENTITY_BANKING",
     officialLinks: [
-      { label: "How to order BankID (Digdir)", url: "https://eid.difi.no/en/bankid/how-order-bankid" },
-      { label: "BankID (BankID.no)", url: "https://bankid.no/en" },
+      { label: "Identification numbers and electronic ID (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/national-registry/identitetsnummer-og-elektronisk-id/" },
+      { label: "Become an online user (Skatteetaten)", url: "https://www.skatteetaten.no/en/about-the-tax-administration/online-user/become-an-online-user/" },
     ],
     minDaysFromArrival: 0,
     maxDaysFromArrival: 180,
-    sortOrder: 20,
+    sortOrder: 10,
   },
-
-  // -----------------
-  // TAX / WORK
-  // -----------------
   {
-    slug: "get-tax-deduction-card",
-    title: "Get a tax deduction card (skattekort)",
-    shortDescription: "Required so your employer can withhold the correct tax.",
+    slug: "apply-tax-deduction-card",
+    title: "Apply for a tax deduction card (skattekort)",
+    shortDescription: "Apply before your first salary payment so tax withholding is correct.",
     body:
-      "If you work in Norway, you generally need a tax deduction card. Your employer uses it to deduct the correct tax from your salary.",
+      "Submit your tax card request and verify your employer can retrieve it electronically. Why it matters: without a tax card, employers may withhold 50% tax.",
+    recurrenceType: "YEARLY",
     category: "TAX_WORK",
     officialLinks: [
-      { label: "Order tax deduction card (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/taxes/tax-deduction-card-and-advance-tax/order-a-tax-deduction-card/" },
-      { label: "Tax deduction card for foreign citizens (Skatteetaten)", url: "https://www.skatteetaten.no/en/forms/tax-deduction-card-for-foreign-citizens/" },
+      { label: "Order a tax deduction card (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/taxes/tax-deduction-card-and-advance-tax/order-a-tax-deduction-card/" },
+      { label: "Tax deduction cards for foreign employees (Skatteetaten)", url: "https://www.skatteetaten.no/en/business-and-organisation/foreign/employer/tax-deduction-cards/" },
     ],
     requiresEmploymentStatus: ["EMPLOYED", "SELF_EMPLOYED"],
     minDaysFromArrival: -14,
     maxDaysFromArrival: 60,
-    sortOrder: 10,
-  },
-  {
-    slug: "check-my-tax",
-    title: "Log in to My tax (Skatteetaten)",
-    shortDescription: "View tax card, tax return, and tax assessment when available.",
-    body:
-      "Use My tax to see your tax deduction card and later your tax return and assessment. This is your main hub for personal tax information.",
-    category: "TAX_WORK",
-    officialLinks: [{ label: "My tax (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/taxes/my-tax/" }],
-    minDaysFromArrival: 0,
-    maxDaysFromArrival: 3650,
     sortOrder: 20,
   },
   {
-    slug: "review-submit-tax-return",
-    title: "Review and submit your tax return (next year)",
-    shortDescription: "Check pre-filled numbers and submit changes by the deadline.",
+    slug: "submit-tax-return",
+    title: "Review and submit your tax return each year",
+    shortDescription: "Check pre-filled tax data and submit corrections before the annual deadline.",
     body:
-      "The tax return is pre-filled. You must review it and submit changes by the deadline each year.",
+      "Log into My Tax to review deductions, income, and any reportable changes. Why it matters: errors can lead to overpayment, underpayment, or penalties.",
+    recurrenceType: "YEARLY",
     category: "TAX_WORK",
     officialLinks: [{ label: "Tax return (Skatteetaten)", url: "https://www.skatteetaten.no/en/person/taxes/tax-return/" }],
     minDaysFromArrival: 60,
@@ -203,56 +185,36 @@ const tasks: SeedTask[] = [
   {
     slug: "nav-membership-basics",
     title: "Understand National Insurance (NAV) membership basics",
-    shortDescription: "Membership affects eligibility for healthcare coverage and benefits.",
+    shortDescription: "Check whether your rights are based on residence, employment, or both.",
     body:
-      "Membership depends on residence and/or employment. Understanding this early helps when navigating benefits and coverage.",
+      "Review membership rules for your exact immigration and work situation. Why it matters: membership determines eligibility for key NAV services and benefits.",
+    recurrenceType: "CUSTOM",
     category: "TAX_WORK",
     officialLinks: [{ label: "Membership (NAV)", url: "https://www.nav.no/en/home/rules-and-regulations/membership-of-the-national-insurance-scheme" }],
     minDaysFromArrival: 0,
     maxDaysFromArrival: 3650,
     sortOrder: 40,
   },
-
-  // -----------------
-  // HEALTH
-  // -----------------
   {
-    slug: "choose-fastlege",
-    title: "Choose / change your GP (fastlege)",
-    shortDescription: "Your GP is your main entry point to the healthcare system.",
+    slug: "register-with-gp-fastlege",
+    title: "Register with a GP (fastlege)",
+    shortDescription: "Once eligible, choose your GP through Helsenorge.",
     body:
-      "Once you have access, choose or change your GP via Helsenorge. If your preferred GP is full, you can join a waiting list.",
+      "Residents in the National Population Register can choose or change GP and join waiting lists. Why it matters: your GP is the entry point for referrals and regular care.",
+    recurrenceType: "CUSTOM",
     category: "HEALTH",
-    officialLinks: [
-      { label: "About changing GP (Helsenorge)", url: "https://www.helsenorge.no/en/change-doctor-gp/about/" },
-      { label: "GP services (Helsenorge)", url: "https://www.helsenorge.no/en/gp/" },
-    ],
+    officialLinks: [{ label: "The right to a doctor in Norway (Helsenorge)", url: "https://www.helsenorge.no/en/gp/about-gp/the-right-to-a-doctor/" }],
     minDaysFromArrival: 0,
     maxDaysFromArrival: 3650,
     sortOrder: 10,
   },
   {
-    slug: "european-health-insurance-card",
-    title: "Apply for European Health Insurance Card (EHIC) (if eligible)",
-    shortDescription: "Documents your right to necessary healthcare during temporary stays abroad (rules apply).",
-    body:
-      "If eligible, EHIC can be useful for temporary stays in EU/EEA countries, Switzerland, or the UK under applicable rules.",
-    category: "HEALTH",
-    officialLinks: [{ label: "EHIC (Helsenorge)", url: "https://www.helsenorge.no/en/health-rights-tourist-abroad/the-european-health-insurance-card/" }],
-    minDaysFromArrival: 0,
-    maxDaysFromArrival: 3650,
-    sortOrder: 20,
-  },
-
-  // -----------------
-  // FAMILY
-  // -----------------
-  {
     slug: "apply-child-benefit",
-    title: "Apply for child benefit (barnetrygd) if applicable",
-    shortDescription: "Support for families with children living in Norway (rules apply).",
+    title: "Apply for child benefit (barnetrygd) if you have children",
+    shortDescription: "Families with eligible children can apply for monthly child benefit from NAV.",
     body:
-      "Child benefit is administered by NAV. Eligibility depends on the child living in Norway and other criteria.",
+      "Submit your application and supporting details through NAV channels. Why it matters: this benefit helps families cover child-related living costs.",
+    recurrenceType: "CUSTOM",
     category: "FAMILY",
     officialLinks: [{ label: "Child benefit (NAV)", url: "https://www.nav.no/barnetrygd/en" }],
     requiresChildren: true,
@@ -260,54 +222,33 @@ const tasks: SeedTask[] = [
     maxDaysFromArrival: 3650,
     sortOrder: 10,
   },
-
-  // -----------------
-  // HOUSING
-  // -----------------
   {
-    slug: "understand-renting-basics",
-    title: "Understand renting basics (deposit, contract, rights)",
-    shortDescription: "Know what a normal deposit is and what to avoid.",
+    slug: "notify-nav-if-unemployed",
+    title: "Notify NAV if you become unemployed",
+    shortDescription: "Register your job-seeker status with NAV quickly if employment ends.",
     body:
-      "Read up on standard rental practices: written contract, deposit account, and your rights and obligations as a tenant.",
-    category: "HOUSING",
-    officialLinks: [{ label: "Tenancy Act (Lovdata)", url: "https://lovdata.no/dokument/NL/lov/1999-03-26-17" }],
-    minDaysFromArrival: -60,
-    maxDaysFromArrival: 3650,
-    sortOrder: 10,
-  },
-
-  // -----------------
-  // DRIVING
-  // -----------------
-  {
-    slug: "foreign-driving-licence-rules",
-    title: "Check rules for using a foreign driving licence in Norway",
-    shortDescription: "Rules differ for EU/EEA vs non-EU/EEA licences.",
-    body:
-      "Different rules apply depending on where your licence is issued. Check what applies to you if you plan to drive in Norway.",
-    category: "DRIVING",
-    officialLinks: [
-      { label: "Driving licences in Norway and abroad (Vegvesen)", url: "https://www.vegvesen.no/en/driving-licences/driving-licence-holders/driving-licences-in-norway-and-abroad/" },
-    ],
-    minDaysFromArrival: -30,
-    maxDaysFromArrival: 3650,
-    sortOrder: 10,
-  },
-  {
-    slug: "exchange-eu-eea-driving-licence",
-    title: "Exchange EU/EEA driving licence (optional)",
-    shortDescription: "You can exchange an EU/EEA licence for a Norwegian one.",
-    body:
-      "If you have an EU/EEA driving licence, you can exchange it for a Norwegian licence for the corresponding category.",
-    category: "DRIVING",
-    officialLinks: [
-      { label: "Exchanging EU/EEA driving licences (Vegvesen)", url: "https://www.vegvesen.no/en/driving-licences/driving-licence-holders/foreign-driving-licence-in-norway/exchanging-eueea-driving-licences/" },
-    ],
-    requiresEU: true,
+      "Report unemployment and check your entitlement to support based on membership and work history. Why it matters: early registration can affect benefit eligibility and timelines.",
+    recurrenceType: "CUSTOM",
+    category: "TAX_WORK",
+    officialLinks: [{ label: "Membership and rights overview (NAV)", url: "https://www.nav.no/en/home/rules-and-regulations/membership-of-the-national-insurance-scheme" }],
+    requiresEmploymentStatus: ["UNEMPLOYED"],
     minDaysFromArrival: 0,
     maxDaysFromArrival: 3650,
-    sortOrder: 20,
+    sortOrder: 50,
+  },
+  {
+    slug: "renew-residence-permit-before-expiry",
+    title: "Renew your residence permit before it expires (if applicable)",
+    shortDescription: "Track permit validity and submit renewal applications in time.",
+    body:
+      "Use UDI guidance and apply for renewal early enough to avoid gaps in legal stay and work rights. Why it matters: late renewal can interrupt work authorization and access to services.",
+    recurrenceType: "CUSTOM",
+    category: "ARRIVAL",
+    officialLinks: [{ label: "Want to apply / renew permit (UDI)", url: "https://www.udi.no/en/want-to-apply/" }],
+    requiresEU: false,
+    minDaysFromArrival: 0,
+    maxDaysFromArrival: 3650,
+    sortOrder: 80,
   },
 ];
 
@@ -350,10 +291,16 @@ async function main() {
   }
 }
 
-main()
-  .then(() => prisma.$disconnect())
-  .catch(async (e) => {
-    console.error(e);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+const currentFilePath = fileURLToPath(import.meta.url);
+// argv[1] covers direct tsx execution; argv[2] covers wrappers that pass seed path as second arg.
+const isDirectRun = [process.argv[1], process.argv[2]].some((arg) => arg && path.resolve(arg) === currentFilePath);
+
+if (isDirectRun) {
+  main()
+    .then(() => prisma.$disconnect())
+    .catch(async (e) => {
+      console.error(e);
+      await prisma.$disconnect();
+      process.exit(1);
+    });
+}
