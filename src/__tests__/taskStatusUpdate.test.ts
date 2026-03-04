@@ -48,9 +48,40 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("DONE");
-    expect(prisma.userTask.upsert).toHaveBeenCalled();
+    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
+
+    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
+    expect(upsertArg).toBeDefined();
+    // Ensure the status is updated to DONE and completedAt is set
+    expect(upsertArg.update.status).toBe("DONE");
+    expect(upsertArg.update.completedAt).toBeInstanceOf(Date);
   });
 
+  it("clears completedAt when status is not DONE", async () => {
+    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-2" } as never);
+    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+      id: "user-task-2",
+      userId: "test-user-id",
+      taskId: "task-2",
+      status: "SAVED",
+      completedAt: null,
+    } as never);
+
+    const response = await request(app)
+      .patch("/api/tasks/task-2")
+      .send({ status: "SAVED" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe("SAVED");
+    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
+
+    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
+    expect(upsertArg).toBeDefined();
+    // Ensure the status is updated to a non-DONE value and completedAt is cleared
+    expect(upsertArg.update.status).toBe("SAVED");
+    expect(upsertArg.update.completedAt == null).toBe(true);
+  });
   it("returns 400 for invalid task status", async () => {
     const response = await request(app)
       .patch("/api/tasks/task-1")
