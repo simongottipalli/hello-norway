@@ -1,24 +1,17 @@
 import { Request, Response } from "express";
+import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
 
-const USER_TASK_STATUS = {
-  TODO: "TODO",
-  SAVED: "SAVED",
-  DONE: "DONE",
-} as const;
-
-type UserTaskStatus = (typeof USER_TASK_STATUS)[keyof typeof USER_TASK_STATUS];
-
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:
-  not_started: USER_TASK_STATUS.TODO,
-  in_progress: USER_TASK_STATUS.SAVED,
-  completed: USER_TASK_STATUS.DONE,
+  not_started: UserTaskStatus.TODO,
+  in_progress: UserTaskStatus.SAVED,
+  completed: UserTaskStatus.DONE,
   // Backward-compatible aliases:
-  todo: USER_TASK_STATUS.TODO,
-  saved: USER_TASK_STATUS.SAVED,
-  done: USER_TASK_STATUS.DONE,
+  todo: UserTaskStatus.TODO,
+  saved: UserTaskStatus.SAVED,
+  done: UserTaskStatus.DONE,
 };
 
 export const getAllTasks = async (req: Request, res: Response) => {
@@ -244,7 +237,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       update: {
         status,
         ...(rawPersonalNotes !== undefined ? { personalNotes: rawPersonalNotes } : {}),
-        completedAt: status === USER_TASK_STATUS.DONE ? new Date() : null,
+        completedAt: status === UserTaskStatus.DONE ? new Date() : null,
         ...(dueDate !== undefined ? { dueDate } : {}),
       },
       create: {
@@ -252,7 +245,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
         taskId: id,
         status,
         personalNotes: rawPersonalNotes ?? null,
-        completedAt: status === USER_TASK_STATUS.DONE ? new Date() : null,
+        completedAt: status === UserTaskStatus.DONE ? new Date() : null,
         ...(dueDate !== undefined ? { dueDate } : {}),
       },
     });

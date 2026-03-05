@@ -1,11 +1,12 @@
 import { Router } from "express";
+import { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
 
 const router = Router();
-const EMPLOYMENT_STATUSES = new Set(["EMPLOYED", "SELF_EMPLOYED", "UNEMPLOYED", "STUDENT", "OTHER"]);
+const EMPLOYMENT_STATUSES = new Set<string>(Object.values(EmploymentStatus));
 
 const parseDateOnly = (value: unknown): Date | null | undefined => {
   if (value === undefined) return undefined;
