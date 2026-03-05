@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +21,14 @@ interface Task {
   dueDate?: string | null;
   personalNotes?: string | null;
   completedAt?: string | null;
+  officialLinks?: unknown;
+  minDaysFromArrival?: number | null;
+  maxDaysFromArrival?: number | null;
 }
 
 export default function TasksPage() {
+  const searchParams = useSearchParams();
+  const selectedTaskIdFromUrl = searchParams.get("taskId") ?? undefined;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,6 +105,7 @@ export default function TasksPage() {
               tasks={tasks}
               onTaskDeleted={handleTaskDeleted}
               onTaskUpdated={handleTaskUpdated}
+              initialSelectedTaskId={selectedTaskIdFromUrl}
             />
           )}
         </div>
