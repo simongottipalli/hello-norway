@@ -21,6 +21,12 @@ vi.mock("../lib/prisma", () => ({
     user: {
       upsert: vi.fn(),
     },
+    task: {
+      findMany: vi.fn(),
+    },
+    userTask: {
+      createMany: vi.fn(),
+    },
     session: {
       deleteMany: vi.fn(),
       create: vi.fn(),
@@ -64,7 +70,15 @@ describe("OTP API", () => {
       id: "user-1",
       email: testEmail,
       name: "test",
+      isEU: null,
+      employmentStatus: null,
+      hasChildren: null,
     });
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      { id: "task-1" },
+      { id: "task-2" },
+    ]);
+    vi.mocked(prisma.userTask.createMany).mockResolvedValue({ count: 2 });
     vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 0 });
     vi.mocked(prisma.session.create).mockResolvedValue({
       id: "session-1",
@@ -891,6 +905,25 @@ describe("OTP API", () => {
         where: {
           email: testEmail,
         },
+      });
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: {
+          AND: [
+            { requiresEU: null },
+            { requiresChildren: null },
+            { requiresEmploymentStatus: { isEmpty: true } },
+          ],
+        },
+        select: {
+          id: true,
+        },
+      });
+      expect(prisma.userTask.createMany).toHaveBeenCalledWith({
+        data: [
+          { userId: "user-1", taskId: "task-1", status: "TODO" },
+          { userId: "user-1", taskId: "task-2", status: "TODO" },
+        ],
+        skipDuplicates: true,
       });
       expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: {
