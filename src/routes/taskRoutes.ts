@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { getAllTasks, getTaskById, createTask, updateTask, updateTaskStatus, deleteTask } from "../controllers/taskController";
+import { getAllTasks, getUserTasks, getTaskById, createTask, updateTask, updateTaskStatus, deleteTask } from "../controllers/taskController";
 
 const router = Router();
 
 router.get("/tasks", getAllTasks);
-router.get("/tasks/personalized", getAllTasks);
+router.get("/tasks/personalized", getUserTasks);
+router.get("/user-tasks", getUserTasks);
 router.get("/tasks/:id", getTaskById);
 router.post("/tasks", createTask);
 router.patch("/tasks/:id/status", updateTaskStatus);

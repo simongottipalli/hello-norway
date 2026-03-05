@@ -1,4 +1,4 @@
-import type { EmploymentStatus, Prisma, User } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 
 type AssignmentProfile = Pick<User, "id" | "isEU" | "hasChildren" | "employmentStatus" | "arrivalDate" | "plannedArrivalDate">;
@@ -16,7 +16,7 @@ function getDaysFromArrival(profile: AssignmentProfile, now: Date): number | nul
   return Math.floor((toUtcMidnight(now) - toUtcMidnight(anchorDate)) / MS_PER_DAY);
 }
 
-function getEmploymentFilter(status: EmploymentStatus | null): Prisma.TaskWhereInput {
+function getEmploymentFilter(status: AssignmentProfile["employmentStatus"]): Prisma.TaskWhereInput {
   if (!status) {
     return { requiresEmploymentStatus: { isEmpty: true } };
   }

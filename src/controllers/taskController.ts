@@ -23,6 +23,20 @@ const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
 
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
+    const tasks = await prisma.task.findMany({
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+    });
+
+    req.logger.info({ msg: 'Fetched all tasks', count: tasks.length });
+    res.json(tasks);
+  } catch (error: unknown) {
+    req.logger.error({ msg: 'Failed to fetch tasks', error });
+    res.status(500).json({ error: "Failed to fetch tasks" });
+  }
+};
+
+export const getUserTasks = async (req: Request, res: Response) => {
+  try {
     const assignedUserTasks = await prisma.userTask.findMany({
       where: { userId: req.user!.id },
       include: { task: true },
@@ -38,11 +52,11 @@ export const getAllTasks = async (req: Request, res: Response) => {
       completedAt,
     }));
 
-    req.logger.info({ msg: 'Fetched all tasks', count: tasks.length });
+    req.logger.info({ msg: 'Fetched user tasks', count: tasks.length, userId: req.user!.id });
     res.json(tasks);
   } catch (error: unknown) {
-    req.logger.error({ msg: 'Failed to fetch tasks', error });
-    res.status(500).json({ error: "Failed to fetch tasks" });
+    req.logger.error({ msg: 'Failed to fetch user tasks', error, userId: req.user?.id });
+    res.status(500).json({ error: "Failed to fetch user tasks" });
   }
 };
 
