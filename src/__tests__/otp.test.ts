@@ -25,7 +25,9 @@ vi.mock("../lib/prisma", () => ({
       findMany: vi.fn(),
     },
     userTask: {
+      findMany: vi.fn(),
       createMany: vi.fn(),
+      deleteMany: vi.fn(),
     },
     session: {
       deleteMany: vi.fn(),
@@ -78,7 +80,9 @@ describe("OTP API", () => {
       { id: "task-1" },
       { id: "task-2" },
     ]);
+    vi.mocked(prisma.userTask.findMany).mockResolvedValue([]);
     vi.mocked(prisma.userTask.createMany).mockResolvedValue({ count: 2 });
+    vi.mocked(prisma.userTask.deleteMany).mockResolvedValue({ count: 0 });
     vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 0 });
     vi.mocked(prisma.session.create).mockResolvedValue({
       id: "session-1",
@@ -912,6 +916,8 @@ describe("OTP API", () => {
             { requiresEU: null },
             { requiresChildren: null },
             { requiresEmploymentStatus: { isEmpty: true } },
+            { minDaysFromArrival: null },
+            { maxDaysFromArrival: null },
           ],
         },
         select: {

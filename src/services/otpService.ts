@@ -1,8 +1,8 @@
 import { randomBytes, randomInt } from 'crypto';
 import { prisma } from '../lib/prisma';
-import { UserTaskStatus } from '../generated/prisma/client';
 import type { EmailService } from './email/emailService';
 import type { Logger } from '../lib/logger';
+import { syncUserTaskAssignments } from './taskAssignmentService';
 
 /**
  * OTP Service
@@ -199,50 +199,7 @@ export class OtpService {
         },
       });
 
-      const relevantTasks = await prisma.task.findMany({
-        where: {
-          AND: [
-            user.isEU === null || user.isEU === undefined
-              ? { requiresEU: null }
-              : {
-                  OR: [
-                    { requiresEU: null },
-                    { requiresEU: user.isEU },
-                  ],
-                },
-            user.hasChildren === null || user.hasChildren === undefined
-              ? { requiresChildren: null }
-              : {
-                  OR: [
-                    { requiresChildren: null },
-                    { requiresChildren: user.hasChildren },
-                  ],
-                },
-            user.employmentStatus === null || user.employmentStatus === undefined
-              ? { requiresEmploymentStatus: { isEmpty: true } }
-              : {
-                  OR: [
-                    { requiresEmploymentStatus: { isEmpty: true } },
-                    { requiresEmploymentStatus: { has: user.employmentStatus } },
-                  ],
-                },
-          ],
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      if (relevantTasks.length > 0) {
-        await prisma.userTask.createMany({
-          data: relevantTasks.map((task) => ({
-            userId: user.id,
-            taskId: task.id,
-            status: UserTaskStatus.TODO,
-          })),
-          skipDuplicates: true,
-        });
-      }
+      await syncUserTaskAssignments(user);
 
       await prisma.session.deleteMany({
         where: {

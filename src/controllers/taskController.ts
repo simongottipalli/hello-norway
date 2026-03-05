@@ -1,48 +1,42 @@
 import { Request, Response } from "express";
-import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
 
+const USER_TASK_STATUS = {
+  TODO: "TODO",
+  SAVED: "SAVED",
+  DONE: "DONE",
+} as const;
+
+type UserTaskStatus = (typeof USER_TASK_STATUS)[keyof typeof USER_TASK_STATUS];
+
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:
-  not_started: UserTaskStatus.TODO,
-  in_progress: UserTaskStatus.SAVED,
-  completed: UserTaskStatus.DONE,
+  not_started: USER_TASK_STATUS.TODO,
+  in_progress: USER_TASK_STATUS.SAVED,
+  completed: USER_TASK_STATUS.DONE,
   // Backward-compatible aliases:
-  todo: UserTaskStatus.TODO,
-  saved: UserTaskStatus.SAVED,
-  done: UserTaskStatus.DONE,
+  todo: USER_TASK_STATUS.TODO,
+  saved: USER_TASK_STATUS.SAVED,
+  done: USER_TASK_STATUS.DONE,
 };
 
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
-    let tasks: Record<string, unknown>[] | null = null;
+    const assignedUserTasks = await prisma.userTask.findMany({
+      where: { userId: req.user!.id },
+      include: { task: true },
+      orderBy: [{ task: { category: "asc" } }, { task: { sortOrder: "asc" } }],
+    });
 
-    if (req.user?.id) {
-      const assignedUserTasks = await prisma.userTask.findMany({
-        where: { userId: req.user.id },
-        include: { task: true },
-        orderBy: [{ task: { category: "asc" } }, { task: { sortOrder: "asc" } }],
-      });
-
-      tasks = assignedUserTasks.length
-        ? assignedUserTasks
-            .map(({ task, id, status, dueDate, personalNotes, completedAt }) => ({
-              ...task,
-              userTaskId: id,
-              status,
-              dueDate,
-              personalNotes,
-              completedAt,
-            }))
-        : null;
-    }
-
-    if (!tasks) {
-      tasks = await prisma.task.findMany({
-        orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-      });
-    }
+    const tasks = assignedUserTasks.map(({ task, id, status, dueDate, personalNotes, completedAt }) => ({
+      ...task,
+      userTaskId: id,
+      status,
+      dueDate,
+      personalNotes,
+      completedAt,
+    }));
 
     req.logger.info({ msg: 'Fetched all tasks', count: tasks.length });
     res.json(tasks);
@@ -236,7 +230,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       update: {
         status,
         ...(rawPersonalNotes !== undefined ? { personalNotes: rawPersonalNotes } : {}),
-        completedAt: status === UserTaskStatus.DONE ? new Date() : null,
+        completedAt: status === USER_TASK_STATUS.DONE ? new Date() : null,
         ...(dueDate !== undefined ? { dueDate } : {}),
       },
       create: {
@@ -244,7 +238,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
         taskId: id,
         status,
         personalNotes: rawPersonalNotes ?? null,
-        completedAt: status === UserTaskStatus.DONE ? new Date() : null,
+        completedAt: status === USER_TASK_STATUS.DONE ? new Date() : null,
         ...(dueDate !== undefined ? { dueDate } : {}),
       },
     });
