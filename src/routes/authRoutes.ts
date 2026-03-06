@@ -29,43 +29,96 @@ const parseDateOnly = (value: unknown): Date | null | undefined => {
   return parsed;
 };
 
-router.post("/onboarding/tasks", async (req, res) => {
-  const { isEU, employmentStatus, hasChildren, arrivalDate, plannedArrivalDate } = req.body ?? {};
+type OnboardingProfilePayload = {
+  isEU: boolean | null;
+  hasChildren: boolean | null;
+  employmentStatus: EmploymentStatus | null;
+  arrivalDate: Date | null;
+  plannedArrivalDate: Date | null;
+};
+
+type OnboardingProfileParseResult =
+  | { value: OnboardingProfilePayload; error?: undefined }
+  | { value?: undefined; error: { status: number; body: unknown } };
+
+const parseOnboardingProfilePayload = (body: unknown): OnboardingProfileParseResult => {
+  const {
+    isEU,
+    employmentStatus,
+    hasChildren,
+    arrivalDate,
+    plannedArrivalDate,
+  } = (body as any) ?? {};
 
   if (isEU !== undefined && isEU !== null && typeof isEU !== "boolean") {
-    return res.status(400).json({ error: "Invalid isEU. Must be boolean or null." });
+    return {
+      error: { status: 400, body: { error: "Invalid isEU. Must be boolean or null." } },
+    };
   }
 
   if (hasChildren !== undefined && hasChildren !== null && typeof hasChildren !== "boolean") {
-    return res.status(400).json({ error: "Invalid hasChildren. Must be boolean or null." });
+    return {
+      error: { status: 400, body: { error: "Invalid hasChildren. Must be boolean or null." } },
+    };
   }
 
   if (employmentStatus !== undefined && employmentStatus !== null) {
     if (typeof employmentStatus !== "string" || !EMPLOYMENT_STATUSES.has(employmentStatus)) {
-      return res.status(400).json({ error: "Invalid employmentStatus." });
+      return {
+        error: { status: 400, body: { error: "Invalid employmentStatus." } },
+      };
     }
   }
 
   const parsedArrivalDate = parseDateOnly(arrivalDate);
   if (arrivalDate !== undefined && parsedArrivalDate === undefined) {
-    return res.status(400).json({ error: "Invalid arrivalDate. Must be YYYY-MM-DD or null." });
+    return {
+      error: {
+        status: 400,
+        body: { error: "Invalid arrivalDate. Must be YYYY-MM-DD or null." },
+      },
+    };
   }
 
   const parsedPlannedArrivalDate = parseDateOnly(plannedArrivalDate);
   if (plannedArrivalDate !== undefined && parsedPlannedArrivalDate === undefined) {
-    return res.status(400).json({ error: "Invalid plannedArrivalDate. Must be YYYY-MM-DD or null." });
+    return {
+      error: {
+        status: 400,
+        body: { error: "Invalid plannedArrivalDate. Must be YYYY-MM-DD or null." },
+      },
+    };
   }
+
+  return {
+    value: {
+      isEU: (isEU ?? null) as boolean | null,
+      hasChildren: (hasChildren ?? null) as boolean | null,
+      employmentStatus: (employmentStatus ?? null) as EmploymentStatus | null,
+      arrivalDate: parsedArrivalDate ?? null,
+      plannedArrivalDate: parsedPlannedArrivalDate ?? null,
+    },
+  };
+};
+
+router.post("/onboarding/tasks", async (req, res) => {
+  const parsed = parseOnboardingProfilePayload(req.body);
+  if (parsed.error) {
+    return res.status(parsed.error.status).json(parsed.error.body);
+  }
+
+  const { isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = parsed.value;
 
   try {
     const tasks = await prisma.task.findMany({
       where: getRelevantTaskWhere(
         {
           id: "onboarding-preview",
-          isEU: isEU ?? null,
-          hasChildren: hasChildren ?? null,
-          employmentStatus: employmentStatus ?? null,
-          arrivalDate: parsedArrivalDate ?? null,
-          plannedArrivalDate: parsedPlannedArrivalDate ?? null,
+          isEU,
+          hasChildren,
+          employmentStatus,
+          arrivalDate,
+          plannedArrivalDate,
         },
         new Date(),
       ),
