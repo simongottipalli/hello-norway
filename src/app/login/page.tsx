@@ -138,14 +138,16 @@ function LoginForm() {
           try {
             const storedProfile = localStorage.getItem(ONBOARDING_PROFILE_STORAGE_KEY);
             if (storedProfile) {
-              await fetch("/api/auth/profile", {
+              const profileResponse = await fetch("/api/auth/profile", {
                 method: "PATCH",
                 headers: {
                   "Content-Type": "application/json",
                 },
                 body: storedProfile,
               });
-              localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+              if (profileResponse.ok) {
+                localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+              }
             }
           } catch {
             // Ignore profile sync failures and continue login.
