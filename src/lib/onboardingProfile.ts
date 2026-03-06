@@ -90,13 +90,10 @@ export const deriveTaskProfileFromOnboardingAnswers = (
   answers: OnboardingAnswers,
 ): OnboardingTaskProfile => {
   const citizenships = normalizeCountries(answers.citizenships);
-  const applyingFrom = answers.applyingFrom?.trim();
-  const hasEuContext = [...citizenships, applyingFrom].some(
-    (country): country is string => Boolean(country) && EU_EEA_COUNTRIES.has(country),
-  );
+  const hasEuCitizenship = citizenships.some((country) => EU_EEA_COUNTRIES.has(country));
 
   return {
-    isEU: hasEuContext,
+    isEU: hasEuCitizenship,
     hasChildren: null,
     employmentStatus: toEmploymentStatus(answers.applyingAs, answers.jobOffer),
     arrivalDate: null,

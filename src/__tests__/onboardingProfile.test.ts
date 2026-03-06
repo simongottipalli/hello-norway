@@ -6,7 +6,7 @@ import {
 } from "../lib/onboardingProfile";
 
 describe("deriveTaskProfileFromOnboardingAnswers", () => {
-  it("maps EU/EEA contexts and student answers", () => {
+  it("maps EU/EEA citizenships and student answers", () => {
     const profile = deriveTaskProfileFromOnboardingAnswers({
       applyingFrom: "France",
       citizenships: "India, France",
@@ -34,6 +34,19 @@ describe("deriveTaskProfileFromOnboardingAnswers", () => {
 
     expect(profile.isEU).toBe(false);
     expect(profile.employmentStatus).toBe("UNEMPLOYED");
+  });
+
+  it("does not infer isEU from applyingFrom when citizenship is non-EU", () => {
+    const profile = deriveTaskProfileFromOnboardingAnswers({
+      applyingFrom: "France",
+      citizenships: "India",
+      applyingAs: "Skilled worker",
+      jobOffer: "Yes",
+      age: "30",
+    });
+
+    expect(profile.isEU).toBe(false);
+    expect(profile.employmentStatus).toBe("EMPLOYED");
   });
 
   it("maps other onboarding paths to OTHER employment status", () => {
