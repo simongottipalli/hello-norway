@@ -78,7 +78,7 @@ describe("Task API", () => {
       }
     });
 
-    it("should return assigned tasks for the authenticated user when assignments exist", async () => {
+    it("should return all tasks including unassigned tasks", async () => {
       await prisma.user.upsert({
         where: { id: authUserId },
         update: {},
@@ -128,6 +128,72 @@ describe("Task API", () => {
         });
 
         const response = await request(app).get("/api/tasks");
+        const taskIds = response.body.map((task: { id: string }) => task.id);
+
+        expect(response.status).toBe(200);
+        expect(taskIds).toContain(assignedTask.id);
+        expect(taskIds).toContain(unassignedTask.id);
+      } finally {
+        if (assignedTaskId) {
+          await prisma.userTask.deleteMany({ where: { userId: authUserId, taskId: assignedTaskId } });
+        }
+        await prisma.task.deleteMany({ where: { id: { in: [assignedTaskId, unassignedTaskId].filter(Boolean) } } });
+        await prisma.user.deleteMany({ where: { id: authUserId } });
+      }
+    });
+  });
+
+  describe("GET /api/user-tasks", () => {
+    it("should return only assigned user tasks for the authenticated user", async () => {
+      await prisma.user.upsert({
+        where: { id: authUserId },
+        update: {},
+        create: {
+          id: authUserId,
+          email: authUserEmail,
+          name: "Test User",
+        },
+      });
+
+      let assignedTaskId = "";
+      let unassignedTaskId = "";
+
+      try {
+        const assignedTask = await prisma.task.create({
+          data: {
+            slug: `assigned-user-task-${Date.now()}`,
+            title: "Assigned User Task",
+            shortDescription: "Assigned user task description",
+            body: "Assigned user task body",
+            category: "OTHER",
+            sortOrder: 5003,
+            officialLinks: {},
+          },
+        });
+        assignedTaskId = assignedTask.id;
+
+        const unassignedTask = await prisma.task.create({
+          data: {
+            slug: `unassigned-user-task-${Date.now()}`,
+            title: "Unassigned User Task",
+            shortDescription: "Unassigned user task description",
+            body: "Unassigned user task body",
+            category: "OTHER",
+            sortOrder: 5004,
+            officialLinks: {},
+          },
+        });
+        unassignedTaskId = unassignedTask.id;
+
+        await prisma.userTask.create({
+          data: {
+            userId: authUserId,
+            taskId: assignedTask.id,
+            status: "TODO",
+          },
+        });
+
+        const response = await request(app).get("/api/user-tasks");
         const taskIds = response.body.map((task: { id: string }) => task.id);
         const assignedResponseTask = response.body.find((task: { id: string }) => task.id === assignedTask.id);
 

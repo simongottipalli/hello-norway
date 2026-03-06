@@ -2,6 +2,7 @@ import { randomBytes, randomInt } from 'crypto';
 import { prisma } from '../lib/prisma';
 import type { EmailService } from './email/emailService';
 import type { Logger } from '../lib/logger';
+import { syncUserTaskAssignments } from './taskAssignmentService';
 
 /**
  * OTP Service
@@ -197,6 +198,16 @@ export class OtpService {
           name: email.split('@')[0],
         },
       });
+
+      try {
+        await syncUserTaskAssignments(user);
+      } catch (error) {
+        logger?.error({
+          msg: 'Failed to sync user task assignments during OTP verification',
+          email,
+          error,
+        });
+      }
 
       await prisma.session.deleteMany({
         where: {

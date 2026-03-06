@@ -101,6 +101,20 @@ describe("API route auth policy", () => {
       expect(response.body.error).toBe("Unauthorized");
     });
 
+    it("GET /api/tasks/personalized returns 401 without a session cookie", async () => {
+      const response = await request(app).get("/api/tasks/personalized");
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Unauthorized");
+    });
+
+    it("GET /api/user-tasks returns 401 without a session cookie", async () => {
+      const response = await request(app).get("/api/user-tasks");
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Unauthorized");
+    });
+
     it("POST /api/tasks returns 401 without a session cookie", async () => {
       const response = await request(app)
         .post("/api/tasks")
@@ -135,6 +149,16 @@ describe("API route auth policy", () => {
       const response = await request(app).delete(
         "/api/tasks/00000000-0000-0000-0000-000000000000"
       );
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Unauthorized");
+    });
+
+    it("PATCH /api/auth/profile returns 401 without a session cookie", async () => {
+      const response = await request(app)
+        .patch("/api/auth/profile")
+        .send({ isEU: true })
+        .set("Content-Type", "application/json");
 
       expect(response.status).toBe(401);
       expect(response.body.error).toBe("Unauthorized");

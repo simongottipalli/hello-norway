@@ -21,6 +21,14 @@ vi.mock("../lib/prisma", () => ({
     user: {
       upsert: vi.fn(),
     },
+    task: {
+      findMany: vi.fn(),
+    },
+    userTask: {
+      findMany: vi.fn(),
+      createMany: vi.fn(),
+      deleteMany: vi.fn(),
+    },
     session: {
       deleteMany: vi.fn(),
       create: vi.fn(),
@@ -64,7 +72,17 @@ describe("OTP API", () => {
       id: "user-1",
       email: testEmail,
       name: "test",
+      isEU: null,
+      employmentStatus: null,
+      hasChildren: null,
     });
+    vi.mocked(prisma.task.findMany).mockResolvedValue([
+      { id: "task-1" },
+      { id: "task-2" },
+    ]);
+    vi.mocked(prisma.userTask.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.userTask.createMany).mockResolvedValue({ count: 2 });
+    vi.mocked(prisma.userTask.deleteMany).mockResolvedValue({ count: 0 });
     vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 0 });
     vi.mocked(prisma.session.create).mockResolvedValue({
       id: "session-1",
@@ -892,6 +910,27 @@ describe("OTP API", () => {
           email: testEmail,
         },
       });
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: {
+          AND: [
+            { requiresEU: null },
+            { requiresChildren: null },
+            { requiresEmploymentStatus: { isEmpty: true } },
+            { minDaysFromArrival: null },
+            { maxDaysFromArrival: null },
+          ],
+        },
+        select: {
+          id: true,
+        },
+      });
+      expect(prisma.userTask.createMany).toHaveBeenCalledWith({
+        data: [
+          { userId: "user-1", taskId: "task-1", status: "TODO" },
+          { userId: "user-1", taskId: "task-2", status: "TODO" },
+        ],
+        skipDuplicates: true,
+      });
       expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: {
           userId: "user-1",
@@ -920,6 +959,66 @@ describe("OTP API", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("Invalid or expired OTP");
       expect(result.statusCode).toBe(401);
+    });
+
+    it("should build OR-based eligibility filters when profile values are set", async () => {
+      const now = new Date("2024-01-01T12:00:00Z");
+      const futureExpiry = new Date("2024-01-01T12:10:00Z");
+
+      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: "test-id",
+        email: testEmail,
+        code: 123456,
+        expiresAt: futureExpiry,
+        createdAt: now,
+      });
+      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
+      vi.mocked(prisma.user.upsert).mockResolvedValue({
+        id: "user-1",
+        email: testEmail,
+        name: "test",
+        isEU: true,
+        employmentStatus: "EMPLOYED",
+        hasChildren: false,
+        arrivalDate: new Date("2023-12-29T00:00:00Z"),
+        plannedArrivalDate: null,
+      });
+
+      const result = await otpService.verifyOtp(testEmail, 123456);
+
+      expect(result.success).toBe(true);
+      expect(prisma.task.findMany).toHaveBeenCalledWith({
+        where: {
+          AND: [
+            { OR: [{ requiresEU: null }, { requiresEU: true }] },
+            { OR: [{ requiresChildren: null }, { requiresChildren: false }] },
+            { OR: [{ requiresEmploymentStatus: { isEmpty: true } }, { requiresEmploymentStatus: { has: "EMPLOYED" } }] },
+            { OR: [{ minDaysFromArrival: null }, { minDaysFromArrival: { lte: 3 } }] },
+            { OR: [{ maxDaysFromArrival: null }, { maxDaysFromArrival: { gte: 3 } }] },
+          ],
+        },
+        select: { id: true },
+      });
+    });
+
+    it("should skip creating user tasks when no relevant tasks are found", async () => {
+      const now = new Date("2024-01-01T12:00:00Z");
+      const futureExpiry = new Date("2024-01-01T12:10:00Z");
+
+      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: "test-id",
+        email: testEmail,
+        code: 123456,
+        expiresAt: futureExpiry,
+        createdAt: now,
+      });
+      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
+      vi.mocked(prisma.task.findMany).mockResolvedValue([]);
+
+      const result = await otpService.verifyOtp(testEmail, 123456);
+
+      expect(result.success).toBe(true);
+      expect(prisma.userTask.createMany).not.toHaveBeenCalled();
     });
   });
 });

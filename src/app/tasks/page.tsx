@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +21,14 @@ interface Task {
   dueDate?: string | null;
   personalNotes?: string | null;
   completedAt?: string | null;
+  officialLinks?: unknown;
+  minDaysFromArrival?: number | null;
+  maxDaysFromArrival?: number | null;
 }
 
-export default function TasksPage() {
+function TasksPageContent() {
+  const searchParams = useSearchParams();
+  const selectedTaskIdFromUrl = searchParams.get("taskId") ?? undefined;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,10 +105,27 @@ export default function TasksPage() {
               tasks={tasks}
               onTaskDeleted={handleTaskDeleted}
               onTaskUpdated={handleTaskUpdated}
+              initialSelectedTaskId={selectedTaskIdFromUrl}
             />
           )}
         </div>
       </div>
     </main>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background px-6 py-12">
+          <div className="max-w-3xl mx-auto text-center py-12 text-muted-foreground">
+            Loading tasks...
+          </div>
+        </main>
+      }
+    >
+      <TasksPageContent />
+    </Suspense>
   );
 }
