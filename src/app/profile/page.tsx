@@ -145,7 +145,7 @@ export default function ProfilePage() {
         credentials: "include",
       });
 
-      let data: any = null;
+      let data: { error?: string } | null = null;
       try {
         data = await response.json();
       } catch {
@@ -154,11 +154,8 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const errorMessage =
-          data &&
-          typeof data === "object" &&
-          "error" in data &&
-          typeof (data as any).error === "string"
-            ? (data as any).error
+          data && typeof data === "object" && "error" in data && typeof data.error === "string"
+            ? data.error
             : "Failed to delete profile";
         setError(errorMessage);
         setShowDeleteDialog(false);
