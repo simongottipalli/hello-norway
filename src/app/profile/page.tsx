@@ -49,7 +49,12 @@ export default function ProfilePage() {
 
       try {
         const response = await fetch("/api/auth/profile", { method: "GET", credentials: "include" });
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          await refreshSession();
+          return;
+        }
 
         if (!response.ok) {
           setError(data.error || "Failed to load profile");
@@ -71,7 +76,7 @@ export default function ProfilePage() {
     };
 
     loadProfile();
-  }, [isAuthLoading, isAuthenticated]);
+  }, [isAuthLoading, isAuthenticated, refreshSession]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
