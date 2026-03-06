@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
+import express from "express";
 import type { NextFunction, Request, Response } from "express";
-import { createApp } from "../app";
+import authRoutes from "../routes/authRoutes";
 import { prisma } from "../lib/prisma";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
 
@@ -14,6 +15,7 @@ vi.mock("../middleware/authMiddleware", () => ({
 
 vi.mock("../lib/prisma", () => ({
   prisma: {
+    $transaction: vi.fn(),
     user: {
       update: vi.fn(),
     },
@@ -27,11 +29,16 @@ vi.mock("../services/taskAssignmentService", () => ({
   syncUserTaskAssignments: vi.fn(),
 }));
 
-const app = createApp();
+const app = express();
+app.use(express.json());
+app.use("/api", authRoutes);
 
 describe("PATCH /api/auth/profile", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: (tx: typeof prisma) => Promise<unknown>) => {
+      return callback(prisma as unknown as typeof prisma);
+    });
     vi.mocked(prisma.user.update).mockResolvedValue({
       id: "user-1",
       email: "user@example.com",
@@ -57,6 +64,7 @@ describe("PATCH /api/auth/profile", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
@@ -78,7 +86,7 @@ describe("PATCH /api/auth/profile", () => {
     });
     expect(syncUserTaskAssignments).toHaveBeenCalledWith(
       expect.objectContaining({ id: "user-1", employmentStatus: "EMPLOYED" }),
-      { removeOutdatedTodoAssignments: true }
+      expect.objectContaining({ removeOutdatedTodoAssignments: true, db: expect.any(Object) })
     );
   });
 
@@ -90,8 +98,22 @@ describe("PATCH /api/auth/profile", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain("Invalid arrivalDate");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(prisma.user.update).not.toHaveBeenCalled();
     expect(syncUserTaskAssignments).not.toHaveBeenCalled();
   });
-});
 
+  it("returns 500 when sync fails inside transaction", async () => {
+    vi.mocked(syncUserTaskAssignments).mockRejectedValueOnce(new Error("sync failed"));
+
+    const response = await request(app)
+      .patch("/api/auth/profile")
+      .send({ hasChildren: true })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe("Failed to update profile");
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.user.update).toHaveBeenCalledTimes(1);
+  });
+});

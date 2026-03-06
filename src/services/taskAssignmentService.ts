@@ -77,17 +77,22 @@ function getRelevantTaskWhere(profile: AssignmentProfile, now: Date): Prisma.Tas
 
 export async function syncUserTaskAssignments(
   profile: AssignmentProfile,
-  options?: { removeOutdatedTodoAssignments?: boolean; now?: Date }
+  options?: {
+    removeOutdatedTodoAssignments?: boolean;
+    now?: Date;
+    db?: Pick<typeof prisma, "task" | "userTask">;
+  }
 ) {
+  const db = options?.db ?? prisma;
   const now = options?.now ?? new Date();
-  const relevantTasks = await prisma.task.findMany({
+  const relevantTasks = await db.task.findMany({
     where: getRelevantTaskWhere(profile, now),
     select: { id: true },
   });
 
   const relevantTaskIds = relevantTasks.map((task) => task.id);
 
-  const existingAssignments = await prisma.userTask.findMany({
+  const existingAssignments = await db.userTask.findMany({
     where: { userId: profile.id },
     select: { taskId: true, status: true },
   });
@@ -103,7 +108,7 @@ export async function syncUserTaskAssignments(
     }));
 
   if (newAssignments.length > 0) {
-    await prisma.userTask.createMany({
+    await db.userTask.createMany({
       data: newAssignments,
       skipDuplicates: true,
     });
@@ -119,7 +124,7 @@ export async function syncUserTaskAssignments(
     .map((assignment) => assignment.taskId);
 
   if (staleTodoTaskIds.length > 0) {
-    await prisma.userTask.deleteMany({
+    await db.userTask.deleteMany({
       where: {
         userId: profile.id,
         taskId: { in: staleTodoTaskIds },

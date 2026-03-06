@@ -67,28 +67,35 @@ router.patch("/auth/profile", authenticateSession, async (req, res) => {
   }
 
   try {
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user!.id },
-      data: {
-        ...(isEU !== undefined ? { isEU } : {}),
-        ...(hasChildren !== undefined ? { hasChildren } : {}),
-        ...(employmentStatus !== undefined ? { employmentStatus } : {}),
-        ...(arrivalDate !== undefined ? { arrivalDate: parsedArrivalDate } : {}),
-        ...(plannedArrivalDate !== undefined ? { plannedArrivalDate: parsedPlannedArrivalDate } : {}),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        isEU: true,
-        hasChildren: true,
-        employmentStatus: true,
-        arrivalDate: true,
-        plannedArrivalDate: true,
-      },
-    });
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: req.user!.id },
+        data: {
+          ...(isEU !== undefined ? { isEU } : {}),
+          ...(hasChildren !== undefined ? { hasChildren } : {}),
+          ...(employmentStatus !== undefined ? { employmentStatus } : {}),
+          ...(arrivalDate !== undefined ? { arrivalDate: parsedArrivalDate } : {}),
+          ...(plannedArrivalDate !== undefined ? { plannedArrivalDate: parsedPlannedArrivalDate } : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          isEU: true,
+          hasChildren: true,
+          employmentStatus: true,
+          arrivalDate: true,
+          plannedArrivalDate: true,
+        },
+      });
 
-    await syncUserTaskAssignments(updatedUser, { removeOutdatedTodoAssignments: true });
+      await syncUserTaskAssignments(user, {
+        removeOutdatedTodoAssignments: true,
+        db: tx,
+      });
+
+      return user;
+    });
 
     return res.status(200).json({ success: true, user: updatedUser });
   } catch (error: unknown) {
