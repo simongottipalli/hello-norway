@@ -175,5 +175,12 @@ describe("API route auth policy", () => {
       expect(response.status).toBe(401);
       expect(response.body.error).toBe("Unauthorized");
     });
+
+    it("GET /api/auth/profile returns 401 without a session cookie", async () => {
+      const response = await request(app).get("/api/auth/profile");
+
+      expect(response.status).toBe(401);
+      expect(response.body.error).toBe("Unauthorized");
+    });
   });
 });
