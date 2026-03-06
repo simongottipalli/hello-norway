@@ -145,9 +145,22 @@ export default function ProfilePage() {
         credentials: "include",
       });
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        // Ignore JSON parse errors; response body may be empty or non-JSON
+      }
+
       if (!response.ok) {
-        setError(data.error || "Failed to delete profile");
+        const errorMessage =
+          data &&
+          typeof data === "object" &&
+          "error" in data &&
+          typeof (data as any).error === "string"
+            ? (data as any).error
+            : "Failed to delete profile";
+        setError(errorMessage);
         setShowDeleteDialog(false);
         return;
       }
