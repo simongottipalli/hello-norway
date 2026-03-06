@@ -1,7 +1,15 @@
-import type { Prisma, User } from "@prisma/client";
+import { UserTaskStatus } from "../generated/prisma/client.js";
+import type { EmploymentStatus, Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 
-type AssignmentProfile = Pick<User, "id" | "isEU" | "hasChildren" | "employmentStatus" | "arrivalDate" | "plannedArrivalDate">;
+type AssignmentProfile = {
+  id: string;
+  isEU: boolean | null;
+  hasChildren: boolean | null;
+  employmentStatus: EmploymentStatus | null;
+  arrivalDate: Date | null;
+  plannedArrivalDate: Date | null;
+};
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -104,7 +112,7 @@ export async function syncUserTaskAssignments(
     .map((taskId) => ({
       userId: profile.id,
       taskId,
-      status: "TODO",
+      status: UserTaskStatus.TODO,
     }));
 
   if (newAssignments.length > 0) {
@@ -120,7 +128,7 @@ export async function syncUserTaskAssignments(
 
   const relevantTaskIdSet = new Set(relevantTaskIds);
   const staleTodoTaskIds = existingAssignments
-    .filter((assignment) => assignment.status === "TODO" && !relevantTaskIdSet.has(assignment.taskId))
+    .filter((assignment) => assignment.status === UserTaskStatus.TODO && !relevantTaskIdSet.has(assignment.taskId))
     .map((assignment) => assignment.taskId);
 
   if (staleTodoTaskIds.length > 0) {
@@ -128,7 +136,7 @@ export async function syncUserTaskAssignments(
       where: {
         userId: profile.id,
         taskId: { in: staleTodoTaskIds },
-        status: "TODO",
+        status: UserTaskStatus.TODO,
       },
     });
   }
