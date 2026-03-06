@@ -19,6 +19,14 @@ export type OnboardingTaskPreview = {
 };
 
 export const ONBOARDING_PROFILE_STORAGE_KEY = "onboarding-task-profile";
+const EMPLOYMENT_STATUSES: EmploymentStatus[] = [
+  "EMPLOYED",
+  "SELF_EMPLOYED",
+  "UNEMPLOYED",
+  "STUDENT",
+  "OTHER",
+];
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 const EU_EEA_COUNTRIES = new Set([
   "Austria",
@@ -153,4 +161,48 @@ export const buildFallbackTaskPreview = (
   );
 
   return tasks;
+};
+
+export const sanitizeStoredOnboardingProfileForPatch = (
+  storedProfile: string,
+): Partial<OnboardingTaskProfile> | null => {
+  try {
+    const parsed = JSON.parse(storedProfile) as unknown;
+    if (typeof parsed !== "object" || parsed === null) {
+      return null;
+    }
+
+    const payload: Partial<OnboardingTaskProfile> = {};
+    const value = parsed as Record<string, unknown>;
+
+    if (typeof value.isEU === "boolean") {
+      payload.isEU = value.isEU;
+    }
+
+    if (typeof value.hasChildren === "boolean") {
+      payload.hasChildren = value.hasChildren;
+    }
+
+    if (
+      typeof value.employmentStatus === "string" &&
+      EMPLOYMENT_STATUSES.includes(value.employmentStatus as EmploymentStatus)
+    ) {
+      payload.employmentStatus = value.employmentStatus as EmploymentStatus;
+    }
+
+    if (typeof value.arrivalDate === "string" && DATE_ONLY_REGEX.test(value.arrivalDate)) {
+      payload.arrivalDate = value.arrivalDate;
+    }
+
+    if (
+      typeof value.plannedArrivalDate === "string" &&
+      DATE_ONLY_REGEX.test(value.plannedArrivalDate)
+    ) {
+      payload.plannedArrivalDate = value.plannedArrivalDate;
+    }
+
+    return Object.keys(payload).length > 0 ? payload : null;
+  } catch {
+    return null;
+  }
 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildFallbackTaskPreview,
   deriveTaskProfileFromOnboardingAnswers,
+  sanitizeStoredOnboardingProfileForPatch,
 } from "../lib/onboardingProfile";
 
 describe("deriveTaskProfileFromOnboardingAnswers", () => {
@@ -58,5 +59,57 @@ describe("deriveTaskProfileFromOnboardingAnswers", () => {
 
     expect(tasks.length).toBeGreaterThanOrEqual(4);
     expect(tasks[0]?.title).toContain("residence permit");
+  });
+});
+
+describe("sanitizeStoredOnboardingProfileForPatch", () => {
+  it("omits null, unknown, and invalid values", () => {
+    const payload = sanitizeStoredOnboardingProfileForPatch(
+      JSON.stringify({
+        isEU: true,
+        hasChildren: null,
+        employmentStatus: "NOT_VALID",
+        arrivalDate: "2026/01/30",
+        plannedArrivalDate: null,
+        unknownKey: "value",
+      }),
+    );
+
+    expect(payload).toEqual({ isEU: true });
+  });
+
+  it("returns valid non-null fields only", () => {
+    const payload = sanitizeStoredOnboardingProfileForPatch(
+      JSON.stringify({
+        isEU: false,
+        hasChildren: true,
+        employmentStatus: "EMPLOYED",
+        arrivalDate: "2026-03-01",
+        plannedArrivalDate: "2026-03-10",
+      }),
+    );
+
+    expect(payload).toEqual({
+      isEU: false,
+      hasChildren: true,
+      employmentStatus: "EMPLOYED",
+      arrivalDate: "2026-03-01",
+      plannedArrivalDate: "2026-03-10",
+    });
+  });
+
+  it("returns null when json is invalid or has no valid fields", () => {
+    expect(sanitizeStoredOnboardingProfileForPatch("{")).toBeNull();
+    expect(
+      sanitizeStoredOnboardingProfileForPatch(
+        JSON.stringify({
+          isEU: null,
+          hasChildren: null,
+          employmentStatus: null,
+          arrivalDate: null,
+          plannedArrivalDate: null,
+        }),
+      ),
+    ).toBeNull();
   });
 });
