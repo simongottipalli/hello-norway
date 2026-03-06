@@ -48,3 +48,25 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const requestId = randomUUID();
+  const logger = createChildLogger({ requestId, route: "/api/auth/profile", method: "DELETE" });
+
+  try {
+    const cookie = request.headers.get("cookie");
+    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: "DELETE",
+      headers: {
+        "X-Request-ID": requestId,
+        ...(cookie ? { Cookie: cookie } : {}),
+      },
+    });
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error: unknown) {
+    logger.error({ err: error, msg: "Failed to delete profile" });
+    return NextResponse.json({ error: "Failed to delete profile" }, { status: 500 });
+  }
+}

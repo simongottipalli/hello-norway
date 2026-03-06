@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EMPLOYMENT_STATUS_OPTIONS, type EmploymentStatusValue } from "@/lib/employmentStatus";
 
 type ProfileUser = {
@@ -21,9 +23,12 @@ const MIN_ARRIVAL_YEAR = 1900;
 const MAX_ARRIVAL_YEAR = 2100;
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { isAuthenticated, isLoading: isAuthLoading, refreshSession } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [name, setName] = useState("");
   const [arrivalYear, setArrivalYear] = useState("");
   const [employmentStatus, setEmploymentStatus] = useState("");
@@ -126,6 +131,43 @@ export default function ProfilePage() {
       setError("Network error. Please try again.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    setError("");
+    setSuccessMessage("");
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch("/api/auth/profile", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "Failed to delete profile");
+        setShowDeleteDialog(false);
+        return;
+      }
+
+      // Profile deleted successfully, logout and redirect
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      // Refresh session to clear auth state
+      await refreshSession();
+
+      // Redirect to home page
+      router.push("/");
+    } catch {
+      setError("Network error. Please try again.");
+      setShowDeleteDialog(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -235,13 +277,64 @@ export default function ProfilePage() {
                   </p>
                 )}
 
-                <Button type="submit" disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save profile"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save profile"}
+                  </Button>
+                </div>
               </form>
             )}
+
+            <div className="mt-8 pt-6 border-t border-border">
+              <h3 className="text-sm font-semibold text-foreground mb-2">Delete Profile</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Permanently delete your profile and all associated data. This action cannot be undone.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={isDeleting}
+              >
+                Delete Profile
+              </Button>
+            </div>
           </CardContent>
         </Card>
+
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Profile</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete your profile? This will permanently delete:
+              </DialogDescription>
+            </DialogHeader>
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 my-4">
+              <li>Your profile information</li>
+              <li>All your tasks and progress</li>
+              <li>All your personal notes</li>
+            </ul>
+            <p className="text-sm font-semibold text-destructive">
+              This action cannot be undone and your data will not be recoverable.
+            </p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteProfile}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete Profile"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </main>
   );

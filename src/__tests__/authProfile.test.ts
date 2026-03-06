@@ -19,8 +19,12 @@ vi.mock("../lib/prisma", () => ({
     user: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      delete: vi.fn(),
     },
     session: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    userTask: {
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
   },
@@ -170,6 +174,53 @@ describe("/api/auth/profile", () => {
       expect(response.body.error).toBe("Failed to update profile");
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("DELETE /api/auth/profile", () => {
+    beforeEach(() => {
+      vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 1 });
+      vi.mocked(prisma.userTask.deleteMany).mockResolvedValue({ count: 5 });
+      vi.mocked(prisma.user.delete).mockResolvedValue({
+        id: "user-1",
+        email: "user@example.com",
+        name: "User",
+        isEU: true,
+        hasChildren: false,
+        employmentStatus: "EMPLOYED",
+        housingType: null,
+        plannedArrivalDate: null,
+        arrivalDate: new Date("2026-03-01T00:00:00.000Z"),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    });
+
+    it("successfully deletes user profile and all associated data", async () => {
+      const response = await request(app).delete("/api/auth/profile");
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+      });
+      expect(prisma.userTask.deleteMany).toHaveBeenCalledWith({
+        where: { userId: "user-1" },
+      });
+      expect(prisma.user.delete).toHaveBeenCalledWith({
+        where: { id: "user-1" },
+      });
+    });
+
+    it("returns 500 when deletion fails", async () => {
+      vi.mocked(prisma.user.delete).mockRejectedValueOnce(new Error("Database error"));
+
+      const response = await request(app).delete("/api/auth/profile");
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe("Failed to delete profile");
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 });
