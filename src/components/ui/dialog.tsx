@@ -11,8 +11,10 @@ type DialogProps = {
 
 export function Dialog({ open, onOpenChange, children }: DialogProps) {
   React.useEffect(() => {
+    if (!open) return;
+
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open) {
+      if (e.key === "Escape") {
         onOpenChange(false);
       }
     };
@@ -38,17 +40,57 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
 type DialogContentProps = {
   children: React.ReactNode;
   className?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
 };
 
-export function DialogContent({ children, className }: DialogContentProps) {
+export function DialogContent({ children, className, "aria-labelledby": ariaLabelledBy = "dialog-title", "aria-describedby": ariaDescribedBy = "dialog-description" }: DialogContentProps) {
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    // Set initial focus to the dialog content
+    if (contentRef.current) {
+      contentRef.current.focus();
+    }
+
+    // Trap focus within the dialog
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+
+      const focusableElements = contentRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      
+      if (!focusableElements || focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0] as HTMLElement;
+      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement.focus();
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleTabKey);
+    return () => document.removeEventListener("keydown", handleTabKey);
+  }, []);
+
   return (
     <div
+      ref={contentRef}
       className={cn(
         "bg-card rounded-lg shadow-lg p-6 mx-4 space-y-4",
         className
       )}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
+      tabIndex={-1}
     >
       {children}
     </div>
@@ -67,11 +109,12 @@ export function DialogHeader({ children, className }: DialogHeaderProps) {
 type DialogTitleProps = {
   children: React.ReactNode;
   className?: string;
+  id?: string;
 };
 
-export function DialogTitle({ children, className }: DialogTitleProps) {
+export function DialogTitle({ children, className, id = "dialog-title" }: DialogTitleProps) {
   return (
-    <h2 className={cn("text-lg font-semibold text-foreground", className)}>
+    <h2 id={id} className={cn("text-lg font-semibold text-foreground", className)}>
       {children}
     </h2>
   );
@@ -80,11 +123,12 @@ export function DialogTitle({ children, className }: DialogTitleProps) {
 type DialogDescriptionProps = {
   children: React.ReactNode;
   className?: string;
+  id?: string;
 };
 
-export function DialogDescription({ children, className }: DialogDescriptionProps) {
+export function DialogDescription({ children, className, id = "dialog-description" }: DialogDescriptionProps) {
   return (
-    <p className={cn("text-sm text-muted-foreground", className)}>
+    <p id={id} className={cn("text-sm text-muted-foreground", className)}>
       {children}
     </p>
   );
