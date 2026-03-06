@@ -36,7 +36,7 @@ function TasksPageContent() {
   const fetchTasks = async () => {
     try {
       setError("");
-      const response = await fetch("/api/tasks");
+      const response = await fetch("/api/tasks/personalized");
 
       if (!response.ok) {
         throw new Error("Failed to fetch tasks");

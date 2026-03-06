@@ -3,7 +3,7 @@ import { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
-import { syncUserTaskAssignments } from "../services/taskAssignmentService";
+import { getRelevantTaskWhere, syncUserTaskAssignments } from "../services/taskAssignmentService";
 
 const router = Router();
 const EMPLOYMENT_STATUSES = new Set<string>(Object.values(EmploymentStatus));
@@ -28,6 +28,63 @@ const parseDateOnly = (value: unknown): Date | null | undefined => {
   }
   return parsed;
 };
+
+router.post("/onboarding/tasks", async (req, res) => {
+  const { isEU, employmentStatus, hasChildren, arrivalDate, plannedArrivalDate } = req.body ?? {};
+
+  if (isEU !== undefined && isEU !== null && typeof isEU !== "boolean") {
+    return res.status(400).json({ error: "Invalid isEU. Must be boolean or null." });
+  }
+
+  if (hasChildren !== undefined && hasChildren !== null && typeof hasChildren !== "boolean") {
+    return res.status(400).json({ error: "Invalid hasChildren. Must be boolean or null." });
+  }
+
+  if (employmentStatus !== undefined && employmentStatus !== null) {
+    if (typeof employmentStatus !== "string" || !EMPLOYMENT_STATUSES.has(employmentStatus)) {
+      return res.status(400).json({ error: "Invalid employmentStatus." });
+    }
+  }
+
+  const parsedArrivalDate = parseDateOnly(arrivalDate);
+  if (arrivalDate !== undefined && parsedArrivalDate === undefined) {
+    return res.status(400).json({ error: "Invalid arrivalDate. Must be YYYY-MM-DD or null." });
+  }
+
+  const parsedPlannedArrivalDate = parseDateOnly(plannedArrivalDate);
+  if (plannedArrivalDate !== undefined && parsedPlannedArrivalDate === undefined) {
+    return res.status(400).json({ error: "Invalid plannedArrivalDate. Must be YYYY-MM-DD or null." });
+  }
+
+  try {
+    const tasks = await prisma.task.findMany({
+      where: getRelevantTaskWhere(
+        {
+          id: "onboarding-preview",
+          isEU: isEU ?? null,
+          hasChildren: hasChildren ?? null,
+          employmentStatus: employmentStatus ?? null,
+          arrivalDate: parsedArrivalDate ?? null,
+          plannedArrivalDate: parsedPlannedArrivalDate ?? null,
+        },
+        new Date(),
+      ),
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      select: {
+        id: true,
+        title: true,
+        shortDescription: true,
+        category: true,
+        sortOrder: true,
+      },
+    });
+
+    return res.status(200).json(tasks);
+  } catch (error: unknown) {
+    logger.error({ err: error, msg: "Failed to fetch onboarding task preview" });
+    return res.status(500).json({ error: "Failed to fetch onboarding tasks" });
+  }
+});
 
 router.get("/auth/session", authenticateSession, (req, res) => {
   return res.status(200).json({

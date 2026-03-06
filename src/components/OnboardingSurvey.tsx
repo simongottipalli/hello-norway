@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { countries } from "@/data/countries";
+import {
+  buildFallbackTaskPreview,
+  deriveTaskProfileFromOnboardingAnswers,
+  ONBOARDING_PROFILE_STORAGE_KEY,
+} from "@/lib/onboardingProfile";
 
 type AnswerMap = Record<string, string>;
 
@@ -18,6 +23,8 @@ type Question = {
   options?: string[];
   shouldShow?: (answers: AnswerMap) => boolean;
 };
+
+type PreviewTask = ReturnType<typeof buildFallbackTaskPreview>[number];
 
 
 const questions: Question[] = [
@@ -53,6 +60,8 @@ const questions: Question[] = [
   },
 ];
 
+const PREVIEW_TASK_COUNT = 3;
+
 function isCountryListValid(value: string) {
   const entries = value.split(",").map((item) => item.trim()).filter(Boolean);
   return entries.length > 0 && entries.every((country) => countries.includes(country));
@@ -77,6 +86,10 @@ export function OnboardingSurvey() {
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [previewTasks, setPreviewTasks] = useState<PreviewTask[]>([]);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const visibleQuestions = useMemo(
     () => questions.filter((question) => !question.shouldShow || question.shouldShow(answers)),
@@ -103,6 +116,59 @@ export function OnboardingSurvey() {
 
   const question = visibleQuestions[safeQuestionIndex];
   const canContinue = question ? isAnswered(question, answers) : false;
+  const visibleTaskPreview = isExpanded ? previewTasks : previewTasks.slice(0, PREVIEW_TASK_COUNT);
+  const hasMoreTasks = previewTasks.length > PREVIEW_TASK_COUNT;
+
+  useEffect(() => {
+    if (!completed) {
+      return;
+    }
+
+    const taskProfile = deriveTaskProfileFromOnboardingAnswers(answers);
+    setIsPreviewLoading(true);
+    setPreviewError("");
+
+    try {
+      localStorage.setItem(ONBOARDING_PROFILE_STORAGE_KEY, JSON.stringify(taskProfile));
+    } catch {
+      // Ignore local storage failures.
+    }
+
+    const fetchPreviewTasks = async () => {
+      try {
+        const response = await fetch("/api/onboarding/tasks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(taskProfile),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load your task list.");
+        }
+
+        const payload = await response.json();
+        if (!Array.isArray(payload)) {
+          throw new Error("Unexpected response while loading tasks.");
+        }
+
+        if (payload.length === 0) {
+          setPreviewTasks(buildFallbackTaskPreview(taskProfile));
+          return;
+        }
+
+        setPreviewTasks(payload);
+      } catch (error) {
+        setPreviewError(error instanceof Error ? error.message : "Failed to load your task list.");
+        setPreviewTasks(buildFallbackTaskPreview(taskProfile));
+      } finally {
+        setIsPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewTasks();
+  }, [answers, completed]);
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
@@ -213,17 +279,62 @@ export function OnboardingSurvey() {
         {completed ? (
           <Card>
             <CardHeader>
-              <CardTitle>One last step</CardTitle>
+              <CardTitle>Your first Norway tasks</CardTitle>
               <CardDescription>
-                Log in to save your answers and follow up on your application later. You can also skip this step.
+                Based on your onboarding answers, here are the first things to focus on.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row justify-between gap-2">
-              <Button variant="ghost" asChild>
-                <Link href="/">Skip for now</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/login?from=onboarding">Continue to login</Link>
+            <CardContent className="space-y-4">
+              {isPreviewLoading ? (
+                <p className="text-sm text-muted-foreground">Loading your task list...</p>
+              ) : previewTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No matching tasks right now.</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="relative overflow-hidden rounded-md border border-border">
+                    <ul className="divide-y divide-border">
+                      {visibleTaskPreview.map((task) => (
+                        <li key={task.id} className="px-4 py-3">
+                          <p className="text-sm font-medium">{task.title}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{task.shortDescription}</p>
+                        </li>
+                      ))}
+                    </ul>
+                    {!isExpanded && hasMoreTasks && (
+                      <div
+                        className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </div>
+                  {hasMoreTasks && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsExpanded((current) => !current)}
+                      aria-expanded={isExpanded}
+                    >
+                      {isExpanded
+                        ? "Show fewer tasks"
+                        : `Show ${previewTasks.length - PREVIEW_TASK_COUNT} more tasks`}
+                    </Button>
+                  )}
+                </div>
+              )}
+              {previewError && (
+                <p className="text-xs text-muted-foreground">
+                  Couldn&apos;t load full personalized tasks. Showing a starter list for now.
+                </p>
+              )}
+
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                <li>• Save your progress</li>
+                <li>• Get personalized due dates and reminders</li>
+                <li>• Keep private notes and add extra tasks manually</li>
+              </ul>
+
+              <Button asChild className="w-full">
+                <Link href="/login?from=onboarding">Login to save progress...</Link>
               </Button>
             </CardContent>
           </Card>

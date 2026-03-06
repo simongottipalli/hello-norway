@@ -2,7 +2,7 @@ import { UserTaskStatus } from "../generated/prisma/client.js";
 import type { EmploymentStatus, Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 
-type AssignmentProfile = {
+export type AssignmentProfile = {
   id: string;
   isEU: boolean | null;
   hasChildren: boolean | null;
@@ -72,7 +72,7 @@ function getArrivalWindowFilter(profile: AssignmentProfile, now: Date): Prisma.T
   ];
 }
 
-function getRelevantTaskWhere(profile: AssignmentProfile, now: Date): Prisma.TaskWhereInput {
+export function getRelevantTaskWhere(profile: AssignmentProfile, now: Date): Prisma.TaskWhereInput {
   return {
     AND: [
       getBooleanEligibilityFilter("requiresEU", profile.isEU),

@@ -13,6 +13,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { ONBOARDING_PROFILE_STORAGE_KEY } from "@/lib/onboardingProfile";
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
@@ -133,9 +134,26 @@ function LoginForm() {
       if (response.ok && data.success) {
         setSuccessMessage("Login successful! Redirecting...");
         await refreshSession();
+        if (fromOnboarding) {
+          try {
+            const storedProfile = localStorage.getItem(ONBOARDING_PROFILE_STORAGE_KEY);
+            if (storedProfile) {
+              await fetch("/api/auth/profile", {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: storedProfile,
+              });
+              localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+            }
+          } catch {
+            // Ignore profile sync failures and continue login.
+          }
+        }
         // Redirect to dashboard after short delay
         setTimeout(() => {
-          router.push("/");
+          router.push(fromOnboarding ? "/tasks" : "/");
         }, 1000);
       } else {
         setError(data.error || "Invalid or expired OTP");
