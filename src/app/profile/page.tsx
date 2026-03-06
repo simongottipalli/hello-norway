@@ -32,7 +32,13 @@ export default function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
-    if (isAuthLoading || !isAuthenticated) {
+    if (isAuthLoading) {
+      // Wait for auth to finish before changing loading state or loading profile
+      return;
+    }
+
+    if (!isAuthenticated) {
+      // Auth is resolved and user is not authenticated; no profile to load
       setIsLoading(false);
       return;
     }
