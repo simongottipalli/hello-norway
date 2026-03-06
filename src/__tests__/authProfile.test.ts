@@ -17,6 +17,7 @@ vi.mock("../lib/prisma", () => ({
   prisma: {
     $transaction: vi.fn(),
     user: {
+      findUnique: vi.fn(),
       update: vi.fn(),
     },
     session: {
@@ -51,10 +52,48 @@ describe("PATCH /api/auth/profile", () => {
     });
   });
 
+  it("returns the current user profile", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "user-1",
+      email: "user@example.com",
+      name: "User",
+      isEU: true,
+      hasChildren: false,
+      employmentStatus: "EMPLOYED",
+      arrivalDate: new Date("2026-03-01T00:00:00.000Z"),
+      plannedArrivalDate: null,
+    });
+
+    const response = await request(app).get("/api/auth/profile");
+
+    expect(response.status).toBe(200);
+    expect(response.body.user).toMatchObject({
+      id: "user-1",
+      email: "user@example.com",
+      name: "User",
+      hasChildren: false,
+      employmentStatus: "EMPLOYED",
+    });
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { id: "user-1" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isEU: true,
+        hasChildren: true,
+        employmentStatus: true,
+        arrivalDate: true,
+        plannedArrivalDate: true,
+      },
+    });
+  });
+
   it("updates profile and re-syncs relevant task assignments", async () => {
     const response = await request(app)
       .patch("/api/auth/profile")
       .send({
+        name: "Updated User",
         isEU: true,
         hasChildren: false,
         employmentStatus: "EMPLOYED",
@@ -68,6 +107,7 @@ describe("PATCH /api/auth/profile", () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user-1" },
       data: {
+        name: "Updated User",
         isEU: true,
         hasChildren: false,
         employmentStatus: "EMPLOYED",
@@ -88,6 +128,18 @@ describe("PATCH /api/auth/profile", () => {
       expect.objectContaining({ id: "user-1", employmentStatus: "EMPLOYED" }),
       expect.objectContaining({ removeOutdatedTodoAssignments: true, db: expect.any(Object) })
     );
+  });
+
+  it("returns 400 for an empty name", async () => {
+    const response = await request(app)
+      .patch("/api/auth/profile")
+      .send({ name: "   " })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain("Invalid name");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid arrival date", async () => {
