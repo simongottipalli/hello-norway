@@ -42,6 +42,9 @@ export function Header() {
                 <span className="text-sm text-muted-foreground">
                   Hey {user.email} 👋
                 </span>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/profile">Profile</Link>
+                </Button>
                 <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoggingOut}>
                   {isLoggingOut ? "Logging out..." : "Logout"}
                 </Button>
