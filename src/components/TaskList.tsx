@@ -399,6 +399,16 @@ export default function TaskList({
           role="dialog"
           aria-modal="true"
           aria-label={`Task details for ${selectedTask.title}`}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              closeDetails();
+            }
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeDetails();
+            }
+          }}
         >
           <div className="max-h-full w-full max-w-2xl overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
