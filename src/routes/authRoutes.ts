@@ -1,8 +1,9 @@
 import { Router } from "express";
+import type { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
-import { syncUserTaskAssignments } from "../services/taskAssignmentService";
+import { getRelevantTaskWhere, syncUserTaskAssignments } from "../services/taskAssignmentService";
 import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
 
 const router = Router();
@@ -38,6 +39,117 @@ const parseDateOnly = (value: unknown): Date | null | undefined => {
   }
   return parsed;
 };
+
+type OnboardingProfilePayload = {
+  isEU: boolean | null;
+  hasChildren: boolean | null;
+  employmentStatus: EmploymentStatus | null;
+  arrivalDate: Date | null;
+  plannedArrivalDate: Date | null;
+};
+
+type OnboardingProfileParseResult =
+  | { value: OnboardingProfilePayload; error?: undefined }
+  | { value?: undefined; error: { status: number; body: unknown } };
+
+const parseOnboardingProfilePayload = (body: unknown): OnboardingProfileParseResult => {
+  const payload = typeof body === "object" && body !== null ? body as Record<string, unknown> : {};
+  const {
+    isEU,
+    employmentStatus,
+    hasChildren,
+    arrivalDate,
+    plannedArrivalDate,
+  } = payload;
+
+  if (isEU !== undefined && isEU !== null && typeof isEU !== "boolean") {
+    return {
+      error: { status: 400, body: { error: "Invalid isEU. Must be boolean or null." } },
+    };
+  }
+
+  if (hasChildren !== undefined && hasChildren !== null && typeof hasChildren !== "boolean") {
+    return {
+      error: { status: 400, body: { error: "Invalid hasChildren. Must be boolean or null." } },
+    };
+  }
+
+  if (employmentStatus !== undefined && employmentStatus !== null) {
+    if (typeof employmentStatus !== "string" || !EMPLOYMENT_STATUSES.has(employmentStatus)) {
+      return {
+        error: { status: 400, body: { error: "Invalid employmentStatus." } },
+      };
+    }
+  }
+
+  const parsedArrivalDate = parseDateOnly(arrivalDate);
+  if (arrivalDate !== undefined && parsedArrivalDate === undefined) {
+    return {
+      error: {
+        status: 400,
+        body: { error: "Invalid arrivalDate. Must be YYYY-MM-DD or null." },
+      },
+    };
+  }
+
+  const parsedPlannedArrivalDate = parseDateOnly(plannedArrivalDate);
+  if (plannedArrivalDate !== undefined && parsedPlannedArrivalDate === undefined) {
+    return {
+      error: {
+        status: 400,
+        body: { error: "Invalid plannedArrivalDate. Must be YYYY-MM-DD or null." },
+      },
+    };
+  }
+
+  return {
+    value: {
+      isEU: (isEU ?? null) as boolean | null,
+      hasChildren: (hasChildren ?? null) as boolean | null,
+      employmentStatus: (employmentStatus ?? null) as EmploymentStatus | null,
+      arrivalDate: parsedArrivalDate ?? null,
+      plannedArrivalDate: parsedPlannedArrivalDate ?? null,
+    },
+  };
+};
+
+router.post("/onboarding/tasks", async (req, res) => {
+  const parsed = parseOnboardingProfilePayload(req.body);
+  if (parsed.error) {
+    return res.status(parsed.error.status).json(parsed.error.body);
+  }
+
+  const { isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = parsed.value;
+
+  try {
+    const tasks = await prisma.task.findMany({
+      where: getRelevantTaskWhere(
+        {
+          id: "onboarding-preview",
+          isEU,
+          hasChildren,
+          employmentStatus,
+          arrivalDate,
+          plannedArrivalDate,
+        },
+        new Date(),
+      ),
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      select: {
+        id: true,
+        title: true,
+        shortDescription: true,
+        category: true,
+        sortOrder: true,
+      },
+    });
+
+    return res.status(200).json(tasks);
+  } catch (error: unknown) {
+    logger.error({ err: error, msg: "Failed to fetch onboarding task preview" });
+    return res.status(500).json({ error: "Failed to fetch onboarding tasks" });
+  }
+});
 
 router.get("/auth/session", authenticateSession, (req, res) => {
   return res.status(200).json({

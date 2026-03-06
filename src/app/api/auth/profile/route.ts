@@ -42,9 +42,13 @@ export async function PATCH(request: NextRequest) {
     });
 
     const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    if (!response.ok) {
+      return NextResponse.json(data, { status: response.status });
+    }
+
+    return NextResponse.json(data);
   } catch (error: unknown) {
-    logger.error({ err: error, msg: "Failed to update profile" });
+    logger.error({ err: error, msg: "Failed to update auth profile" });
     return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 }

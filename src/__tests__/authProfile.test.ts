@@ -4,7 +4,7 @@ import express from "express";
 import type { NextFunction, Request, Response } from "express";
 import authRoutes from "../routes/authRoutes";
 import { prisma } from "../lib/prisma";
-import { syncUserTaskAssignments } from "../services/taskAssignmentService";
+import { getRelevantTaskWhere, syncUserTaskAssignments } from "../services/taskAssignmentService";
 
 vi.mock("../middleware/authMiddleware", () => ({
   authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
@@ -20,6 +20,9 @@ vi.mock("../lib/prisma", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    task: {
+      findMany: vi.fn(),
+    },
     session: {
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
@@ -27,6 +30,7 @@ vi.mock("../lib/prisma", () => ({
 }));
 
 vi.mock("../services/taskAssignmentService", () => ({
+  getRelevantTaskWhere: vi.fn(),
   syncUserTaskAssignments: vi.fn(),
 }));
 
@@ -50,6 +54,7 @@ describe("/api/auth/profile", () => {
       arrivalDate: new Date("2026-03-01T00:00:00.000Z"),
       plannedArrivalDate: null,
     });
+    vi.mocked(getRelevantTaskWhere).mockReturnValue({ mockedWhere: true });
   });
 
   describe("GET /api/auth/profile", () => {
@@ -170,6 +175,115 @@ describe("/api/auth/profile", () => {
       expect(response.body.error).toBe("Failed to update profile");
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.user.update).toHaveBeenCalledTimes(1);
+    });
+  });
+});
+
+describe("POST /api/onboarding/tasks", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getRelevantTaskWhere).mockReturnValue({ mockedWhere: true });
+    vi.mocked(prisma.task.findMany).mockResolvedValue([]);
+  });
+
+  it("returns 400 for invalid boolean and enum fields", async () => {
+    const invalidIsEU = await request(app)
+      .post("/api/onboarding/tasks")
+      .send({ isEU: "yes" })
+      .set("Content-Type", "application/json");
+    expect(invalidIsEU.status).toBe(400);
+    expect(invalidIsEU.body.error).toContain("Invalid isEU");
+
+    const invalidChildren = await request(app)
+      .post("/api/onboarding/tasks")
+      .send({ hasChildren: "no" })
+      .set("Content-Type", "application/json");
+    expect(invalidChildren.status).toBe(400);
+    expect(invalidChildren.body.error).toContain("Invalid hasChildren");
+
+    const invalidEmployment = await request(app)
+      .post("/api/onboarding/tasks")
+      .send({ employmentStatus: "CONTRACTOR" })
+      .set("Content-Type", "application/json");
+    expect(invalidEmployment.status).toBe(400);
+    expect(invalidEmployment.body.error).toContain("Invalid employmentStatus");
+
+    expect(prisma.task.findMany).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for invalid date payloads", async () => {
+    const invalidArrivalDate = await request(app)
+      .post("/api/onboarding/tasks")
+      .send({ arrivalDate: "2026-02-30" })
+      .set("Content-Type", "application/json");
+    expect(invalidArrivalDate.status).toBe(400);
+    expect(invalidArrivalDate.body.error).toContain("Invalid arrivalDate");
+
+    const invalidPlannedDate = await request(app)
+      .post("/api/onboarding/tasks")
+      .send({ plannedArrivalDate: "not-a-date" })
+      .set("Content-Type", "application/json");
+    expect(invalidPlannedDate.status).toBe(400);
+    expect(invalidPlannedDate.body.error).toContain("Invalid plannedArrivalDate");
+
+    expect(prisma.task.findMany).not.toHaveBeenCalled();
+  });
+
+  it("queries prisma with expected shape and returns minimal task data", async () => {
+    vi.mocked(prisma.task.findMany).mockResolvedValueOnce([
+      {
+        id: "task-1",
+        title: "Register with police",
+        shortDescription: "Complete police registration",
+        category: "ARRIVAL",
+        sortOrder: 20,
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/onboarding/tasks")
+      .send({
+        isEU: true,
+        hasChildren: false,
+        employmentStatus: "EMPLOYED",
+        arrivalDate: "2026-03-01",
+        plannedArrivalDate: "2026-02-25",
+      })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      {
+        id: "task-1",
+        title: "Register with police",
+        shortDescription: "Complete police registration",
+        category: "ARRIVAL",
+        sortOrder: 20,
+      },
+    ]);
+
+    expect(getRelevantTaskWhere).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "onboarding-preview",
+        isEU: true,
+        hasChildren: false,
+        employmentStatus: "EMPLOYED",
+        arrivalDate: new Date("2026-03-01T00:00:00.000Z"),
+        plannedArrivalDate: new Date("2026-02-25T00:00:00.000Z"),
+      }),
+      expect.any(Date),
+    );
+
+    expect(prisma.task.findMany).toHaveBeenCalledWith({
+      where: { mockedWhere: true },
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      select: {
+        id: true,
+        title: true,
+        shortDescription: true,
+        category: true,
+        sortOrder: true,
+      },
     });
   });
 });
