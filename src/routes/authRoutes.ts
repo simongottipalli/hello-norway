@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
+import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
 
 const router = Router();
-const EMPLOYMENT_STATUSES = new Set<string>(Object.values(EmploymentStatus));
+const EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
 const PROFILE_SELECT = {
   id: true,
   email: true,

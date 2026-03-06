@@ -8,22 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-
-type EmploymentOption = "EMPLOYED" | "STUDENT" | "UNEMPLOYED" | "SELF_EMPLOYED";
+import { EMPLOYMENT_STATUS_OPTIONS, type EmploymentStatusValue } from "@/lib/employmentStatus";
 
 type ProfileUser = {
   name: string;
   arrivalDate: string | null;
-  employmentStatus: EmploymentOption | null;
+  employmentStatus: EmploymentStatusValue | null;
   hasChildren: boolean | null;
 };
-
-const EMPLOYMENT_OPTIONS: Array<{ value: EmploymentOption; label: string }> = [
-  { value: "EMPLOYED", label: "Employed" },
-  { value: "STUDENT", label: "Student" },
-  { value: "UNEMPLOYED", label: "Unemployed" },
-  { value: "SELF_EMPLOYED", label: "Self-employed" },
-];
 
 const MIN_ARRIVAL_YEAR = 1900;
 const MAX_ARRIVAL_YEAR = 2100;
@@ -200,7 +192,7 @@ export default function ProfilePage() {
                     onChange={(event) => setEmploymentStatus(event.target.value)}
                   >
                     <option value="">Select status</option>
-                    {EMPLOYMENT_OPTIONS.map((option) => (
+                    {EMPLOYMENT_STATUS_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
