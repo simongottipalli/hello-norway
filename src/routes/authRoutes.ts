@@ -264,4 +264,28 @@ router.post("/auth/logout", async (req, res) => {
   }
 });
 
+router.delete("/auth/profile", authenticateSession, async (req, res) => {
+  const userId = req.user!.id;
+  const userEmail = req.user!.email;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Delete all user sessions
+      await tx.session.deleteMany({ where: { userId } });
+      
+      // Delete all user tasks (cascade will handle this, but explicit for clarity)
+      await tx.userTask.deleteMany({ where: { userId } });
+      
+      // Delete the user (this will also cascade delete sessions and userTasks due to schema)
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    logger.info({ userId, email: userEmail, msg: "User profile deleted successfully" });
+    return res.status(200).json({ success: true });
+  } catch (error: unknown) {
+    logger.error({ err: error, userId, msg: "Failed to delete profile" });
+    return res.status(500).json({ error: "Failed to delete profile" });
+  }
+});
+
 export default router;
