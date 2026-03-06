@@ -60,7 +60,7 @@ test.describe('Onboarding survey', () => {
     await expect(page.getByRole('button', { name: 'Finish questionnaire' })).toBeEnabled();
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
 
-    await expect(page.getByText("One last step")).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your first Norway tasks' })).toBeVisible();
   });
 
   test('jobOffer question appears when applying as Skilled worker', async ({ page }) => {
@@ -82,10 +82,10 @@ test.describe('Onboarding survey', () => {
     await page.getByRole('button', { name: 'Yes' }).click();
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
 
-    await expect(page.getByText("One last step")).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your first Norway tasks' })).toBeVisible();
   });
 
-  test('completing all questions shows the completion card with a Continue link', async ({ page }) => {
+  test('completing all questions shows task preview and login-to-save action', async ({ page }) => {
     await page.getByPlaceholder('Start typing a country').fill('Norway');
     await page.getByRole('button', { name: 'Go to next question' }).click();
 
@@ -98,8 +98,7 @@ test.describe('Onboarding survey', () => {
     await page.getByRole('spinbutton').fill('25');
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
 
-    await expect(page.getByText("One last step")).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Continue to login' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Skip for now' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your first Norway tasks' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Login to save progress...' })).toBeVisible();
   });
 });

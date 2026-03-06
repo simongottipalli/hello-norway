@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
