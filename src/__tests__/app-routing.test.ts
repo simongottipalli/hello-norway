@@ -20,6 +20,9 @@ vi.mock("../lib/prisma", () => ({
       delete: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    task: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 
@@ -90,6 +93,15 @@ describe("API route auth policy", () => {
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe("Failed to logout");
+    });
+
+    it("POST /api/onboarding/tasks is NOT blocked with 401", async () => {
+      const response = await request(app)
+        .post("/api/onboarding/tasks")
+        .send({ isEU: false })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).not.toBe(401);
     });
   });
 
