@@ -199,15 +199,7 @@ export class OtpService {
         },
       });
 
-      try {
-        await syncUserTaskAssignments(user);
-      } catch (error) {
-        logger?.error({
-          msg: 'Failed to sync user task assignments during OTP verification',
-          email,
-          error,
-        });
-      }
+      await syncUserTaskAssignments(user);
 
       await prisma.session.deleteMany({
         where: {

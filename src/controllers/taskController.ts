@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
+import { syncUserTaskAssignments } from "../services/taskAssignmentService";
 
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:
