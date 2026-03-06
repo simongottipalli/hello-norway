@@ -153,11 +153,6 @@ export function OnboardingSurvey() {
           throw new Error("Unexpected response while loading tasks.");
         }
 
-        if (payload.length === 0) {
-          setPreviewTasks(buildFallbackTaskPreview(taskProfile));
-          return;
-        }
-
         setPreviewTasks(payload);
       } catch (error) {
         setPreviewError(error instanceof Error ? error.message : "Failed to load your task list.");
