@@ -1,12 +1,22 @@
 import { Router } from "express";
-import { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
+import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
 
 const router = Router();
-const EMPLOYMENT_STATUSES = new Set<string>(Object.values(EmploymentStatus));
+const EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
+const PROFILE_SELECT = {
+  id: true,
+  email: true,
+  name: true,
+  isEU: true,
+  hasChildren: true,
+  employmentStatus: true,
+  arrivalDate: true,
+  plannedArrivalDate: true,
+} as const;
 
 const parseDateOnly = (value: unknown): Date | null | undefined => {
   if (value === undefined) return undefined;
@@ -39,8 +49,39 @@ router.get("/auth/session", authenticateSession, (req, res) => {
   });
 });
 
+router.get("/auth/profile", authenticateSession, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: PROFILE_SELECT,
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({ user });
+  } catch (error: unknown) {
+    logger.error({ err: error, userId: req.user!.id, msg: "Failed to fetch profile" });
+    return res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
 router.patch("/auth/profile", authenticateSession, async (req, res) => {
-  const { isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = req.body ?? {};
+  const { name, isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = req.body ?? {};
+
+  if (name !== undefined) {
+    if (typeof name !== "string") {
+      return res.status(400).json({ error: "Invalid name. Must be a string." });
+    }
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      return res.status(400).json({ error: "Invalid name. Must not be empty." });
+    }
+    if (trimmedName.length > 255) {
+      return res.status(400).json({ error: "Invalid name. Maximum length is 255 characters." });
+    }
+  }
 
   if (isEU !== undefined && isEU !== null && typeof isEU !== "boolean") {
     return res.status(400).json({ error: "Invalid isEU. Must be boolean or null." });
@@ -71,22 +112,14 @@ router.patch("/auth/profile", authenticateSession, async (req, res) => {
       const user = await tx.user.update({
         where: { id: req.user!.id },
         data: {
+          ...(name !== undefined ? { name: name.trim() } : {}),
           ...(isEU !== undefined ? { isEU } : {}),
           ...(hasChildren !== undefined ? { hasChildren } : {}),
           ...(employmentStatus !== undefined ? { employmentStatus } : {}),
           ...(arrivalDate !== undefined ? { arrivalDate: parsedArrivalDate } : {}),
           ...(plannedArrivalDate !== undefined ? { plannedArrivalDate: parsedPlannedArrivalDate } : {}),
         },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          isEU: true,
-          hasChildren: true,
-          employmentStatus: true,
-          arrivalDate: true,
-          plannedArrivalDate: true,
-        },
+        select: PROFILE_SELECT,
       });
 
       await syncUserTaskAssignments(user, {
