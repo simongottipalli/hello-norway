@@ -42,13 +42,14 @@ type OnboardingProfileParseResult =
   | { value?: undefined; error: { status: number; body: unknown } };
 
 const parseOnboardingProfilePayload = (body: unknown): OnboardingProfileParseResult => {
+  const payload = typeof body === "object" && body !== null ? body as Record<string, unknown> : {};
   const {
     isEU,
     employmentStatus,
     hasChildren,
     arrivalDate,
     plannedArrivalDate,
-  } = (body as any) ?? {};
+  } = payload;
 
   if (isEU !== undefined && isEU !== null && typeof isEU !== "boolean") {
     return {
