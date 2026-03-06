@@ -46,15 +46,17 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
         env:
-          DATABASE_URL: env.DATABASE_URL
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Run database migrations
         run: npx prisma migrate deploy
-        with:
-          DATABASE_URL: env.DATABASE_URL
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Seed database
         run: npx prisma db seed
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
