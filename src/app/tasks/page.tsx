@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
@@ -26,7 +26,7 @@ interface Task {
   maxDaysFromArrival?: number | null;
 }
 
-export default function TasksPage() {
+function TasksPageContent() {
   const searchParams = useSearchParams();
   const selectedTaskIdFromUrl = searchParams.get("taskId") ?? undefined;
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -111,5 +111,21 @@ export default function TasksPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background px-6 py-12">
+          <div className="max-w-3xl mx-auto text-center py-12 text-muted-foreground">
+            Loading tasks...
+          </div>
+        </main>
+      }
+    >
+      <TasksPageContent />
+    </Suspense>
   );
 }
