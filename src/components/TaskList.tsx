@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ComponentProps, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -137,11 +137,91 @@ export const formatRecurrenceInfo = (
   }
 
   if (minDaysFromArrival != null) {
-    return `Recommended timing: from ${minDaysFromArrival} days from arrival onward.`;
+    return `Recommended timing: From ${minDaysFromArrival} days from arrival.`;
   }
 
-  return `Recommended timing: up to ${maxDaysFromArrival} days from arrival.`;
+  return `Recommended timing: Up to ${maxDaysFromArrival} days from arrival.`;
 };
+
+interface TaskTrackingControlsProps {
+  taskId: string;
+  idPrefix: string;
+  trackingState?: TaskTrackingState;
+  completedAt?: string | null;
+  error?: string;
+  isSaving: boolean;
+  notesRows: number;
+  saveButtonSize?: ComponentProps<typeof Button>["size"];
+  onFieldChange: <K extends keyof TaskTrackingState>(field: K, value: TaskTrackingState[K]) => void;
+  onSave: () => void;
+}
+
+function TaskTrackingControls({
+  taskId,
+  idPrefix,
+  trackingState,
+  completedAt,
+  error,
+  isSaving,
+  notesRows,
+  saveButtonSize,
+  onFieldChange,
+  onSave,
+}: TaskTrackingControlsProps) {
+  return (
+    <>
+      <div className="grid gap-2 sm:max-w-xs">
+        <Label htmlFor={`${idPrefix}-status-${taskId}`}>Status</Label>
+        <Select
+          id={`${idPrefix}-status-${taskId}`}
+          value={trackingState?.status ?? "not_started"}
+          onChange={(event) =>
+            onFieldChange("status", event.target.value as TaskTrackingState["status"])
+          }
+        >
+          <option value="not_started">Not started</option>
+          <option value="in_progress">In progress</option>
+          <option value="completed">Completed</option>
+        </Select>
+      </div>
+
+      <div className="grid gap-2 sm:max-w-xs">
+        <Label htmlFor={`${idPrefix}-dueDate-${taskId}`}>Personal due date</Label>
+        <Input
+          id={`${idPrefix}-dueDate-${taskId}`}
+          type="date"
+          value={trackingState?.dueDate ?? ""}
+          onChange={(event) => onFieldChange("dueDate", event.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor={`${idPrefix}-notes-${taskId}`}>Private notes</Label>
+        <Textarea
+          id={`${idPrefix}-notes-${taskId}`}
+          value={trackingState?.personalNotes ?? ""}
+          onChange={(event) => onFieldChange("personalNotes", event.target.value)}
+          rows={notesRows}
+          placeholder="Add your notes for this task"
+        />
+      </div>
+
+      {completedAt && (
+        <p className="text-xs text-muted-foreground">
+          Completed on {new Date(completedAt).toLocaleDateString("en-CA")}
+        </p>
+      )}
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <div>
+        <Button size={saveButtonSize} onClick={onSave} disabled={isSaving}>
+          {isSaving ? "Saving..." : "Save progress"}
+        </Button>
+      </div>
+    </>
+  );
+}
 
 export default function TaskList({
   tasks,
@@ -334,59 +414,18 @@ export default function TaskList({
           </div>
 
           <div className="mt-4 grid gap-3">
-            <div className="grid gap-2 sm:max-w-xs">
-              <Label htmlFor={`status-${task.id}`}>Status</Label>
-              <Select
-                id={`status-${task.id}`}
-                value={trackingByTaskId[task.id]?.status ?? "not_started"}
-                onChange={(event) =>
-                  handleTrackingFieldChange(task.id, "status", event.target.value as TaskTrackingState["status"])
-                }
-              >
-                <option value="not_started">Not started</option>
-                <option value="in_progress">In progress</option>
-                <option value="completed">Completed</option>
-              </Select>
-            </div>
-
-            <div className="grid gap-2 sm:max-w-xs">
-              <Label htmlFor={`dueDate-${task.id}`}>Personal due date</Label>
-              <Input
-                id={`dueDate-${task.id}`}
-                type="date"
-                value={trackingByTaskId[task.id]?.dueDate ?? ""}
-                onChange={(event) => handleTrackingFieldChange(task.id, "dueDate", event.target.value)}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor={`notes-${task.id}`}>Private notes</Label>
-              <Textarea
-                id={`notes-${task.id}`}
-                value={trackingByTaskId[task.id]?.personalNotes ?? ""}
-                onChange={(event) => handleTrackingFieldChange(task.id, "personalNotes", event.target.value)}
-                rows={3}
-                placeholder="Add your notes for this task"
-              />
-            </div>
-
-            {task.completedAt && (
-              <p className="text-xs text-muted-foreground">
-                Completed on {new Date(task.completedAt).toLocaleDateString("en-CA")}
-              </p>
-            )}
-
-            {errorByTaskId[task.id] && <p className="text-sm text-destructive">{errorByTaskId[task.id]}</p>}
-
-            <div>
-              <Button
-                size="sm"
-                onClick={() => handleTrackingSave(task.id)}
-                disabled={Boolean(savingByTaskId[task.id])}
-              >
-                {savingByTaskId[task.id] ? "Saving..." : "Save progress"}
-              </Button>
-            </div>
+            <TaskTrackingControls
+              taskId={task.id}
+              idPrefix="task"
+              trackingState={trackingByTaskId[task.id]}
+              completedAt={task.completedAt}
+              error={errorByTaskId[task.id]}
+              isSaving={Boolean(savingByTaskId[task.id])}
+              notesRows={3}
+              saveButtonSize="sm"
+              onFieldChange={(field, value) => handleTrackingFieldChange(task.id, field, value)}
+              onSave={() => handleTrackingSave(task.id)}
+            />
           </div>
         </div>
       ))}
@@ -479,62 +518,19 @@ export default function TaskList({
                 </p>
               </div>
 
-              <div className="grid gap-2 sm:max-w-xs">
-                <Label htmlFor={`detail-status-${selectedTask.id}`}>Status</Label>
-                <Select
-                  id={`detail-status-${selectedTask.id}`}
-                  value={trackingByTaskId[selectedTask.id]?.status ?? "not_started"}
-                  onChange={(event) =>
-                    handleTrackingFieldChange(
-                      selectedTask.id,
-                      "status",
-                      event.target.value as TaskTrackingState["status"],
-                    )
-                  }
-                >
-                  <option value="not_started">Not started</option>
-                  <option value="in_progress">In progress</option>
-                  <option value="completed">Completed</option>
-                </Select>
-              </div>
-
-              <div className="grid gap-2 sm:max-w-xs">
-                <Label htmlFor={`detail-dueDate-${selectedTask.id}`}>Personal due date</Label>
-                <Input
-                  id={`detail-dueDate-${selectedTask.id}`}
-                  type="date"
-                  value={trackingByTaskId[selectedTask.id]?.dueDate ?? ""}
-                  onChange={(event) => handleTrackingFieldChange(selectedTask.id, "dueDate", event.target.value)}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor={`detail-notes-${selectedTask.id}`}>Private notes</Label>
-                <Textarea
-                  id={`detail-notes-${selectedTask.id}`}
-                  value={trackingByTaskId[selectedTask.id]?.personalNotes ?? ""}
-                  onChange={(event) => handleTrackingFieldChange(selectedTask.id, "personalNotes", event.target.value)}
-                  rows={4}
-                  placeholder="Add your notes for this task"
-                />
-              </div>
-
-              {selectedTask.completedAt && (
-                <p className="text-xs text-muted-foreground">
-                  Completed on {new Date(selectedTask.completedAt).toLocaleDateString("en-CA")}
-                </p>
-              )}
-
-              {errorByTaskId[selectedTask.id] && (
-                <p className="text-sm text-destructive">{errorByTaskId[selectedTask.id]}</p>
-              )}
-
-              <Button
-                onClick={() => handleTrackingSave(selectedTask.id)}
-                disabled={Boolean(savingByTaskId[selectedTask.id])}
-              >
-                {savingByTaskId[selectedTask.id] ? "Saving..." : "Save progress"}
-              </Button>
+              <TaskTrackingControls
+                taskId={selectedTask.id}
+                idPrefix="detail-task"
+                trackingState={trackingByTaskId[selectedTask.id]}
+                completedAt={selectedTask.completedAt}
+                error={errorByTaskId[selectedTask.id]}
+                isSaving={Boolean(savingByTaskId[selectedTask.id])}
+                notesRows={4}
+                onFieldChange={(field, value) =>
+                  handleTrackingFieldChange(selectedTask.id, field, value)
+                }
+                onSave={() => handleTrackingSave(selectedTask.id)}
+              />
             </div>
           </div>
         </div>

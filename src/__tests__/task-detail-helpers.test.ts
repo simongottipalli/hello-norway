@@ -29,7 +29,7 @@ describe("Task detail helper formatting", () => {
 
   it("handles non-array official links input gracefully", () => {
     // TaskForm passes `{}` by default; ensure we handle it without throwing.
-    const links = getOfficialLinks({} as any);
+    const links = getOfficialLinks({});
 
     expect(links).toEqual([]);
   });
