@@ -46,10 +46,12 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hello_norway_test
+          DATABASE_URL: env.DATABASE_URL
 
       - name: Run database migrations
         run: npx prisma migrate deploy
+        with:
+          DATABASE_URL: env.DATABASE_URL
 
       - name: Seed database
         run: npx prisma db seed
