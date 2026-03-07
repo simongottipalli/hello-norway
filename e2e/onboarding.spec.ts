@@ -85,7 +85,7 @@ test.describe('Onboarding survey', () => {
     await expect(page.getByRole('heading', { name: 'Your first Norway tasks' })).toBeVisible();
   });
 
-  test('completing all questions shows task preview and login-to-save action', async ({ page }) => {
+  test('completing all questions shows task preview and save action', async ({ page }) => {
     await page.getByPlaceholder('Start typing a country').fill('Norway');
     await page.getByRole('button', { name: 'Go to next question' }).click();
 
@@ -99,6 +99,7 @@ test.describe('Onboarding survey', () => {
     await page.getByRole('button', { name: 'Finish questionnaire' }).click();
 
     await expect(page.getByRole('heading', { name: 'Your first Norway tasks' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Login to save progress...' })).toBeVisible();
+    // Test runs with authenticated context, so should show the save button for logged-in users
+    await expect(page.getByRole('button', { name: 'Save and continue to tasks' })).toBeVisible();
   });
 });
