@@ -10,8 +10,8 @@ import type { EmailService } from "../services/email/emailService";
 import type { EmailResult } from "../services/email/types";
 
 // Mock prisma
-vi.mock("../lib/prisma", () => ({
-  prisma: {
+vi.mock("../lib/prisma", () => {
+  const mockPrismaClient = {
     oTPCode: {
       count: vi.fn(),
       findFirst: vi.fn(),
@@ -33,8 +33,18 @@ vi.mock("../lib/prisma", () => ({
       deleteMany: vi.fn(),
       create: vi.fn(),
     },
-  },
-}));
+  };
+
+  return {
+    prisma: {
+      ...mockPrismaClient,
+      $transaction: vi.fn(async (callback) => {
+        // Execute the transaction callback with the mock client
+        return callback(mockPrismaClient);
+      }),
+    },
+  };
+});
 
 // Create test app with OTP routes
 const createTestApp = () => {

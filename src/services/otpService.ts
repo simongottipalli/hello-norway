@@ -183,49 +183,60 @@ export class OtpService {
         };
       }
 
-      // Delete all OTP records for this email after successful verification
-      await prisma.oTPCode.deleteMany({
-        where: {
-          email,
-        },
-      });
+      // Wrap all operations in a transaction to ensure atomicity
+      // If any step fails, the OTP is not consumed and the user can retry
+      const result = await prisma.$transaction(async (tx) => {
+        // Delete all OTP records for this email after successful verification
+        await tx.oTPCode.deleteMany({
+          where: {
+            email,
+          },
+        });
 
-      const user = await prisma.user.upsert({
-        where: { email },
-        update: {},
-        create: {
-          email,
-          name: email.split('@')[0],
-        },
-      });
+        const user = await tx.user.upsert({
+          where: { email },
+          update: {},
+          create: {
+            email,
+            name: email.split('@')[0],
+          },
+        });
 
-      await syncUserTaskAssignments(user);
+        // Sync task assignments within the transaction
+        await syncUserTaskAssignments(user, { db: tx });
 
-      await prisma.session.deleteMany({
-        where: {
-          userId: user.id,
-        },
-      });
+        // Clean up old sessions for this user
+        await tx.session.deleteMany({
+          where: {
+            userId: user.id,
+          },
+        });
 
-      const sessionToken = randomBytes(SESSION_TOKEN_BYTES).toString('hex');
-      await prisma.session.create({
-        data: {
+        // Create new session
+        const sessionToken = randomBytes(SESSION_TOKEN_BYTES).toString('hex');
+        await tx.session.create({
+          data: {
+            sessionToken,
+            userId: user.id,
+            expiresAt: new Date(Date.now() + SESSION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
+          },
+        });
+
+        return {
           sessionToken,
-          userId: user.id,
-          expiresAt: new Date(Date.now() + SESSION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
-        },
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          },
+        };
       });
 
       logger?.info({ msg: 'OTP verified successfully', email });
 
       return {
         success: true,
-        sessionToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
+        ...result,
       };
     } catch (error) {
       logger?.error({ msg: 'Error in verifyOtp', email, error });
