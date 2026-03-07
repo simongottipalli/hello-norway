@@ -26,7 +26,7 @@ describe("taskAssignmentService", () => {
     vi.useRealTimers();
   });
 
-  it("assigns only evergreen tasks when arrival date is unknown", async () => {
+  it("assigns tasks ignoring arrival window when arrival date is unknown", async () => {
     vi.mocked(prisma.task.findMany).mockResolvedValue([{ id: "task-a" }]);
     vi.mocked(prisma.userTask.findMany).mockResolvedValue([]);
     vi.mocked(prisma.userTask.createMany).mockResolvedValue({ count: 1 });
@@ -46,8 +46,6 @@ describe("taskAssignmentService", () => {
           { requiresEU: null },
           { requiresChildren: null },
           { requiresEmploymentStatus: { isEmpty: true } },
-          { minDaysFromArrival: null },
-          { maxDaysFromArrival: null },
         ],
       },
       select: { id: true },
