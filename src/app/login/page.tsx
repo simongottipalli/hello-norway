@@ -205,9 +205,17 @@ function LoginForm() {
     );
   }
 
-  // Don't render form if already authenticated (will redirect via useEffect)
+  // Show redirecting state when already authenticated (will redirect via useEffect)
   if (isAuthenticated) {
-    return null;
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-6">
+            <p className="text-muted-foreground">Redirecting...</p>
+          </CardContent>
+        </Card>
+      </main>
+    );
   }
 
   return (
