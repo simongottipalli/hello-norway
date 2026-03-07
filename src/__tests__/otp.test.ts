@@ -926,8 +926,6 @@ describe("OTP API", () => {
             { requiresEU: null },
             { requiresChildren: null },
             { requiresEmploymentStatus: { isEmpty: true } },
-            { minDaysFromArrival: null },
-            { maxDaysFromArrival: null },
           ],
         },
         select: {

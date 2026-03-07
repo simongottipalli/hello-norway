@@ -149,7 +149,7 @@ describe("Task Assignment Integration Tests", () => {
   });
 
   describe("Signup - User with no profile information", () => {
-    it("should assign only evergreen tasks", async () => {
+    it("should assign tasks with no eligibility requirements, ignoring arrival window", async () => {
       await syncUserTaskAssignments({
         id: testUser.id,
         isEU: null,
@@ -164,9 +164,18 @@ describe("Task Assignment Integration Tests", () => {
         include: { task: true },
       });
 
-      expect(assignments).toHaveLength(1);
-      expect(assignments[0].task.id).toBe(testTasks.evergreen.id);
-      expect(assignments[0].status).toBe("TODO");
+      const taskIds = assignments.map((a) => a.task.id);
+      // Evergreen task (no constraints at all) and arrival-windowed task (no eligibility
+      // constraints) should both be included — arrival window is not applied when the
+      // user has no arrival date yet.
+      expect(taskIds).toContain(testTasks.evergreen.id);
+      expect(taskIds).toContain(testTasks.arrivalWindow.id);
+      // Tasks requiring specific eligibility must not be shown to a user with unknown profile.
+      expect(taskIds).not.toContain(testTasks.euOnly.id);
+      expect(taskIds).not.toContain(testTasks.childrenOnly.id);
+      expect(taskIds).not.toContain(testTasks.employedOnly.id);
+      expect(taskIds).not.toContain(testTasks.combined.id);
+      expect(assignments.every((a) => a.status === "TODO")).toBe(true);
     });
   });
 
@@ -404,8 +413,10 @@ describe("Task Assignment Integration Tests", () => {
 
       let assignments = await prisma.userTask.findMany({
         where: { userId: testUser.id },
+        include: { task: true },
       });
-      expect(assignments).toHaveLength(1); // Only evergreen
+      // EU-specific task must not be assigned when isEU is unknown
+      expect(assignments.map((a) => a.task.id)).not.toContain(testTasks.euOnly.id);
 
       // Update: becomes EU citizen
       await syncUserTaskAssignments({
