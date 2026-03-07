@@ -96,6 +96,7 @@ export function OnboardingSurvey() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [hasExistingTasks, setHasExistingTasks] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const visibleQuestions = useMemo(
     () => questions.filter((question) => !question.shouldShow || question.shouldShow(answers)),
@@ -147,8 +148,10 @@ export function OnboardingSurvey() {
     }
 
     setIsSavingProfile(true);
+    setSaveError("");
     try {
       const taskProfile = deriveTaskProfileFromOnboardingAnswers(answers);
+      
       // Only send fields that have been inferred (omit null/undefined to avoid clearing existing data)
       const sanitizedTaskProfile = Object.fromEntries(
         Object.entries(taskProfile).filter(([, value]) => value !== null && value !== undefined),
@@ -173,11 +176,11 @@ export function OnboardingSurvey() {
         // Ignore localStorage errors
       }
       
-      // Redirect to tasks page
+      // Redirect to tasks page on success
       router.push("/tasks");
     } catch (error) {
       console.error("Failed to save onboarding profile:", error);
-      // Keep the user on the onboarding page so they can retry saving their profile.
+      setSaveError("Failed to save your onboarding profile. Please try again or update your profile later from the Profile page.");
     } finally {
       setIsSavingProfile(false);
     }
@@ -402,6 +405,11 @@ export function OnboardingSurvey() {
                   {hasExistingTasks && (
                     <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
                       ⚠️ Warning: Starting this onboarding will overwrite your existing task list with personalized tasks based on your answers.
+                    </div>
+                  )}
+                  {saveError && (
+                    <div className="rounded-md border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
+                      {saveError}
                     </div>
                   )}
                   <Button 
