@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
 interface Task {
@@ -338,14 +340,14 @@ function DashboardContent() {
             {/* Filters */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex-1">
-                <label htmlFor="category-filter" className="mb-2 block text-sm font-medium">
+                <Label htmlFor="category-filter">
                   Filter by Category
-                </label>
-                <select
+                </Label>
+                <Select
                   id="category-filter"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="mt-2"
                 >
                   <option value="ALL">All Categories</option>
                   {TASK_CATEGORIES.map((category) => (
@@ -353,23 +355,23 @@ function DashboardContent() {
                       {formatCategory(category)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div className="flex-1">
-                <label htmlFor="status-filter" className="mb-2 block text-sm font-medium">
+                <Label htmlFor="status-filter">
                   Filter by Status
-                </label>
-                <select
+                </Label>
+                <Select
                   id="status-filter"
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="mt-2"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="TODO">To Do</option>
                   <option value="SAVED">In Progress</option>
                   <option value="DONE">Completed</option>
-                </select>
+                </Select>
               </div>
             </div>
 
