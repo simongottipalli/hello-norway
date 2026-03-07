@@ -119,7 +119,9 @@ export function OnboardingSurvey() {
         const response = await fetch("/api/tasks/personalized");
         if (response.ok) {
           const tasks = await response.json();
-          setHasExistingTasks(Array.isArray(tasks) && tasks.length > 0);
+          setHasExistingTasks(
+            Array.isArray(tasks) && tasks.some((task: any) => task?.status === "TODO")
+          );
         }
       } catch {
         // Ignore errors when checking existing tasks
@@ -404,7 +406,7 @@ export function OnboardingSurvey() {
                 <>
                   {hasExistingTasks && (
                     <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
-                      ⚠️ Warning: Starting this onboarding will overwrite your existing task list with personalized tasks based on your answers.
+                      ⚠️ Warning: Updating your onboarding profile may replace or update your TODO task list with personalized tasks based on your answers. Saved and completed tasks will be kept.
                     </div>
                   )}
                   {saveError && (
