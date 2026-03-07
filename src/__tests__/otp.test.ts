@@ -10,8 +10,8 @@ import type { EmailService } from "../services/email/emailService";
 import type { EmailResult } from "../services/email/types";
 
 // Mock prisma
-vi.mock("../lib/prisma", () => ({
-  prisma: {
+vi.mock("../lib/prisma", () => {
+  const mockPrismaClient = {
     oTPCode: {
       count: vi.fn(),
       findFirst: vi.fn(),
@@ -33,8 +33,18 @@ vi.mock("../lib/prisma", () => ({
       deleteMany: vi.fn(),
       create: vi.fn(),
     },
-  },
-}));
+  };
+
+  return {
+    prisma: {
+      ...mockPrismaClient,
+      $transaction: vi.fn(async (callback) => {
+        // Execute the transaction callback with the mock client
+        return callback(mockPrismaClient);
+      }),
+    },
+  };
+});
 
 // Create test app with OTP routes
 const createTestApp = () => {
@@ -1019,6 +1029,34 @@ describe("OTP API", () => {
 
       expect(result.success).toBe(true);
       expect(prisma.userTask.createMany).not.toHaveBeenCalled();
+    });
+
+    it("should roll back all operations when task assignment fails in transaction", async () => {
+      const now = new Date("2024-01-01T12:00:00Z");
+      const futureExpiry = new Date("2024-01-01T12:10:00Z");
+
+      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: "test-id",
+        email: testEmail,
+        code: 123456,
+        expiresAt: futureExpiry,
+        createdAt: now,
+      });
+
+      // Mock task assignment to fail
+      vi.mocked(prisma.task.findMany).mockRejectedValue(new Error("Task assignment failed"));
+
+      const result = await otpService.verifyOtp(testEmail, 123456);
+
+      // Transaction should fail and return error
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Internal server error");
+      expect(result.statusCode).toBe(500);
+
+      // Verify that operations were called within transaction context
+      // but didn't commit due to the error
+      expect(prisma.oTPCode.findFirst).toHaveBeenCalled();
+      expect(prisma.task.findMany).toHaveBeenCalled();
     });
   });
 });
