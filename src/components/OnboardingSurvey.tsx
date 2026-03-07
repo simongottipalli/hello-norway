@@ -119,8 +119,9 @@ export function OnboardingSurvey() {
         const response = await fetch("/api/tasks/personalized");
         if (response.ok) {
           const tasks = await response.json();
+          // Check if user has existing TODO tasks that might be replaced
           setHasExistingTasks(
-            Array.isArray(tasks) && tasks.some((task: any) => task?.status === "TODO")
+            Array.isArray(tasks) && tasks.some((task: { status?: string }) => task?.status === "TODO")
           );
         }
       } catch {

@@ -213,7 +213,9 @@ function LoginForm() {
       <main className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex items-center justify-center py-6">
-            <p className="text-muted-foreground">Redirecting...</p>
+            <p className="text-muted-foreground" role="status" aria-live="polite">
+              Redirecting...
+            </p>
           </CardContent>
         </Card>
       </main>

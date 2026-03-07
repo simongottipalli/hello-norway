@@ -53,7 +53,9 @@ export default function Home() {
     return (
       <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-center">
-          <p className="text-muted-foreground">Redirecting to your tasks...</p>
+          <p className="text-muted-foreground" role="status" aria-live="polite">
+            Redirecting to your tasks...
+          </p>
         </div>
       </main>
     );
