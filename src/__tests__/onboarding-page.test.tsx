@@ -1,9 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import OnboardingPage from "../app/onboarding/page";
+
+// Mock Next.js router and auth context
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+  })),
+}));
+
+vi.mock("@/components/AuthProvider", () => ({
+  useAuth: vi.fn(() => ({
+    isAuthenticated: false,
+    isLoading: false,
+    user: null,
+    refreshSession: vi.fn(),
+  })),
+}));
 
 describe("Onboarding page", () => {
-  it("renders survey flow with required onboarding questions and progress UI", () => {
+  it("renders survey flow with required onboarding questions and progress UI", async () => {
+    const OnboardingPage = (await import("../app/onboarding/page")).default;
     const html = renderToStaticMarkup(<OnboardingPage />);
 
     expect(html).toContain("Onboarding questionnaire");

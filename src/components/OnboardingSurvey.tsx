@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +85,8 @@ function isAnswered(question: Question, answers: AnswerMap) {
 }
 
 export function OnboardingSurvey() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [completed, setCompleted] = useState(false);
@@ -90,6 +94,9 @@ export function OnboardingSurvey() {
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasExistingTasks, setHasExistingTasks] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const visibleQuestions = useMemo(
     () => questions.filter((question) => !question.shouldShow || question.shouldShow(answers)),
@@ -100,6 +107,30 @@ export function OnboardingSurvey() {
   const progress = visibleQuestions.length
     ? (visibleQuestions.filter((question) => isAnswered(question, answers)).length / visibleQuestions.length) * 100
     : 0;
+
+  // Check if authenticated user has existing tasks
+  useEffect(() => {
+    const checkExistingTasks = async () => {
+      if (!isAuthenticated || isAuthLoading) {
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/tasks/personalized");
+        if (response.ok) {
+          const tasks = await response.json();
+          // Check if user has existing TODO tasks that might be replaced
+          setHasExistingTasks(
+            Array.isArray(tasks) && tasks.some((task: { status?: string }) => task.status === "TODO")
+          );
+        }
+      } catch {
+        // Ignore errors when checking existing tasks
+      }
+    };
+
+    checkExistingTasks();
+  }, [isAuthenticated, isAuthLoading]);
 
   const handleNext = () => {
     if (safeQuestionIndex >= visibleQuestions.length - 1) {
@@ -112,6 +143,50 @@ export function OnboardingSurvey() {
   const handleBack = () => {
     setCompleted(false);
     setCurrentQuestion((previous) => Math.max(0, previous - 1));
+  };
+
+  const handleSaveForAuthenticatedUser = async () => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    setIsSavingProfile(true);
+    setSaveError("");
+    try {
+      const taskProfile = deriveTaskProfileFromOnboardingAnswers(answers);
+      
+      // Only send fields that have been inferred (omit null/undefined to avoid clearing existing data)
+      const sanitizedTaskProfile = Object.fromEntries(
+        Object.entries(taskProfile).filter(([, value]) => value !== null && value !== undefined),
+      );
+
+      const response = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(sanitizedTaskProfile),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save profile");
+      }
+
+      // Clear any stored profile from localStorage since we've saved it
+      try {
+        localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+      } catch {
+        // Ignore localStorage errors
+      }
+      
+      // Redirect to tasks page on success
+      router.push("/tasks");
+    } catch (error) {
+      console.error("Failed to save onboarding profile:", error);
+      setSaveError("Failed to save your onboarding profile. Please try again or update your profile later from the Profile page.");
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const question = visibleQuestions[safeQuestionIndex];
@@ -328,9 +403,31 @@ export function OnboardingSurvey() {
                 <li>• Keep private notes and add extra tasks manually</li>
               </ul>
 
-              <Button asChild className="w-full">
-                <Link href="/login?from=onboarding">Login to save progress...</Link>
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  {hasExistingTasks && (
+                    <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+                      ⚠️ Warning: Updating your onboarding profile may replace or update your TODO task list with personalized tasks based on your answers. Saved and completed tasks will be kept.
+                    </div>
+                  )}
+                  {saveError && (
+                    <div className="rounded-md border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
+                      {saveError}
+                    </div>
+                  )}
+                  <Button 
+                    onClick={handleSaveForAuthenticatedUser} 
+                    className="w-full"
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? "Saving..." : "Save and continue to tasks"}
+                  </Button>
+                </>
+              ) : (
+                <Button asChild className="w-full">
+                  <Link href="/login?from=onboarding">Login to save progress...</Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
