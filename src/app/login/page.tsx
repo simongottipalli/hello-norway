@@ -32,7 +32,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromOnboarding = searchParams.get("from") === "onboarding";
-  const { refreshSession } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -40,6 +40,14 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
+
+  // Redirect if already authenticated (but not if we just logged in - that redirect is handled by the login flow)
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated && !justLoggedIn) {
+      router.replace("/tasks");
+    }
+  }, [isAuthenticated, isAuthLoading, justLoggedIn, router]);
 
   // Cooldown timer
   useEffect(() => {
@@ -136,6 +144,7 @@ function LoginForm() {
 
       if (response.ok && data.success) {
         setSuccessMessage("Login successful! Redirecting...");
+        setJustLoggedIn(true); // Prevent the useEffect redirect from firing
         await refreshSession();
         if (fromOnboarding) {
           try {
@@ -184,6 +193,34 @@ function LoginForm() {
       action();
     }
   };
+
+  // Show loading while checking auth
+  if (isAuthLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-6">
+            <p className="text-muted-foreground">Loading...</p>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  // Show redirecting state when already authenticated (will redirect via useEffect)
+  if (isAuthenticated) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-6">
+            <p className="text-muted-foreground" role="status" aria-live="polite">
+              Redirecting...
+            </p>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">

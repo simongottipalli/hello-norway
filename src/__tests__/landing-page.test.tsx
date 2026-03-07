@@ -1,9 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import Home from "../app/page";
+
+// Mock Next.js router and auth context
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+  })),
+}));
+
+vi.mock("@/components/AuthProvider", () => ({
+  useAuth: vi.fn(() => ({
+    isAuthenticated: false,
+    isLoading: false,
+    user: null,
+    refreshSession: vi.fn(),
+  })),
+}));
 
 describe("Landing page", () => {
-  it("renders required sections and onboarding call-to-actions", () => {
+  it("renders required sections and onboarding call-to-actions", async () => {
+    const Home = (await import("../app/page")).default;
     const html = renderToStaticMarkup(<Home />);
 
     expect(html).toContain("Settle in, faster.");
