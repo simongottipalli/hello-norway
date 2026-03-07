@@ -32,7 +32,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromOnboarding = searchParams.get("from") === "onboarding";
-  const { refreshSession } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -40,6 +40,13 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!isAuthLoading && isAuthenticated) {
+      router.push("/tasks");
+    }
+  }, [isAuthenticated, isAuthLoading, router]);
 
   // Cooldown timer
   useEffect(() => {
@@ -184,6 +191,24 @@ function LoginForm() {
       action();
     }
   };
+
+  // Show loading while checking auth
+  if (isAuthLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="flex items-center justify-center py-6">
+            <p className="text-muted-foreground">Loading...</p>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
+
+  // Don't render form if already authenticated (will redirect via useEffect)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">

@@ -1,3 +1,8 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +30,29 @@ const features = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push("/tasks");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-center">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated) {
+    return null;
+  }
+
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
