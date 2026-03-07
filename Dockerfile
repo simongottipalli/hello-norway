@@ -54,4 +54,4 @@ ENV API_PORT=3001
 ENV API_BASE_URL=http://localhost:3001/api
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && node node_modules/tsx/dist/cli.mjs src/server.ts & PORT=$PORT node server.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && (node node_modules/tsx/dist/cli.mjs prisma/seed.ts || echo '[warn] seed failed, continuing') && node node_modules/tsx/dist/cli.mjs src/server.ts & PORT=$PORT node server.js"]
