@@ -44,7 +44,7 @@ function LoginForm() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!isAuthLoading && isAuthenticated) {
-      router.push("/tasks");
+      router.replace("/tasks");
     }
   }, [isAuthenticated, isAuthLoading, router]);
 

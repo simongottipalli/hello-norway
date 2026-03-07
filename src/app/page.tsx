@@ -35,7 +35,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push("/tasks");
+      router.replace("/tasks");
     }
   }, [isAuthenticated, isLoading, router]);
 

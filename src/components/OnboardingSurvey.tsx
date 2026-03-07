@@ -149,13 +149,17 @@ export function OnboardingSurvey() {
     setIsSavingProfile(true);
     try {
       const taskProfile = deriveTaskProfileFromOnboardingAnswers(answers);
-      
+      // Only send fields that have been inferred (omit null/undefined to avoid clearing existing data)
+      const sanitizedTaskProfile = Object.fromEntries(
+        Object.entries(taskProfile).filter(([, value]) => value !== null && value !== undefined),
+      );
+
       const response = await fetch("/api/auth/profile", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(taskProfile),
+        body: JSON.stringify(sanitizedTaskProfile),
       });
 
       if (!response.ok) {
@@ -173,9 +177,7 @@ export function OnboardingSurvey() {
       router.push("/tasks");
     } catch (error) {
       console.error("Failed to save onboarding profile:", error);
-      alert("Failed to save your onboarding profile. Please try updating your profile from the Profile page.");
-      // Still redirect to tasks - user can try again from profile page
-      router.push("/tasks");
+      // Keep the user on the onboarding page so they can retry saving their profile.
     } finally {
       setIsSavingProfile(false);
     }
