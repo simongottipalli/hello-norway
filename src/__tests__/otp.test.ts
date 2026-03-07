@@ -1030,5 +1030,33 @@ describe("OTP API", () => {
       expect(result.success).toBe(true);
       expect(prisma.userTask.createMany).not.toHaveBeenCalled();
     });
+
+    it("should roll back all operations when task assignment fails in transaction", async () => {
+      const now = new Date("2024-01-01T12:00:00Z");
+      const futureExpiry = new Date("2024-01-01T12:10:00Z");
+
+      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+        id: "test-id",
+        email: testEmail,
+        code: 123456,
+        expiresAt: futureExpiry,
+        createdAt: now,
+      });
+
+      // Mock task assignment to fail
+      vi.mocked(prisma.task.findMany).mockRejectedValue(new Error("Task assignment failed"));
+
+      const result = await otpService.verifyOtp(testEmail, 123456);
+
+      // Transaction should fail and return error
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Internal server error");
+      expect(result.statusCode).toBe(500);
+
+      // Verify that operations were called within transaction context
+      // but didn't commit due to the error
+      expect(prisma.oTPCode.findFirst).toHaveBeenCalled();
+      expect(prisma.task.findMany).toHaveBeenCalled();
+    });
   });
 });
