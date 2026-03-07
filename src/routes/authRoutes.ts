@@ -272,10 +272,10 @@ router.delete("/auth/profile", authenticateSession, async (req, res) => {
     await prisma.$transaction(async (tx) => {
       // Delete all user sessions
       await tx.session.deleteMany({ where: { userId } });
-      
+
       // Delete all user tasks (cascade will handle this, but explicit for clarity)
       await tx.userTask.deleteMany({ where: { userId } });
-      
+
       // Delete the user (this will also cascade delete sessions and userTasks due to schema)
       await tx.user.delete({ where: { id: userId } });
     });

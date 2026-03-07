@@ -53,7 +53,7 @@ function getBooleanEligibilityFilter(field: "requiresEU" | "requiresChildren", v
 function getArrivalWindowFilter(profile: AssignmentProfile, now: Date): Prisma.TaskWhereInput[] {
   const daysFromArrival = getDaysFromArrival(profile, now);
   if (daysFromArrival === null) {
-    return [{ minDaysFromArrival: null }, { maxDaysFromArrival: null }];
+    return [];
   }
 
   return [
