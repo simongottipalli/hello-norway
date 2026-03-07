@@ -39,8 +39,6 @@ const TASK_CATEGORIES = [
   "OTHER",
 ] as const;
 
-const TASK_STATUSES = ["TODO", "SAVED", "DONE"] as const;
-
 function formatCategory(category: string): string {
   return category
     .split("_")
