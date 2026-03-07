@@ -158,22 +158,23 @@ export function OnboardingSurvey() {
         body: JSON.stringify(taskProfile),
       });
 
-      if (response.ok) {
-        // Clear any stored profile from localStorage since we've saved it
-        try {
-          localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
-        } catch {
-          // Ignore localStorage errors
-        }
-        
-        // Redirect to tasks page
-        router.push("/tasks");
-      } else {
+      if (!response.ok) {
         throw new Error("Failed to save profile");
       }
+
+      // Clear any stored profile from localStorage since we've saved it
+      try {
+        localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+      } catch {
+        // Ignore localStorage errors
+      }
+      
+      // Redirect to tasks page
+      router.push("/tasks");
     } catch (error) {
       console.error("Failed to save onboarding profile:", error);
-      // Still redirect to tasks on error - user can try again from profile page
+      alert("Failed to save your onboarding profile. Please try updating your profile from the Profile page.");
+      // Still redirect to tasks - user can try again from profile page
       router.push("/tasks");
     } finally {
       setIsSavingProfile(false);
