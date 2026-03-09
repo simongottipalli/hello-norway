@@ -185,34 +185,6 @@ function LoginForm() {
     }
   };
 
-  // Show loading while checking auth
-  if (isAuthLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex items-center justify-center py-6">
-            <p className="text-muted-foreground">Loading...</p>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
-
-  // Show redirecting state when already authenticated (will redirect via useEffect)
-  if (isAuthenticated) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex items-center justify-center py-6">
-            <p className="text-muted-foreground" role="status" aria-live="polite">
-              Redirecting...
-            </p>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
