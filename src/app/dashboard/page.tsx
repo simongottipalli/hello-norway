@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { TaskCategory } from "@/generated/prisma/enums";
 
 interface Task {
   id: string;
@@ -30,16 +31,8 @@ interface Task {
   maxDaysFromArrival?: number | null;
 }
 
-const TASK_CATEGORIES = [
-  "ARRIVAL",
-  "IDENTITY_BANKING",
-  "HEALTH",
-  "TAX_WORK",
-  "FAMILY",
-  "HOUSING",
-  "DRIVING",
-  "OTHER",
-] as const;
+// Use the TaskCategory enum from Prisma instead of duplicating the list
+const TASK_CATEGORIES = Object.values(TaskCategory);
 
 function formatCategory(category: string): string {
   return category
