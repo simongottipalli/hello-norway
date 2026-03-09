@@ -4,8 +4,8 @@
  */
 
 export interface TaskWithDate {
-  dueDate?: string;
-  status: "TODO" | "SAVED" | "DONE";
+  dueDate?: string | null;
+  status?: "TODO" | "SAVED" | "DONE";
 }
 
 /**
