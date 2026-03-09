@@ -39,9 +39,15 @@ export function Header() {
           <div className="flex items-center gap-3">
             {isAuthenticated && user ? (
               <>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground hidden sm:inline">
                   Hey {user.email} 👋
                 </span>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/tasks">Tasks</Link>
+                </Button>
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/profile">Profile</Link>
                 </Button>
