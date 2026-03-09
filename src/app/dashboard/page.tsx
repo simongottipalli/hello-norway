@@ -11,6 +11,12 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { TaskCategory } from "@/generated/prisma/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import {
+  parseUtcDate,
+  isTaskOverdue,
+  isTaskUpcoming,
+  formatDueDateWithTimezone,
+} from "@/lib/dateUtils";
 
 interface Task {
   id: string;
@@ -42,55 +48,7 @@ function formatCategory(category: string): string {
     .join(" ");
 }
 
-// Helper to parse date string as UTC midnight and return UTC Date
-function parseUtcDate(dateString: string): Date {
-  const datePart = dateString.slice(0, 10); // YYYY-MM-DD
-  const [year, month, day] = datePart.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day));
-}
 
-// Get today's date at UTC midnight
-function getTodayUtc(): Date {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-}
-
-function isTaskOverdue(task: Task): boolean {
-  if (!task.dueDate || task.status === "DONE") {
-    return false;
-  }
-  
-  const todayUtc = getTodayUtc();
-  const dueDateUtc = parseUtcDate(task.dueDate);
-  
-  return dueDateUtc < todayUtc;
-}
-
-function isTaskUpcoming(task: Task): boolean {
-  if (!task.dueDate || task.status === "DONE") {
-    return false;
-  }
-  
-  const todayUtc = getTodayUtc();
-  const dueDateUtc = parseUtcDate(task.dueDate);
-  
-  const msPerDay = 1000 * 60 * 60 * 24;
-  const daysDifference = Math.floor((dueDateUtc.getTime() - todayUtc.getTime()) / msPerDay);
-  
-  return daysDifference >= 0 && daysDifference <= 14;
-}
-
-// Format date for display in Norway time (Europe/Oslo timezone)
-function formatDueDateWithTimezone(dateString: string): string {
-  const date = parseUtcDate(dateString);
-  const formatted = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    timeZone: 'Europe/Oslo',
-  }).format(date);
-  return `${formatted} (Norway time)`;
-}
 
 export default function DashboardPage() {
   const router = useRouter();

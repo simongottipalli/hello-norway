@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { isTaskOverdue, isTaskUpcoming } from "@/lib/dateUtils";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -82,45 +83,6 @@ describe("Dashboard date logic and filtering", () => {
     const date = new Date();
     date.setUTCDate(date.getUTCDate() + daysFromNow);
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T00:00:00.000Z`;
-  };
-
-  // Type for test tasks
-  type TestTask = {
-    dueDate?: string;
-    status: "TODO" | "SAVED" | "DONE";
-    [key: string]: unknown;
-  };
-
-  // Helper functions for date logic (extracted from dashboard page)
-  const parseUtcDate = (dateString: string): Date => {
-    const datePart = dateString.slice(0, 10);
-    const [year, month, day] = datePart.split("-").map(Number);
-    return new Date(Date.UTC(year, month - 1, day));
-  };
-
-  const getTodayUtc = (): Date => {
-    const now = new Date();
-    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  };
-
-  const isTaskOverdue = (task: TestTask): boolean => {
-    if (!task.dueDate || task.status === "DONE") {
-      return false;
-    }
-    const todayUtc = getTodayUtc();
-    const dueDateUtc = parseUtcDate(task.dueDate);
-    return dueDateUtc < todayUtc;
-  };
-
-  const isTaskUpcoming = (task: TestTask): boolean => {
-    if (!task.dueDate || task.status === "DONE") {
-      return false;
-    }
-    const todayUtc = getTodayUtc();
-    const dueDateUtc = parseUtcDate(task.dueDate);
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const daysDifference = Math.floor((dueDateUtc.getTime() - todayUtc.getTime()) / msPerDay);
-    return daysDifference >= 0 && daysDifference <= 14;
   };
 
   describe("Task overdue classification", () => {
