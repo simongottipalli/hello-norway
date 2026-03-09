@@ -151,16 +151,16 @@ export default function DashboardPage() {
 
   const overdueTasks = useMemo(() => {
     return tasks.filter(isTaskOverdue).sort((a, b) => {
-      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
-      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+      const dateA = a.dueDate ? parseUtcDate(a.dueDate).getTime() : 0;
+      const dateB = b.dueDate ? parseUtcDate(b.dueDate).getTime() : 0;
       return dateA - dateB;
     });
   }, [tasks]);
 
   const upcomingTasks = useMemo(() => {
     return tasks.filter(isTaskUpcoming).sort((a, b) => {
-      const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
-      const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+      const dateA = a.dueDate ? parseUtcDate(a.dueDate).getTime() : 0;
+      const dateB = b.dueDate ? parseUtcDate(b.dueDate).getTime() : 0;
       return dateA - dateB;
     });
   }, [tasks]);

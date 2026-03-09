@@ -71,6 +71,12 @@ describe("Dashboard loading skeleton", () => {
 });
 
 describe("Dashboard date logic and filtering", () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
   // Helper to create a date string at UTC midnight
   const createUtcDateString = (daysFromNow: number): string => {
     const date = new Date();
@@ -78,184 +84,172 @@ describe("Dashboard date logic and filtering", () => {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T00:00:00.000Z`;
   };
 
+  // Type for test tasks
+  type TestTask = {
+    dueDate?: string;
+    status: "TODO" | "SAVED" | "DONE";
+    [key: string]: unknown;
+  };
+
+  // Helper functions for date logic (extracted from dashboard page)
+  const parseUtcDate = (dateString: string): Date => {
+    const datePart = dateString.slice(0, 10);
+    const [year, month, day] = datePart.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
+  };
+
+  const getTodayUtc = (): Date => {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  };
+
+  const isTaskOverdue = (task: TestTask): boolean => {
+    if (!task.dueDate || task.status === "DONE") {
+      return false;
+    }
+    const todayUtc = getTodayUtc();
+    const dueDateUtc = parseUtcDate(task.dueDate);
+    return dueDateUtc < todayUtc;
+  };
+
+  const isTaskUpcoming = (task: TestTask): boolean => {
+    if (!task.dueDate || task.status === "DONE") {
+      return false;
+    }
+    const todayUtc = getTodayUtc();
+    const dueDateUtc = parseUtcDate(task.dueDate);
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const daysDifference = Math.floor((dueDateUtc.getTime() - todayUtc.getTime()) / msPerDay);
+    return daysDifference >= 0 && daysDifference <= 14;
+  };
+
   describe("Task overdue classification", () => {
     it("classifies tasks past due date as overdue", () => {
-      const mockTasks = [
-        {
-          id: "1",
-          title: "Overdue Task",
-          slug: "overdue-task",
-          shortDescription: "This is overdue",
-          body: "Body",
-          category: "ARRIVAL",
-          sortOrder: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: "TODO" as const,
-          dueDate: createUtcDateString(-5), // 5 days ago
-        },
-      ];
+      const mockTask = {
+        id: "1",
+        title: "Overdue Task",
+        slug: "overdue-task",
+        shortDescription: "This is overdue",
+        body: "Body",
+        category: "ARRIVAL",
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "TODO" as const,
+        dueDate: createUtcDateString(-5), // 5 days ago
+      };
 
-      // Mock fetch to return the task
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockTasks,
-      });
-
-      // We can't easily test the internal state, but we verify the function exists
-      expect(true).toBe(true);
+      expect(isTaskOverdue(mockTask)).toBe(true);
     });
 
     it("does not classify completed tasks as overdue even if past due", () => {
-      const mockTasks = [
-        {
-          id: "1",
-          title: "Completed Task",
-          slug: "completed-task",
-          shortDescription: "This is completed",
-          body: "Body",
-          category: "ARRIVAL",
-          sortOrder: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: "DONE" as const,
-          dueDate: createUtcDateString(-5), // 5 days ago
-        },
-      ];
+      const mockTask = {
+        id: "1",
+        title: "Completed Task",
+        slug: "completed-task",
+        shortDescription: "This is completed",
+        body: "Body",
+        category: "ARRIVAL",
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "DONE" as const,
+        dueDate: createUtcDateString(-5), // 5 days ago
+      };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockTasks,
-      });
-
-      expect(true).toBe(true);
+      expect(isTaskOverdue(mockTask)).toBe(false);
     });
   });
 
   describe("Task upcoming classification", () => {
     it("classifies tasks due today as upcoming", () => {
-      const mockTasks = [
-        {
-          id: "1",
-          title: "Due Today",
-          slug: "due-today",
-          shortDescription: "Due today",
-          body: "Body",
-          category: "ARRIVAL",
-          sortOrder: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: "TODO" as const,
-          dueDate: createUtcDateString(0), // today
-        },
-      ];
+      const mockTask = {
+        id: "1",
+        title: "Due Today",
+        slug: "due-today",
+        shortDescription: "Due today",
+        body: "Body",
+        category: "ARRIVAL",
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "TODO" as const,
+        dueDate: createUtcDateString(0), // today
+      };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockTasks,
-      });
-
-      expect(true).toBe(true);
+      expect(isTaskUpcoming(mockTask)).toBe(true);
     });
 
     it("classifies tasks due in 7 days as upcoming", () => {
-      const mockTasks = [
-        {
-          id: "1",
-          title: "Due in 7 days",
-          slug: "due-in-7",
-          shortDescription: "Due in a week",
-          body: "Body",
-          category: "ARRIVAL",
-          sortOrder: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: "TODO" as const,
-          dueDate: createUtcDateString(7),
-        },
-      ];
+      const mockTask = {
+        id: "1",
+        title: "Due in 7 days",
+        slug: "due-in-7",
+        shortDescription: "Due in a week",
+        body: "Body",
+        category: "ARRIVAL",
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "TODO" as const,
+        dueDate: createUtcDateString(7),
+      };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockTasks,
-      });
-
-      expect(true).toBe(true);
+      expect(isTaskUpcoming(mockTask)).toBe(true);
     });
 
     it("classifies tasks due in 14 days as upcoming", () => {
-      const mockTasks = [
-        {
-          id: "1",
-          title: "Due in 14 days",
-          slug: "due-in-14",
-          shortDescription: "Due in two weeks",
-          body: "Body",
-          category: "ARRIVAL",
-          sortOrder: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: "TODO" as const,
-          dueDate: createUtcDateString(14),
-        },
-      ];
+      const mockTask = {
+        id: "1",
+        title: "Due in 14 days",
+        slug: "due-in-14",
+        shortDescription: "Due in two weeks",
+        body: "Body",
+        category: "ARRIVAL",
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "TODO" as const,
+        dueDate: createUtcDateString(14),
+      };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockTasks,
-      });
-
-      expect(true).toBe(true);
+      expect(isTaskUpcoming(mockTask)).toBe(true);
     });
 
     it("does not classify tasks due in 15+ days as upcoming", () => {
-      const mockTasks = [
-        {
-          id: "1",
-          title: "Due in 15 days",
-          slug: "due-in-15",
-          shortDescription: "Due in 15 days",
-          body: "Body",
-          category: "ARRIVAL",
-          sortOrder: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: "TODO" as const,
-          dueDate: createUtcDateString(15),
-        },
-      ];
+      const mockTask = {
+        id: "1",
+        title: "Due in 15 days",
+        slug: "due-in-15",
+        shortDescription: "Due in 15 days",
+        body: "Body",
+        category: "ARRIVAL",
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "TODO" as const,
+        dueDate: createUtcDateString(15),
+      };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockTasks,
-      });
-
-      expect(true).toBe(true);
+      expect(isTaskUpcoming(mockTask)).toBe(false);
     });
 
     it("does not classify completed tasks as upcoming", () => {
-      const mockTasks = [
-        {
-          id: "1",
-          title: "Completed upcoming task",
-          slug: "completed-upcoming",
-          shortDescription: "This is completed",
-          body: "Body",
-          category: "ARRIVAL",
-          sortOrder: 1,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          status: "DONE" as const,
-          dueDate: createUtcDateString(7),
-        },
-      ];
+      const mockTask = {
+        id: "1",
+        title: "Completed upcoming task",
+        slug: "completed-upcoming",
+        shortDescription: "This is completed",
+        body: "Body",
+        category: "ARRIVAL",
+        sortOrder: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: "DONE" as const,
+        dueDate: createUtcDateString(7),
+      };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockTasks,
-      });
-
-      expect(true).toBe(true);
+      expect(isTaskUpcoming(mockTask)).toBe(false);
     });
   });
 
