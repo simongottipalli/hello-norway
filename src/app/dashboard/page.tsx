@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,17 +48,28 @@ function formatCategory(category: string): string {
     .join(" ");
 }
 
+// Helper to parse date string as UTC midnight and return UTC Date
+function parseUtcDate(dateString: string): Date {
+  const datePart = dateString.slice(0, 10); // YYYY-MM-DD
+  const [year, month, day] = datePart.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+// Get today's date at UTC midnight
+function getTodayUtc(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
 function isTaskOverdue(task: Task): boolean {
   if (!task.dueDate || task.status === "DONE") {
     return false;
   }
   
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dueDate = new Date(task.dueDate);
-  dueDate.setHours(0, 0, 0, 0);
+  const todayUtc = getTodayUtc();
+  const dueDateUtc = parseUtcDate(task.dueDate);
   
-  return dueDate < today;
+  return dueDateUtc < todayUtc;
 }
 
 function isTaskUpcoming(task: Task): boolean {
@@ -66,14 +77,24 @@ function isTaskUpcoming(task: Task): boolean {
     return false;
   }
   
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dueDate = new Date(task.dueDate);
-  dueDate.setHours(0, 0, 0, 0);
+  const todayUtc = getTodayUtc();
+  const dueDateUtc = parseUtcDate(task.dueDate);
   
-  const daysDifference = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysDifference = Math.floor((dueDateUtc.getTime() - todayUtc.getTime()) / msPerDay);
   
   return daysDifference >= 0 && daysDifference <= 14;
+}
+
+// Format date for display with timezone indication
+function formatDueDateWithTimezone(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString(undefined, { 
+    year: 'numeric', 
+    month: 'numeric', 
+    day: 'numeric',
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
 }
 
 function DashboardContent() {
@@ -160,7 +181,8 @@ function DashboardContent() {
       filtered = filtered.filter((task) => task.status === selectedStatus);
     }
 
-    return filtered.sort((a, b) => {
+    // Create a copy before sorting to avoid mutating state
+    return [...filtered].sort((a, b) => {
       if (a.category !== b.category) {
         return a.category.localeCompare(b.category);
       }
@@ -269,7 +291,7 @@ function DashboardContent() {
                         {task.shortDescription}
                       </p>
                       <p className="text-xs font-medium text-destructive">
-                        Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}
+                        Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                       </p>
                     </div>
                     <Button variant="outline" size="sm" asChild>
@@ -315,7 +337,7 @@ function DashboardContent() {
                         {task.shortDescription}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}
+                        Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                       </p>
                     </div>
                     <Button variant="outline" size="sm" asChild>
@@ -423,7 +445,7 @@ function DashboardContent() {
                       </p>
                       {task.dueDate && (
                         <p className="text-xs text-muted-foreground">
-                          Due: {new Date(task.dueDate).toLocaleDateString()}
+                          Due: {formatDueDateWithTimezone(task.dueDate)}
                         </p>
                       )}
                       <Button variant="outline" size="sm" className="w-full" asChild>
@@ -442,17 +464,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl text-center py-12 text-muted-foreground">
-            Loading dashboard...
-          </div>
-        </main>
-      }
-    >
-      <DashboardContent />
-    </Suspense>
-  );
+  return <DashboardContent />;
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Mock Next.js router
@@ -9,24 +9,37 @@ vi.mock("next/navigation", () => ({
   })),
 }));
 
-// Mock fetch for API calls
-global.fetch = vi.fn();
+// Mock AuthProvider
+vi.mock("@/components/AuthProvider", () => ({
+  useAuth: vi.fn(() => ({
+    isAuthenticated: true,
+    isLoading: false,
+    user: { id: "1", email: "test@example.com", name: "Test User" },
+    refreshSession: vi.fn(),
+  })),
+}));
 
 describe("Dashboard page", () => {
-  it("renders Suspense fallback during static rendering", async () => {
-    vi.mock("@/components/AuthProvider", () => ({
-      useAuth: vi.fn(() => ({
-        isAuthenticated: false,
-        isLoading: true,
-        user: null,
-        refreshSession: vi.fn(),
-      })),
-    }));
+  const originalFetch = global.fetch;
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Mock fetch for API calls
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    });
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it("renders loading state during data fetch", async () => {
     const DashboardPage = (await import("../app/dashboard/page")).default;
     const html = renderToStaticMarkup(<DashboardPage />);
 
-    // During static rendering, Suspense shows the fallback
+    // Component shows loading state when fetching data
     expect(html).toContain("Loading dashboard...");
   });
 
