@@ -50,3 +50,21 @@ describe("Dashboard page", () => {
     expect(typeof dashboardModule.default).toBe("function");
   });
 });
+
+describe("Dashboard loading skeleton", () => {
+  it("renders loading skeleton correctly", async () => {
+    const DashboardLoading = (await import("../app/dashboard/loading")).default;
+    const html = renderToStaticMarkup(<DashboardLoading />);
+
+    // Check for skeleton elements
+    expect(html).toContain("animate-pulse");
+    expect(html).toContain("bg-muted");
+  });
+
+  it("can be imported without errors", async () => {
+    // Verify the loading module can be imported successfully
+    const loadingModule = await import("../app/dashboard/loading");
+    expect(loadingModule.default).toBeDefined();
+    expect(typeof loadingModule.default).toBe("function");
+  });
+});

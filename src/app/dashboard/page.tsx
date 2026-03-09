@@ -97,7 +97,7 @@ function formatDueDateWithTimezone(dateString: string): string {
   });
 }
 
-function DashboardContent() {
+export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -461,8 +461,4 @@ function DashboardContent() {
       </div>
     </main>
   );
-}
-
-export default function DashboardPage() {
-  return <DashboardContent />;
 }
