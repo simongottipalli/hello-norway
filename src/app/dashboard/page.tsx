@@ -80,15 +80,16 @@ function isTaskUpcoming(task: Task): boolean {
   return daysDifference >= 0 && daysDifference <= 14;
 }
 
-// Format date for display with timezone indication
+// Format date for display in Norway time (Europe/Oslo timezone)
 function formatDueDateWithTimezone(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString(undefined, { 
-    year: 'numeric', 
-    month: 'numeric', 
+  const date = parseUtcDate(dateString);
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'numeric',
     day: 'numeric',
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-  });
+    timeZone: 'Europe/Oslo',
+  }).format(date);
+  return `${formatted} (Norway time)`;
 }
 
 export default function DashboardPage() {
