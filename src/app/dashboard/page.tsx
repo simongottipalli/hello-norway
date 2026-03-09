@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { TaskCategory } from "@/generated/prisma/enums";
+import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 
 interface Task {
   id: string;
@@ -184,15 +185,7 @@ export default function DashboardPage() {
   }, [tasks, selectedCategory, selectedStatus]);
 
   if (authLoading || (isAuthenticated && isLoading)) {
-    return (
-      <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center py-12 text-muted-foreground">
-            Loading dashboard...
-          </div>
-        </div>
-      </main>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!isAuthenticated) {
@@ -303,7 +296,7 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Upcoming Tasks ({upcomingTasks.length})</CardTitle>
               <CardDescription>
-                Tasks due within the next 14 days
+                Tasks due in the next 14 days
               </CardDescription>
             </CardHeader>
             <CardContent>
