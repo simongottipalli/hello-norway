@@ -95,22 +95,23 @@ export function Header() {
             </nav>
 
             {/* Mobile Menu Button */}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-foreground hover:text-foreground/80"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+            </Button>
           </>
         )}
       </div>
 
       {/* Mobile Navigation Menu */}
       {!isLoading && isMobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background">
-          <nav className="mx-auto max-w-7xl px-4 py-4 space-y-2">
-            {isAuthenticated && user ? (
+        <div className="md:hidden border-t border-border bg-background" data-testid="mobile-nav">
+          <nav className="mx-auto max-w-7xl px-4 py-4 space-y-2">{isAuthenticated && user ? (
               <>
                 <div className="pb-2 mb-2 border-b border-border">
                   <span className="text-sm text-muted-foreground">
@@ -121,6 +122,7 @@ export function Header() {
                   variant={isActivePath("/dashboard") ? "secondary" : "ghost"} 
                   size="sm" 
                   className="w-full justify-start"
+                  data-testid="mobile-dashboard-link"
                   asChild
                 >
                   <Link href="/dashboard" onClick={closeMobileMenu}>Dashboard</Link>
@@ -129,6 +131,7 @@ export function Header() {
                   variant={isActivePath("/tasks") ? "secondary" : "ghost"} 
                   size="sm" 
                   className="w-full justify-start"
+                  data-testid="mobile-tasks-link"
                   asChild
                 >
                   <Link href="/tasks" onClick={closeMobileMenu}>Tasks</Link>
@@ -137,6 +140,7 @@ export function Header() {
                   variant={isActivePath("/profile") ? "secondary" : "ghost"} 
                   size="sm" 
                   className="w-full justify-start"
+                  data-testid="mobile-profile-link"
                   asChild
                 >
                   <Link href="/profile" onClick={closeMobileMenu}>Profile</Link>

@@ -140,16 +140,16 @@ test.describe('Navigation and Routing', () => {
       await page.goto('/dashboard');
       await page.waitForLoadState('networkidle');
       
-      // Dashboard link should have secondary variant (active state)
-      const dashboardButton = page.getByRole('link', { name: 'Dashboard' }).first().locator('..');
+      // Dashboard button should have secondary variant (active state)
+      const dashboardButton = page.locator('a[href="/dashboard"]').first().locator('..');
       await expect(dashboardButton).toHaveClass(/secondary/);
       
       // Go to tasks
       await page.goto('/tasks');
       await page.waitForLoadState('networkidle');
       
-      // Tasks link should have secondary variant (active state)
-      const tasksButton = page.getByRole('link', { name: 'Tasks' }).first().locator('..');
+      // Tasks button should have secondary variant (active state)
+      const tasksButton = page.locator('a[href="/tasks"]').first().locator('..');
       await expect(tasksButton).toHaveClass(/secondary/);
     });
 
@@ -190,7 +190,7 @@ test.describe('Navigation and Routing', () => {
       await page.waitForLoadState('networkidle');
       
       // Mobile menu should not be visible initially
-      const mobileNav = page.locator('nav').filter({ hasText: 'Dashboard' });
+      const mobileNav = page.getByTestId('mobile-nav');
       await expect(mobileNav).not.toBeVisible();
       
       // Click menu button
@@ -215,11 +215,11 @@ test.describe('Navigation and Routing', () => {
       // Open mobile menu
       await page.getByLabel('Toggle menu').click();
       
-      const mobileNav = page.locator('nav').filter({ hasText: 'Dashboard' });
+      const mobileNav = page.getByTestId('mobile-nav');
       await expect(mobileNav).toBeVisible();
       
       // Click on Tasks link in mobile menu
-      await page.getByRole('link', { name: 'Tasks' }).last().click();
+      await page.getByTestId('mobile-tasks-link').click();
       await page.waitForLoadState('networkidle');
       
       // Should navigate to tasks
@@ -238,11 +238,11 @@ test.describe('Navigation and Routing', () => {
       // Open mobile menu
       await page.getByLabel('Toggle menu').click();
       
-      // All links should be visible in mobile menu
-      const mobileNav = page.locator('nav').filter({ hasText: 'Dashboard' });
-      await expect(mobileNav.getByRole('link', { name: 'Dashboard' })).toBeVisible();
-      await expect(mobileNav.getByRole('link', { name: 'Tasks' })).toBeVisible();
-      await expect(mobileNav.getByRole('link', { name: 'Profile' })).toBeVisible();
+      // All links should be visible in mobile menu using test IDs
+      const mobileNav = page.getByTestId('mobile-nav');
+      await expect(mobileNav.getByTestId('mobile-dashboard-link')).toBeVisible();
+      await expect(mobileNav.getByTestId('mobile-tasks-link')).toBeVisible();
+      await expect(mobileNav.getByTestId('mobile-profile-link')).toBeVisible();
       await expect(mobileNav.getByRole('button', { name: /Logout/i })).toBeVisible();
     });
   });

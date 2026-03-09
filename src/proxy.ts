@@ -12,6 +12,7 @@ export async function proxy(request: NextRequest) {
   const authOnlyPaths = ["/login", "/signup"];
   
   // Protected routes that require authentication
+  // Note: These paths use startsWith matching, so /tasks protects /tasks/* sub-routes
   const protectedPaths = ["/dashboard", "/tasks", "/profile"];
 
   // Allow static files and API routes to pass through
