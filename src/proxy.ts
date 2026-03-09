@@ -8,12 +8,17 @@ import {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const publicPaths = ["/", "/login", "/signup", "/onboarding", "/favicon.ico"];
+  // Routes that authenticated users should not access
+  const authOnlyPaths = ["/login", "/signup"];
+  
+  // Protected routes that require authentication
+  const protectedPaths = ["/dashboard", "/tasks", "/profile"];
 
+  // Allow static files and API routes to pass through
   if (
-    publicPaths.includes(pathname) ||
     pathname.startsWith("/api") ||
-    pathname.startsWith("/_next")
+    pathname.startsWith("/_next") ||
+    pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
   }
@@ -21,21 +26,34 @@ export async function proxy(request: NextRequest) {
   const sessionToken = request.cookies.get("session_token")?.value;
   const sessionSig = request.cookies.get(SESSION_SIG_COOKIE_NAME)?.value;
 
-  if (!sessionToken || !sessionSig) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // Check if session is valid
+  let isAuthenticated = false;
+  if (sessionToken && sessionSig) {
+    const secret = process.env.SESSION_COOKIE_SECRET;
+    if (secret) {
+      isAuthenticated = await verifySessionCookie(sessionToken, sessionSig, secret);
+    }
   }
 
-  const secret = process.env.SESSION_COOKIE_SECRET;
-  if (!secret) {
-    // Fail closed: without the secret we cannot verify anything.
-    return NextResponse.redirect(new URL("/login", request.url));
+  // Check if current path is protected
+  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
+  
+  // Check if current path is auth-only (login/signup)
+  const isAuthPath = authOnlyPaths.some((path) => pathname.startsWith(path));
+
+  // Redirect unauthenticated users from protected routes to login
+  if (isProtectedPath && !isAuthenticated) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  const valid = await verifySessionCookie(sessionToken, sessionSig, secret);
-  if (!valid) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // Redirect authenticated users away from login/signup to dashboard
+  if (isAuthPath && isAuthenticated) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // Allow public paths and authenticated access to protected paths
   return NextResponse.next();
 }
 

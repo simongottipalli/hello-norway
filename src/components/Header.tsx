@@ -2,17 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, isLoading, refreshSession } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    setIsMobileMenuOpen(false);
     try {
       const response = await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       if (!response.ok) {
@@ -28,6 +32,15 @@ export function Header() {
     }
   };
 
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  const isActivePath = (path: string) => {
+    if (path === "/") return pathname === path;
+    return pathname.startsWith(path);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -36,38 +49,130 @@ export function Header() {
         </Link>
 
         {!isLoading && (
-          <div className="flex items-center gap-3">
+          <>
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-3">
+              {isAuthenticated && user ? (
+                <>
+                  <span className="text-sm text-muted-foreground hidden lg:inline">
+                    Hey {user.email} 👋
+                  </span>
+                  <Button 
+                    variant={isActivePath("/dashboard") ? "secondary" : "ghost"} 
+                    size="sm" 
+                    asChild
+                  >
+                    <Link href="/dashboard">Dashboard</Link>
+                  </Button>
+                  <Button 
+                    variant={isActivePath("/tasks") ? "secondary" : "ghost"} 
+                    size="sm" 
+                    asChild
+                  >
+                    <Link href="/tasks">Tasks</Link>
+                  </Button>
+                  <Button 
+                    variant={isActivePath("/profile") ? "secondary" : "ghost"} 
+                    size="sm" 
+                    asChild
+                  >
+                    <Link href="/profile">Profile</Link>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoggingOut}>
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/login">Login</Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link href="/onboarding">Start</Link>
+                  </Button>
+                </>
+              )}
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-foreground hover:text-foreground/80"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Mobile Navigation Menu */}
+      {!isLoading && isMobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background">
+          <nav className="mx-auto max-w-7xl px-4 py-4 space-y-2">
             {isAuthenticated && user ? (
               <>
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  Hey {user.email} 👋
-                </span>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/dashboard">Dashboard</Link>
+                <div className="pb-2 mb-2 border-b border-border">
+                  <span className="text-sm text-muted-foreground">
+                    Hey {user.email} 👋
+                  </span>
+                </div>
+                <Button 
+                  variant={isActivePath("/dashboard") ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link href="/dashboard" onClick={closeMobileMenu}>Dashboard</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/tasks">Tasks</Link>
+                <Button 
+                  variant={isActivePath("/tasks") ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link href="/tasks" onClick={closeMobileMenu}>Tasks</Link>
                 </Button>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/profile">Profile</Link>
+                <Button 
+                  variant={isActivePath("/profile") ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link href="/profile" onClick={closeMobileMenu}>Profile</Link>
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoggingOut}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  onClick={handleLogout} 
+                  disabled={isLoggingOut}
+                >
                   {isLoggingOut ? "Logging out..." : "Logout"}
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/login">Login</Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link href="/login" onClick={closeMobileMenu}>Login</Link>
                 </Button>
-                <Button size="sm" asChild>
-                  <Link href="/onboarding">Start</Link>
+                <Button 
+                  size="sm" 
+                  className="w-full justify-start"
+                  asChild
+                >
+                  <Link href="/onboarding" onClick={closeMobileMenu}>Start</Link>
                 </Button>
               </>
             )}
-          </div>
-        )}
-      </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
