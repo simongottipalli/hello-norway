@@ -24,6 +24,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Check if current path is protected or auth-only
+  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
+  const isAuthPath = authOnlyPaths.some((path) => pathname.startsWith(path));
+
+  // Skip authentication check if path is neither protected nor auth-only
+  if (!isProtectedPath && !isAuthPath) {
+    return NextResponse.next();
+  }
+
+  // Only verify session for paths that need authentication checks
   const sessionToken = request.cookies.get("session_token")?.value;
   const sessionSig = request.cookies.get(SESSION_SIG_COOKIE_NAME)?.value;
 
@@ -35,12 +45,6 @@ export async function middleware(request: NextRequest) {
       isAuthenticated = await verifySessionCookie(sessionToken, sessionSig, secret);
     }
   }
-
-  // Check if current path is protected
-  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
-  
-  // Check if current path is auth-only (login/signup)
-  const isAuthPath = authOnlyPaths.some((path) => pathname.startsWith(path));
 
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedPath && !isAuthenticated) {
