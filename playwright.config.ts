@@ -50,10 +50,13 @@ export default defineConfig({
     {
       // Use production build for E2E tests to ensure middleware works correctly
       // Next.js 16 dev mode with Turbopack has known issues with middleware execution
-      command: 'SESSION_COOKIE_SECRET="${SESSION_COOKIE_SECRET:-test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890}" npm run start',
+      // Build before starting if in CI environment
+      command: process.env.CI 
+        ? 'npm run build && SESSION_COOKIE_SECRET="${SESSION_COOKIE_SECRET:-test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890}" npm run start'
+        : 'SESSION_COOKIE_SECRET="${SESSION_COOKIE_SECRET:-test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890}" npm run start',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
+      timeout: 180_000, // Increased timeout to account for build time
       stdout: 'ignore',
       stderr: 'pipe',
     },
