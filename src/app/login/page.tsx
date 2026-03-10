@@ -20,6 +20,18 @@ import {
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
+// Validate that a redirect path is safe (internal, no open redirect)
+function isSafeRedirectPath(path: string | null): boolean {
+  if (!path) return false;
+  // Must start with a single slash (internal path)
+  if (!path.startsWith("/")) return false;
+  // Must not start with // (protocol-relative URL)
+  if (path.startsWith("//")) return false;
+  // Must not contain scheme (http://, https://, etc.)
+  if (path.includes("://")) return false;
+  return true;
+}
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -163,7 +175,7 @@ function LoginForm() {
         }
         // Redirect to the originally requested page or dashboard
         setTimeout(() => {
-          if (redirectPath) {
+          if (redirectPath && isSafeRedirectPath(redirectPath)) {
             router.push(redirectPath);
           } else if (fromOnboarding) {
             router.push("/tasks");
