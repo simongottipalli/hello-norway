@@ -101,6 +101,8 @@ export function Header() {
               className="md:hidden p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav"
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </Button>
@@ -110,7 +112,7 @@ export function Header() {
 
       {/* Mobile Navigation Menu */}
       {!isLoading && isMobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background" data-testid="mobile-nav">
+        <div className="md:hidden border-t border-border bg-background" data-testid="mobile-nav" id="mobile-nav">
           <nav className="mx-auto max-w-7xl px-4 py-4 space-y-2">{isAuthenticated && user ? (
               <>
                 <div className="pb-2 mb-2 border-b border-border">

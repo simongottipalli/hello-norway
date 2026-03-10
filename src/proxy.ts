@@ -45,7 +45,9 @@ export async function proxy(request: NextRequest) {
   // Redirect unauthenticated users from protected routes to login
   if (isProtectedPath && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
+    // Include both pathname and search params in redirect
+    const redirectPath = pathname + request.nextUrl.search;
+    loginUrl.searchParams.set("redirect", redirectPath);
     return NextResponse.redirect(loginUrl);
   }
 

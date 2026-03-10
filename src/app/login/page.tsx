@@ -32,6 +32,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromOnboarding = searchParams.get("from") === "onboarding";
+  const redirectPath = searchParams.get("redirect");
   const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -160,9 +161,15 @@ function LoginForm() {
             // Ignore profile sync failures and continue login.
           }
         }
-        // Redirect to dashboard after short delay
+        // Redirect to the originally requested page or dashboard
         setTimeout(() => {
-          router.push(fromOnboarding ? "/tasks" : "/");
+          if (redirectPath) {
+            router.push(redirectPath);
+          } else if (fromOnboarding) {
+            router.push("/tasks");
+          } else {
+            router.push("/dashboard");
+          }
         }, 1000);
       } else {
         setError(data.error || "Invalid or expired OTP");
