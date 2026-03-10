@@ -210,8 +210,11 @@ test.describe('Navigation and Routing', () => {
       const mobileNav = page.getByTestId('mobile-nav');
       await expect(mobileNav).toBeVisible();
       
+      // Wait for authentication to complete by checking for user greeting
+      await expect(mobileNav.getByText(/Hey .+ 👋/)).toBeVisible();
+      
       // Wait for the Tasks link to be visible before clicking
-      const tasksLink = page.getByTestId('mobile-tasks-link');
+      const tasksLink = mobileNav.getByTestId('mobile-tasks-link');
       await expect(tasksLink).toBeVisible();
       await tasksLink.click();
       await page.waitForLoadState('networkidle');
@@ -232,10 +235,14 @@ test.describe('Navigation and Routing', () => {
       // Open mobile menu
       await page.getByLabel('Toggle menu').click();
       
-      // Wait for mobile menu to be visible and all links should be visible using test IDs
+      // Wait for mobile menu to be visible
       const mobileNav = page.getByTestId('mobile-nav');
       await expect(mobileNav).toBeVisible();
       
+      // Wait for authentication to complete by checking for user greeting
+      await expect(mobileNav.getByText(/Hey .+ 👋/)).toBeVisible();
+      
+      // All links should be visible in mobile menu using test IDs
       await expect(mobileNav.getByTestId('mobile-dashboard-link')).toBeVisible();
       await expect(mobileNav.getByTestId('mobile-tasks-link')).toBeVisible();
       await expect(mobileNav.getByTestId('mobile-profile-link')).toBeVisible();
