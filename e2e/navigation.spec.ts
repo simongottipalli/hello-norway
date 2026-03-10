@@ -140,17 +140,17 @@ test.describe('Navigation and Routing', () => {
       await page.goto('/dashboard');
       await page.waitForLoadState('networkidle');
       
-      // Dashboard button should have secondary variant (active state)
-      const dashboardButton = page.locator('a[href="/dashboard"]').first().locator('..');
-      await expect(dashboardButton).toHaveClass(/secondary/);
+      // Dashboard link should have secondary variant classes (active state)
+      const dashboardLink = page.locator('a[href="/dashboard"]').first();
+      await expect(dashboardLink).toHaveClass(/bg-secondary/);
       
       // Go to tasks
       await page.goto('/tasks');
       await page.waitForLoadState('networkidle');
       
-      // Tasks button should have secondary variant (active state)
-      const tasksButton = page.locator('a[href="/tasks"]').first().locator('..');
-      await expect(tasksButton).toHaveClass(/secondary/);
+      // Tasks link should have secondary variant classes (active state)
+      const tasksLink = page.locator('a[href="/tasks"]').first();
+      await expect(tasksLink).toHaveClass(/bg-secondary/);
     });
 
     test('should logout successfully from navigation', async ({ page }) => {

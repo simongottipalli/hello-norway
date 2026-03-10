@@ -124,28 +124,25 @@ export function Header() {
                   variant={isActivePath("/dashboard") ? "secondary" : "ghost"} 
                   size="sm" 
                   className="w-full justify-start"
-                  data-testid="mobile-dashboard-link"
                   asChild
                 >
-                  <Link href="/dashboard" onClick={closeMobileMenu}>Dashboard</Link>
+                  <Link href="/dashboard" onClick={closeMobileMenu} data-testid="mobile-dashboard-link">Dashboard</Link>
                 </Button>
                 <Button 
                   variant={isActivePath("/tasks") ? "secondary" : "ghost"} 
                   size="sm" 
                   className="w-full justify-start"
-                  data-testid="mobile-tasks-link"
                   asChild
                 >
-                  <Link href="/tasks" onClick={closeMobileMenu}>Tasks</Link>
+                  <Link href="/tasks" onClick={closeMobileMenu} data-testid="mobile-tasks-link">Tasks</Link>
                 </Button>
                 <Button 
                   variant={isActivePath("/profile") ? "secondary" : "ghost"} 
                   size="sm" 
                   className="w-full justify-start"
-                  data-testid="mobile-profile-link"
                   asChild
                 >
-                  <Link href="/profile" onClick={closeMobileMenu}>Profile</Link>
+                  <Link href="/profile" onClick={closeMobileMenu} data-testid="mobile-profile-link">Profile</Link>
                 </Button>
                 <Button 
                   variant="outline" 
