@@ -38,9 +38,13 @@ export default defineConfig({
       timeout: 120_000,
       stdout: 'ignore',
       stderr: 'pipe',
+      env: {
+        ...process.env,
+        SESSION_COOKIE_SECRET: process.env.SESSION_COOKIE_SECRET || 'test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890',
+      },
     },
     {
-      command: 'npm run dev:client',
+      command: 'SESSION_COOKIE_SECRET="${SESSION_COOKIE_SECRET:-test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890}" npm run dev:client',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

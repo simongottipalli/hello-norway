@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+// Create a test instance without authentication for unauthenticated tests
+const unauthenticatedTest = test.extend({
+  storageState: { cookies: [], origins: [] },
+});
+
 test.describe('Navigation and Routing', () => {
   test.describe('Protected Routes', () => {
-    test('should redirect unauthenticated users from /dashboard to /login', async ({ page, context }) => {
-      // Clear cookies to simulate unauthenticated state
-      await context.clearCookies();
-      
+    unauthenticatedTest('should redirect unauthenticated users from /dashboard to /login', async ({ page }) => {
       await page.goto('/dashboard');
       await page.waitForLoadState('networkidle');
       
@@ -13,18 +15,14 @@ test.describe('Navigation and Routing', () => {
       await expect(page).toHaveURL(/\/login/);
     });
 
-    test('should redirect unauthenticated users from /tasks to /login', async ({ page, context }) => {
-      await context.clearCookies();
-      
+    unauthenticatedTest('should redirect unauthenticated users from /tasks to /login', async ({ page }) => {
       await page.goto('/tasks');
       await page.waitForLoadState('networkidle');
       
       await expect(page).toHaveURL(/\/login/);
     });
 
-    test('should redirect unauthenticated users from /profile to /login', async ({ page, context }) => {
-      await context.clearCookies();
-      
+    unauthenticatedTest('should redirect unauthenticated users from /profile to /login', async ({ page }) => {
       await page.goto('/profile');
       await page.waitForLoadState('networkidle');
       
@@ -52,32 +50,26 @@ test.describe('Navigation and Routing', () => {
       await page.waitForLoadState('networkidle');
       
       await expect(page).toHaveURL(/\/profile/);
-      await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
     });
   });
 
   test.describe('Public Routes', () => {
-    test('should allow unauthenticated users to access home page', async ({ page, context }) => {
-      await context.clearCookies();
-      
+    unauthenticatedTest('should allow unauthenticated users to access home page', async ({ page }) => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
       
       await expect(page).toHaveURL('/');
     });
 
-    test('should allow unauthenticated users to access /login', async ({ page, context }) => {
-      await context.clearCookies();
-      
+    unauthenticatedTest('should allow unauthenticated users to access /login', async ({ page }) => {
       await page.goto('/login');
       await page.waitForLoadState('networkidle');
       
       await expect(page).toHaveURL('/login');
     });
 
-    test('should allow unauthenticated users to access /onboarding', async ({ page, context }) => {
-      await context.clearCookies();
-      
+    unauthenticatedTest('should allow unauthenticated users to access /onboarding', async ({ page }) => {
       await page.goto('/onboarding');
       await page.waitForLoadState('networkidle');
       
