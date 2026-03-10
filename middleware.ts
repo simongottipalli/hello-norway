@@ -18,8 +18,7 @@ export async function middleware(request: NextRequest) {
   // Allow static files and API routes to pass through
   if (
     pathname.startsWith("/api") ||
-    pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico"
+    pathname.startsWith("/_next")
   ) {
     return NextResponse.next();
   }

@@ -155,18 +155,18 @@ function LoginForm() {
             const storedProfile = localStorage.getItem(ONBOARDING_PROFILE_STORAGE_KEY);
             if (storedProfile) {
               const profilePatchPayload = sanitizeStoredOnboardingProfileForPatch(storedProfile);
-              if (!profilePatchPayload) {
-                return;
-              }
-              const profileResponse = await fetch("/api/auth/profile", {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(profilePatchPayload),
-              });
-              if (profileResponse.ok) {
-                localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+              // Only attempt to patch if there's a valid payload, but continue to redirect regardless
+              if (profilePatchPayload) {
+                const profileResponse = await fetch("/api/auth/profile", {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(profilePatchPayload),
+                });
+                if (profileResponse.ok) {
+                  localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+                }
               }
             }
           } catch {
