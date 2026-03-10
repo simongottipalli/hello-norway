@@ -3,6 +3,10 @@ import path from 'path';
 
 /**
  * See https://playwright.dev/docs/test-configuration.
+ * 
+ * Note: E2E tests use production mode (npm run start) instead of dev mode
+ * because Next.js 16's Turbopack in dev mode has known issues with middleware execution.
+ * Production mode provides a more accurate representation of the deployed application anyway.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -44,7 +48,9 @@ export default defineConfig({
       },
     },
     {
-      command: 'SESSION_COOKIE_SECRET="${SESSION_COOKIE_SECRET:-test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890}" npm run dev:client',
+      // Use production build for E2E tests to ensure middleware works correctly
+      // Next.js 16 dev mode with Turbopack has known issues with middleware execution
+      command: 'SESSION_COOKIE_SECRET="${SESSION_COOKIE_SECRET:-test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890}" npm run start',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
