@@ -38,7 +38,7 @@ export function Header() {
 
   const isActivePath = (path: string) => {
     if (path === "/") return pathname === path;
-    return pathname.startsWith(path);
+    return pathname === path || pathname.startsWith(path + "/");
   };
 
   return (
@@ -57,23 +57,23 @@ export function Header() {
                   <span className="text-sm text-muted-foreground hidden lg:inline">
                     Hey {user.email} 👋
                   </span>
-                  <Button 
-                    variant={isActivePath("/dashboard") ? "secondary" : "ghost"} 
-                    size="sm" 
+                  <Button
+                    variant={isActivePath("/dashboard") ? "secondary" : "ghost"}
+                    size="sm"
                     asChild
                   >
                     <Link href="/dashboard">Dashboard</Link>
                   </Button>
-                  <Button 
-                    variant={isActivePath("/tasks") ? "secondary" : "ghost"} 
-                    size="sm" 
+                  <Button
+                    variant={isActivePath("/tasks") ? "secondary" : "ghost"}
+                    size="sm"
                     asChild
                   >
                     <Link href="/tasks">Tasks</Link>
                   </Button>
-                  <Button 
-                    variant={isActivePath("/profile") ? "secondary" : "ghost"} 
-                    size="sm" 
+                  <Button
+                    variant={isActivePath("/profile") ? "secondary" : "ghost"}
+                    size="sm"
                     asChild
                   >
                     <Link href="/profile">Profile</Link>
@@ -120,35 +120,35 @@ export function Header() {
                     Hey {user.email} 👋
                   </span>
                 </div>
-                <Button 
-                  variant={isActivePath("/dashboard") ? "secondary" : "ghost"} 
-                  size="sm" 
+                <Button
+                  variant={isActivePath("/dashboard") ? "secondary" : "ghost"}
+                  size="sm"
                   className="w-full justify-start"
                   asChild
                 >
                   <Link href="/dashboard" onClick={closeMobileMenu} data-testid="mobile-dashboard-link">Dashboard</Link>
                 </Button>
-                <Button 
-                  variant={isActivePath("/tasks") ? "secondary" : "ghost"} 
-                  size="sm" 
+                <Button
+                  variant={isActivePath("/tasks") ? "secondary" : "ghost"}
+                  size="sm"
                   className="w-full justify-start"
                   asChild
                 >
                   <Link href="/tasks" onClick={closeMobileMenu} data-testid="mobile-tasks-link">Tasks</Link>
                 </Button>
-                <Button 
-                  variant={isActivePath("/profile") ? "secondary" : "ghost"} 
-                  size="sm" 
+                <Button
+                  variant={isActivePath("/profile") ? "secondary" : "ghost"}
+                  size="sm"
                   className="w-full justify-start"
                   asChild
                 >
                   <Link href="/profile" onClick={closeMobileMenu} data-testid="mobile-profile-link">Profile</Link>
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full justify-start"
-                  onClick={handleLogout} 
+                  onClick={handleLogout}
                   disabled={isLoggingOut}
                 >
                   {isLoggingOut ? "Logging out..." : "Logout"}
@@ -156,16 +156,16 @@ export function Header() {
               </>
             ) : (
               <>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="w-full justify-start"
                   asChild
                 >
                   <Link href="/login" onClick={closeMobileMenu}>Login</Link>
                 </Button>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="w-full justify-start"
                   asChild
                 >

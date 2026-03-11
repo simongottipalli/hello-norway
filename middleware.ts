@@ -10,9 +10,9 @@ export async function middleware(request: NextRequest) {
 
   // Routes that authenticated users should not access
   const authOnlyPaths = ["/login", "/signup"];
-  
+
   // Protected routes that require authentication
-  // Note: These paths use startsWith matching, so /tasks protects /tasks/* sub-routes
+  // Exact match or any sub-path (e.g. /tasks protects /tasks/123 but not /tasks-review)
   const protectedPaths = ["/dashboard", "/tasks", "/profile"];
 
   // Allow static files and API routes to pass through
@@ -24,8 +24,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if current path is protected or auth-only
-  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
-  const isAuthPath = authOnlyPaths.some((path) => pathname.startsWith(path));
+  // Use exact match or prefix with "/" to avoid false positives (e.g. /tasks-review matching /tasks)
+  const isProtectedPath = protectedPaths.some((path) => pathname === path || pathname.startsWith(path + "/"));
+  const isAuthPath = authOnlyPaths.some((path) => pathname === path || pathname.startsWith(path + "/"));
 
   // Skip authentication check if path is neither protected nor auth-only
   if (!isProtectedPath && !isAuthPath) {

@@ -10,6 +10,10 @@ loadDotenv({ path: path.join(__dirname, '.env') });
  * Note: E2E tests use production mode (npm run start) instead of dev mode
  * because Next.js 16's Turbopack in dev mode has known issues with middleware execution.
  * Production mode provides a more accurate representation of the deployed application anyway.
+ *
+ * A production build must exist before running tests. Use `npm run test:e2e` which runs
+ * `npm run build` automatically. If invoking Playwright directly (e.g. `playwright test --ui`),
+ * run `npm run build` first.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -51,13 +55,13 @@ export default defineConfig({
       },
     },
     {
-      // Use production build for E2E tests to ensure middleware works correctly
-      // Next.js 16 dev mode with Turbopack has known issues with middleware execution
-      // Build before starting if in CI environment
-      command: process.env.CI ? 'npm run build && npm run start' : 'npm run start',
+      // Use production mode to ensure middleware executes correctly.
+      // Next.js 16's Turbopack dev mode has known issues with middleware execution.
+      // The build is expected to already exist (run via `npm run test:e2e` or manually with `npm run build`).
+      command: 'npm run start',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
-      timeout: 180_000, // Increased timeout to account for build time
+      timeout: 120_000,
       stdout: 'ignore',
       stderr: 'pipe',
       env: {
