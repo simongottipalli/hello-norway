@@ -11,6 +11,7 @@ loadDotenv({ path: path.join(__dirname, '.env') });
  * because Next.js 16's Turbopack in dev mode has known issues with middleware execution.
  * Production mode provides a more accurate representation of the deployed application anyway.
  *
+ * The production server runs on port 3999 so it never conflicts with a dev server on 3000.
  * A production build must exist before running tests. Use `npm run test:e2e` which runs
  * `npm run build` automatically. If invoking Playwright directly (e.g. `playwright test --ui`),
  * run `npm run build` first.
@@ -28,11 +29,15 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.ts',
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3999',
     trace: 'on-first-retry',
     // All tests start with a pre-authenticated browser context.
     storageState: path.join(__dirname, 'e2e', '.auth', 'user.json'),
   },
+
+  // Increase assertion timeout from the 5s default to accommodate pages that
+  // render their headings only after one or more API calls complete (e.g. Dashboard).
+  expect: { timeout: 10_000 },
 
   projects: [
     {
@@ -59,11 +64,12 @@ export default defineConfig({
       },
     },
     {
-      // Use production mode to ensure middleware executes correctly.
-      // Next.js 16's Turbopack dev mode has known issues with middleware execution.
-      // The build is expected to already exist (run via `npm run test:e2e` or manually with `npm run build`).
+      // Dedicated port 3999 so this production server never conflicts with a
+      // dev server running on 3000. Middleware executes correctly in production —
+      // Next.js 16's Turbopack dev mode has a known limitation where it does not.
+      // The build is expected to already exist (run via `npm run test:e2e` or `npm run build`).
       command: 'npm run start',
-      url: 'http://localhost:3000',
+      url: 'http://localhost:3999',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       stdout: 'ignore',
@@ -75,6 +81,7 @@ export default defineConfig({
         EMAIL_FROM: process.env.EMAIL_FROM ?? '',
         BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
         NODE_ENV: process.env.NODE_ENV ?? 'test',
+        PORT: '3999',
       },
     },
   ],

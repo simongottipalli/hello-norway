@@ -111,6 +111,17 @@ async function main() {
   const results = [];
 
   try {
+    // E2E tests always require a production build (Next.js 16 dev mode has
+    // known middleware issues, and data-testid attributes must be compiled in).
+    // Build once up front when E2E tests are in scope.
+    if (flags.e2e && !flags.watch) {
+      const buildResult = await runCommand('npm', ['run', 'build'], 'Build');
+      if (!buildResult.success) {
+        results.push(buildResult);
+        flags.e2e = false; // skip E2E if the build failed
+      }
+    }
+
     if (flags.parallel && flags.unit && flags.e2e) {
       log('Running tests in parallel mode...\n', colors.yellow);
 
