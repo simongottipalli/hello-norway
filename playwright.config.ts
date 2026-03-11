@@ -50,8 +50,12 @@ export default defineConfig({
       stdout: 'ignore',
       stderr: 'pipe',
       env: {
-        ...process.env,
+        DATABASE_URL: process.env.DATABASE_URL ?? '',
         SESSION_COOKIE_SECRET: process.env.SESSION_COOKIE_SECRET || 'test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890',
+        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? '',
+        EMAIL_FROM: process.env.EMAIL_FROM ?? '',
+        BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
+        NODE_ENV: process.env.NODE_ENV ?? 'test',
       },
     },
     {
@@ -65,8 +69,12 @@ export default defineConfig({
       stdout: 'ignore',
       stderr: 'pipe',
       env: {
-        ...process.env,
+        DATABASE_URL: process.env.DATABASE_URL ?? '',
         SESSION_COOKIE_SECRET: process.env.SESSION_COOKIE_SECRET || 'test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890',
+        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? '',
+        EMAIL_FROM: process.env.EMAIL_FROM ?? '',
+        BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
+        NODE_ENV: process.env.NODE_ENV ?? 'test',
       },
     },
   ],

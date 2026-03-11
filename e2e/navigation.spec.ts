@@ -110,10 +110,10 @@ test.describe('Navigation and Routing', () => {
       await page.waitForLoadState('networkidle');
 
       // Check for desktop navigation links
-      await expect(page.getByRole('link', { name: 'Dashboard' }).first()).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Tasks' }).first()).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Profile' }).first()).toBeVisible();
-      await expect(page.getByRole('button', { name: /Logout/i }).first()).toBeVisible();
+      await expect(page.getByTestId('nav-dashboard-link')).toBeVisible();
+      await expect(page.getByTestId('nav-tasks-link')).toBeVisible();
+      await expect(page.getByTestId('nav-profile-link')).toBeVisible();
+      await expect(page.getByTestId('nav-logout-button')).toBeVisible();
     });
 
     test('should navigate between pages using navigation links', async ({ page }) => {
@@ -121,17 +121,17 @@ test.describe('Navigation and Routing', () => {
       await page.waitForLoadState('networkidle');
 
       // Navigate to Tasks
-      await page.getByRole('link', { name: 'Tasks' }).first().click();
+      await page.getByTestId('nav-tasks-link').click();
       await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(/\/tasks/);
 
       // Navigate to Profile
-      await page.getByRole('link', { name: 'Profile' }).first().click();
+      await page.getByTestId('nav-profile-link').click();
       await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(/\/profile/);
 
       // Navigate back to Dashboard
-      await page.getByRole('link', { name: 'Dashboard' }).first().click();
+      await page.getByTestId('nav-dashboard-link').click();
       await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(/\/dashboard/);
     });
@@ -141,17 +141,15 @@ test.describe('Navigation and Routing', () => {
       await page.goto('/dashboard');
       await page.waitForLoadState('networkidle');
 
-      // Dashboard link should have secondary variant classes (active state)
-      const dashboardLink = page.locator('a[href="/dashboard"]').first();
-      await expect(dashboardLink).toHaveClass(/bg-secondary/);
+      // Dashboard link should have the active attribute set
+      await expect(page.getByTestId('nav-dashboard-link')).toHaveAttribute('data-active', 'true');
 
       // Go to tasks
       await page.goto('/tasks');
       await page.waitForLoadState('networkidle');
 
-      // Tasks link should have secondary variant classes (active state)
-      const tasksLink = page.locator('a[href="/tasks"]').first();
-      await expect(tasksLink).toHaveClass(/bg-secondary/);
+      // Tasks link should have the active attribute set
+      await expect(page.getByTestId('nav-tasks-link')).toHaveAttribute('data-active', 'true');
     });
 
     logoutTest('should logout successfully from navigation', async ({ page }) => {
@@ -159,7 +157,7 @@ test.describe('Navigation and Routing', () => {
       await page.waitForLoadState('networkidle');
 
       // Click logout button
-      await page.getByRole('button', { name: /Logout/i }).first().click();
+      await page.getByTestId('nav-logout-button').click();
 
       // Should be redirected to home page
       await page.waitForLoadState('networkidle');
