@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Dashboard Task Details Modal', () => {
   test.beforeEach(async ({ page }) => {
     // Set viewport to desktop size for consistency
-    await page.setViewportSize({ width: 1280, height 800 });
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/dashboard');
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
   });
