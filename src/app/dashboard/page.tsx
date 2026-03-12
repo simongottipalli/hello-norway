@@ -177,8 +177,8 @@ export default function DashboardPage() {
               </p>
             </div>
 
-        {/* Progress Summary */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Progress Summary */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Total Tasks</CardDescription>
@@ -212,200 +212,200 @@ export default function DashboardPage() {
 
         {/* Overdue Tasks */}
         {overdueTasks.length > 0 && (
-          <Card className="border-destructive/50">
-            <CardHeader>
-              <CardTitle className="text-destructive">
-                Overdue Tasks ({overdueTasks.length})
-              </CardTitle>
-              <CardDescription>
-                These tasks are past their due date
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {overdueTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-medium">{task.title}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {formatCategory(task.category)}
-                        </Badge>
+              <Card className="border-destructive/50">
+                <CardHeader>
+                  <CardTitle className="text-destructive">
+                    Overdue Tasks ({overdueTasks.length})
+                  </CardTitle>
+                  <CardDescription>
+                    These tasks are past their due date
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {overdueTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-medium">{task.title}</h3>
+                            <Badge variant="secondary" className="text-xs">
+                              {formatCategory(task.category)}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {task.shortDescription}
+                          </p>
+                          <p className="text-xs font-medium text-destructive">
+                            Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/tasks?taskId=${task.id}`}>View</Link>
+                        </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {task.shortDescription}
-                      </p>
-                      <p className="text-xs font-medium text-destructive">
-                        Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/tasks?taskId=${task.id}`}>View</Link>
-                    </Button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Upcoming Tasks */}
-        {upcomingTasks.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Tasks ({upcomingTasks.length})</CardTitle>
-              <CardDescription>
-                Tasks due in the next 14 days
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {upcomingTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-medium">{task.title}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {formatCategory(task.category)}
-                        </Badge>
-                        <Badge
-                          variant={task.status === "SAVED" ? "default" : "outline"}
-                          className="text-xs"
-                        >
-                          {task.status === "SAVED" ? "In Progress" : "To Do"}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {task.shortDescription}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/tasks?taskId=${task.id}`}>View</Link>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Task Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Tasks</CardTitle>
-            <CardDescription>
-              Filter and view all your tasks
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Filters */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex-1">
-                <Label htmlFor="category-filter">
-                  Filter by Category
-                </Label>
-                <Select
-                  id="category-filter"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="mt-2"
-                >
-                  <option value="ALL">All Categories</option>
-                  {TASK_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {formatCategory(category)}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="flex-1">
-                <Label htmlFor="status-filter">
-                  Filter by Status
-                </Label>
-                <Select
-                  id="status-filter"
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="mt-2"
-                >
-                  <option value="ALL">All Statuses</option>
-                  <option value="TODO">To Do</option>
-                  <option value="SAVED">In Progress</option>
-                  <option value="DONE">Completed</option>
-                </Select>
-              </div>
-            </div>
-
-            {/* Task Grid */}
-            {filteredTasks.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                {selectedCategory !== "ALL" || selectedStatus !== "ALL"
-                  ? "No tasks match the selected filters."
-                  : "No tasks available. Complete your onboarding to get personalized tasks."}
-              </div>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredTasks.map((task) => (
-                  <Card key={task.id} className="hover:bg-accent/30 transition-colors">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <CardTitle className="text-base">{task.title}</CardTitle>
-                        <Badge
-                          variant={
-                            task.status === "DONE"
-                              ? "default"
-                              : task.status === "SAVED"
-                                ? "default"
-                                : "outline"
-                          }
-                          className="text-xs"
-                        >
-                          {task.status === "DONE"
-                            ? "Completed"
-                            : task.status === "SAVED"
-                              ? "In Progress"
-                              : "To Do"}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {formatCategory(task.category)}
-                        </Badge>
-                        {isTaskOverdue(task) && (
-                          <Badge variant="destructive" className="text-xs">
-                            Overdue
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {task.shortDescription}
-                      </p>
-                      {task.dueDate && (
-                        <p className="text-xs text-muted-foreground">
-                          Due: {formatDueDateWithTimezone(task.dueDate)}
-                        </p>
-                      )}
-                      <Button variant="outline" size="sm" className="w-full" asChild>
-                        <Link href={`/tasks?taskId=${task.id}`}>View Details</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+
+            {/* Upcoming Tasks */}
+            {upcomingTasks.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upcoming Tasks ({upcomingTasks.length})</CardTitle>
+                  <CardDescription>
+                    Tasks due in the next 14 days
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {upcomingTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-sm font-medium">{task.title}</h3>
+                            <Badge variant="secondary" className="text-xs">
+                              {formatCategory(task.category)}
+                            </Badge>
+                            <Badge
+                              variant={task.status === "SAVED" ? "default" : "outline"}
+                              className="text-xs"
+                            >
+                              {task.status === "SAVED" ? "In Progress" : "To Do"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {task.shortDescription}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/tasks?taskId=${task.id}`}>View</Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Task Filters */}
+            <Card>
+              <CardHeader>
+                <CardTitle>All Tasks</CardTitle>
+                <CardDescription>
+                  Filter and view all your tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Filters */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div className="flex-1">
+                    <Label htmlFor="category-filter">
+                      Filter by Category
+                    </Label>
+                    <Select
+                      id="category-filter"
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="mt-2"
+                    >
+                      <option value="ALL">All Categories</option>
+                      {TASK_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {formatCategory(category)}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="status-filter">
+                      Filter by Status
+                    </Label>
+                    <Select
+                      id="status-filter"
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      className="mt-2"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="TODO">To Do</option>
+                      <option value="SAVED">In Progress</option>
+                      <option value="DONE">Completed</option>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Task Grid */}
+                {filteredTasks.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    {selectedCategory !== "ALL" || selectedStatus !== "ALL"
+                      ? "No tasks match the selected filters."
+                      : "No tasks available. Complete your onboarding to get personalized tasks."}
+                  </div>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredTasks.map((task) => (
+                      <Card key={task.id} className="hover:bg-accent/30 transition-colors">
+                        <CardHeader className="pb-3">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <CardTitle className="text-base">{task.title}</CardTitle>
+                            <Badge
+                              variant={
+                                task.status === "DONE"
+                                  ? "default"
+                                  : task.status === "SAVED"
+                                    ? "default"
+                                    : "outline"
+                              }
+                              className="text-xs"
+                            >
+                              {task.status === "DONE"
+                                ? "Completed"
+                                : task.status === "SAVED"
+                                  ? "In Progress"
+                                  : "To Do"}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {formatCategory(task.category)}
+                            </Badge>
+                            {isTaskOverdue(task) && (
+                              <Badge variant="destructive" className="text-xs">
+                                Overdue
+                              </Badge>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {task.shortDescription}
+                          </p>
+                          {task.dueDate && (
+                            <p className="text-xs text-muted-foreground">
+                              Due: {formatDueDateWithTimezone(task.dueDate)}
+                            </p>
+                          )}
+                          <Button variant="outline" size="sm" className="w-full" asChild>
+                            <Link href={`/tasks?taskId=${task.id}`}>View Details</Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

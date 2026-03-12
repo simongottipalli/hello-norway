@@ -22,7 +22,7 @@ export function DashboardSidebar({
   upcomingCount,
 }: DashboardSidebarProps) {
   return (
-    <aside className="hidden lg:block w-64 flex-shrink-0">
+    <aside className="hidden lg:block w-64 flex-shrink-0" aria-label="Dashboard sidebar">
       <div className="sticky top-24 space-y-4">
         {/* Quick Stats Card */}
         <Card>
