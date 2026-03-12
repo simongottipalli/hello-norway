@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { TaskCategory } from "@/generated/prisma/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
@@ -17,6 +16,12 @@ import {
   isTaskUpcoming,
   formatDueDateWithTimezone,
 } from "@/lib/dateUtils";
+import {
+  extractWhyItMatters,
+  getTaskDescription,
+  getOfficialLinks,
+  formatRecurrenceInfo,
+} from "@/components/TaskList";
 
 interface Task {
   id: string;
@@ -57,6 +62,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -135,6 +141,16 @@ export default function DashboardPage() {
       return a.sortOrder - b.sortOrder;
     });
   }, [tasks, selectedCategory, selectedStatus]);
+
+  const selectedTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) : null;
+
+  const openTaskOverlay = (taskId: string) => {
+    setSelectedTaskId(taskId);
+  };
+
+  const closeTaskOverlay = () => {
+    setSelectedTaskId(null);
+  };
 
   if (authLoading || (isAuthenticated && isLoading)) {
     return <DashboardSkeleton />;
@@ -243,8 +259,12 @@ export default function DashboardPage() {
                             Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/tasks?taskId=${task.id}`}>View</Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openTaskOverlay(task.id)}
+                        >
+                          View
                         </Button>
                       </div>
                     ))}
@@ -289,8 +309,12 @@ export default function DashboardPage() {
                             Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/tasks?taskId=${task.id}`}>View</Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openTaskOverlay(task.id)}
+                        >
+                          View
                         </Button>
                       </div>
                     ))}
@@ -397,8 +421,13 @@ export default function DashboardPage() {
                               Due: {formatDueDateWithTimezone(task.dueDate)}
                             </p>
                           )}
-                          <Button variant="outline" size="sm" className="w-full" asChild>
-                            <Link href={`/tasks?taskId=${task.id}`}>View Details</Link>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => openTaskOverlay(task.id)}
+                          >
+                            View Details
                           </Button>
                         </CardContent>
                       </Card>
@@ -410,6 +439,137 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Task Details Overlay */}
+      {selectedTask && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 px-4 py-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Task details for ${selectedTask.title}`}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              closeTaskOverlay();
+            }
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeTaskOverlay();
+            }
+          }}
+        >
+          <div className="max-h-full w-full max-w-2xl overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Task details</p>
+                <h2 className="text-xl font-semibold">{selectedTask.title}</h2>
+              </div>
+              <Button variant="outline" size="sm" onClick={closeTaskOverlay}>
+                Close
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold">Description</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {selectedTask.shortDescription}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold">Full information</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {getTaskDescription(selectedTask.body) || selectedTask.body}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold">Category</h3>
+                <Badge variant="secondary" className="mt-1">
+                  {formatCategory(selectedTask.category)}
+                </Badge>
+              </div>
+
+              {selectedTask.status && (
+                <div>
+                  <h3 className="text-sm font-semibold">Status</h3>
+                  <Badge
+                    variant={
+                      selectedTask.status === "DONE"
+                        ? "default"
+                        : selectedTask.status === "SAVED"
+                          ? "default"
+                          : "outline"
+                    }
+                    className="mt-1"
+                  >
+                    {selectedTask.status === "DONE"
+                      ? "Completed"
+                      : selectedTask.status === "SAVED"
+                        ? "In Progress"
+                        : "To Do"}
+                  </Badge>
+                </div>
+              )}
+
+              {selectedTask.dueDate && (
+                <div>
+                  <h3 className="text-sm font-semibold">Due Date</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {formatDueDateWithTimezone(selectedTask.dueDate)}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <h3 className="text-sm font-semibold">Why it matters</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {extractWhyItMatters(selectedTask.body) || "No additional context provided."}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold">Official links</h3>
+                {getOfficialLinks(selectedTask.officialLinks).length === 0 ? (
+                  <p className="mt-1 text-sm text-muted-foreground">No official links provided.</p>
+                ) : (
+                  <ul className="mt-1 list-inside list-disc space-y-1">
+                    {getOfficialLinks(selectedTask.officialLinks).map((link) => (
+                      <li key={link.url}>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary underline underline-offset-2"
+                        >
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold">Recurrence information</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {formatRecurrenceInfo(selectedTask.minDaysFromArrival, selectedTask.maxDaysFromArrival)}
+                </p>
+              </div>
+
+              {selectedTask.personalNotes && (
+                <div>
+                  <h3 className="text-sm font-semibold">Personal Notes</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {selectedTask.personalNotes}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
