@@ -36,6 +36,7 @@ async function signSessionCookie(
 
 export const TEST_USER_EMAIL = "e2e-test@example.com";
 export const AUTH_STATE_PATH = path.join(__dirname, ".auth", "user.json");
+export const LOGOUT_AUTH_STATE_PATH = path.join(__dirname, ".auth", "user-logout.json");
 
 export default async function globalSetup() {
   // Require a session secret — same var the app uses.
@@ -64,38 +65,35 @@ export default async function globalSetup() {
 
   // The helper prints exactly one JSON line to stdout.
   const jsonLine = raw.split("\n").pop()!.trim();
-  const { sessionToken, expiresAt: expiresAtISO } = JSON.parse(jsonLine);
+  const parsed = JSON.parse(jsonLine);
+  const { sessionToken, logoutSessionToken, expiresAt: expiresAtISO } = parsed;
   const expiresAt = new Date(expiresAtISO);
 
   const sessionSig = await signSessionCookie(sessionToken, expiresAt, secret);
+  const logoutSessionSig = await signSessionCookie(logoutSessionToken, expiresAt, secret);
 
   // Persist cookies as Playwright storageState so every test starts authed.
   fs.mkdirSync(path.dirname(AUTH_STATE_PATH), { recursive: true });
 
   const browser = await chromium.launch();
-  const context = await browser.newContext();
 
-  await context.addCookies([
-    {
-      name: "session_token",
-      value: sessionToken,
-      domain: "localhost",
-      path: "/",
-      httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
-    },
-    {
-      name: "session_sig",
-      value: sessionSig,
-      domain: "localhost",
-      path: "/",
-      httpOnly: true,
-      secure: false,
-      sameSite: "Lax",
-    },
+  // Main session: used by all tests.
+  const mainContext = await browser.newContext();
+  await mainContext.addCookies([
+    { name: "session_token", value: sessionToken, domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax" },
+    { name: "session_sig", value: sessionSig, domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax" },
   ]);
+  await mainContext.storageState({ path: AUTH_STATE_PATH });
 
-  await context.storageState({ path: AUTH_STATE_PATH });
+  // Logout session: isolated session used only by the logout test so that
+  // when it calls /api/auth/logout (which deletes the session from the DB),
+  // the main session remains intact for all subsequent tests.
+  const logoutContext = await browser.newContext();
+  await logoutContext.addCookies([
+    { name: "session_token", value: logoutSessionToken, domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax" },
+    { name: "session_sig", value: logoutSessionSig, domain: "localhost", path: "/", httpOnly: true, secure: false, sameSite: "Lax" },
+  ]);
+  await logoutContext.storageState({ path: LOGOUT_AUTH_STATE_PATH });
+
   await browser.close();
 }

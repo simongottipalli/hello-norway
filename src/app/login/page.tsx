@@ -20,6 +20,18 @@ import {
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
+// Validate that a redirect path is safe (internal, no open redirect)
+function isSafeRedirectPath(path: string | null): boolean {
+  if (!path) return false;
+  // Must start with a single slash (internal path)
+  if (!path.startsWith("/")) return false;
+  // Must not start with // (protocol-relative URL)
+  if (path.startsWith("//")) return false;
+  // Must not contain scheme (http://, https://, etc.)
+  if (path.includes("://")) return false;
+  return true;
+}
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -32,7 +44,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromOnboarding = searchParams.get("from") === "onboarding";
-  const { isAuthenticated, isLoading: isAuthLoading, refreshSession } = useAuth();
+  const redirectPath = searchParams.get("redirect");
+  const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -40,14 +53,6 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [justLoggedIn, setJustLoggedIn] = useState(false);
-
-  // Redirect if already authenticated (but not if we just logged in - that redirect is handled by the login flow)
-  useEffect(() => {
-    if (!isAuthLoading && isAuthenticated && !justLoggedIn) {
-      router.replace("/tasks");
-    }
-  }, [isAuthenticated, isAuthLoading, justLoggedIn, router]);
 
   // Cooldown timer
   useEffect(() => {
@@ -144,34 +149,39 @@ function LoginForm() {
 
       if (response.ok && data.success) {
         setSuccessMessage("Login successful! Redirecting...");
-        setJustLoggedIn(true); // Prevent the useEffect redirect from firing
         await refreshSession();
         if (fromOnboarding) {
           try {
             const storedProfile = localStorage.getItem(ONBOARDING_PROFILE_STORAGE_KEY);
             if (storedProfile) {
               const profilePatchPayload = sanitizeStoredOnboardingProfileForPatch(storedProfile);
-              if (!profilePatchPayload) {
-                return;
-              }
-              const profileResponse = await fetch("/api/auth/profile", {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(profilePatchPayload),
-              });
-              if (profileResponse.ok) {
-                localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+              // Only attempt to patch if there's a valid payload, but continue to redirect regardless
+              if (profilePatchPayload) {
+                const profileResponse = await fetch("/api/auth/profile", {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(profilePatchPayload),
+                });
+                if (profileResponse.ok) {
+                  localStorage.removeItem(ONBOARDING_PROFILE_STORAGE_KEY);
+                }
               }
             }
           } catch {
             // Ignore profile sync failures and continue login.
           }
         }
-        // Redirect to dashboard after short delay
+        // Redirect to the originally requested page or dashboard
         setTimeout(() => {
-          router.push(fromOnboarding ? "/tasks" : "/");
+          if (redirectPath && isSafeRedirectPath(redirectPath)) {
+            router.push(redirectPath);
+          } else if (fromOnboarding) {
+            router.push("/tasks");
+          } else {
+            router.push("/dashboard");
+          }
         }, 1000);
       } else {
         setError(data.error || "Invalid or expired OTP");
@@ -193,34 +203,6 @@ function LoginForm() {
       action();
     }
   };
-
-  // Show loading while checking auth
-  if (isAuthLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex items-center justify-center py-6">
-            <p className="text-muted-foreground">Loading...</p>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
-
-  // Show redirecting state when already authenticated (will redirect via useEffect)
-  if (isAuthenticated) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex items-center justify-center py-6">
-            <p className="text-muted-foreground" role="status" aria-live="polite">
-              Redirecting...
-            </p>
-          </CardContent>
-        </Card>
-      </main>
-    );
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">

@@ -1,8 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
+import { config as loadDotenv } from 'dotenv';
+
+loadDotenv({ path: path.join(__dirname, '.env') });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
+ *
+ * Note: E2E tests use production mode (npm run start) instead of dev mode
+ * because Next.js 16's Turbopack in dev mode has known issues with middleware execution.
+ * Production mode provides a more accurate representation of the deployed application anyway.
+ *
+ * The production server runs on port 3999 so it never conflicts with a dev server on 3000.
+ * A production build must exist before running tests. Use `npm run test:e2e` which runs
+ * `npm run build` automatically. If invoking Playwright directly (e.g. `playwright test --ui`),
+ * run `npm run build` first.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -17,11 +29,15 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.ts',
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3999',
     trace: 'on-first-retry',
     // All tests start with a pre-authenticated browser context.
     storageState: path.join(__dirname, 'e2e', '.auth', 'user.json'),
   },
+
+  // Increase assertion timeout from the 5s default to accommodate pages that
+  // render their headings only after one or more API calls complete (e.g. Dashboard).
+  expect: { timeout: 10_000 },
 
   projects: [
     {
@@ -38,14 +54,35 @@ export default defineConfig({
       timeout: 120_000,
       stdout: 'ignore',
       stderr: 'pipe',
+      env: {
+        DATABASE_URL: process.env.DATABASE_URL ?? '',
+        SESSION_COOKIE_SECRET: process.env.SESSION_COOKIE_SECRET || 'test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890',
+        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? '',
+        EMAIL_FROM: process.env.EMAIL_FROM ?? '',
+        BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
+        NODE_ENV: process.env.NODE_ENV ?? 'test',
+      },
     },
     {
-      command: 'npm run dev:client',
-      url: 'http://localhost:3000',
+      // Dedicated port 3999 so this production server never conflicts with a
+      // dev server running on 3000. Middleware executes correctly in production —
+      // Next.js 16's Turbopack dev mode has a known limitation where it does not.
+      // The build is expected to already exist (run via `npm run test:e2e` or `npm run build`).
+      command: 'npm run start',
+      url: 'http://localhost:3999',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       stdout: 'ignore',
       stderr: 'pipe',
+      env: {
+        DATABASE_URL: process.env.DATABASE_URL ?? '',
+        SESSION_COOKIE_SECRET: process.env.SESSION_COOKIE_SECRET || 'test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890',
+        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? '',
+        EMAIL_FROM: process.env.EMAIL_FROM ?? '',
+        BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
+        NODE_ENV: process.env.NODE_ENV ?? 'test',
+        PORT: '3999',
+      },
     },
   ],
 });

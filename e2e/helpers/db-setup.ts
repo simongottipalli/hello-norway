@@ -28,15 +28,23 @@ async function main() {
       create: { email, name: "E2E Test User" },
     });
 
-    const sessionToken = crypto.randomBytes(48).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    // Main session: used by all tests
+    const sessionToken = crypto.randomBytes(48).toString("hex");
     await prisma.session.create({
       data: { sessionToken, userId: user.id, expiresAt },
     });
 
+    // Logout session: used exclusively by the logout test so it can be
+    // safely deleted without invalidating the main session used by other tests.
+    const logoutSessionToken = crypto.randomBytes(48).toString("hex");
+    await prisma.session.create({
+      data: { sessionToken: logoutSessionToken, userId: user.id, expiresAt },
+    });
+
     // Output JSON for the calling process to parse.
-    console.log(JSON.stringify({ sessionToken, expiresAt: expiresAt.toISOString(), userId: user.id }));
+    console.log(JSON.stringify({ sessionToken, logoutSessionToken, expiresAt: expiresAt.toISOString(), userId: user.id }));
   } finally {
     await prisma.$disconnect();
   }

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, beforeEach, vi } from "vitest";
+import { describe, it, expect, afterAll, beforeAll, beforeEach, vi } from "vitest";
 import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
 import { randomUUID } from "node:crypto";
@@ -43,6 +43,29 @@ describe("Task API", () => {
   });
 
   describe("GET /api/tasks", () => {
+    let getTestTaskId: string;
+
+    beforeAll(async () => {
+      const task = await prisma.task.create({
+        data: {
+          slug: `get-test-task-${Date.now()}`,
+          title: "Get Test Task",
+          shortDescription: "Task for GET tests",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 9999,
+          officialLinks: {},
+        },
+      });
+      getTestTaskId = task.id;
+    });
+
+    afterAll(async () => {
+      if (getTestTaskId) {
+        await prisma.task.delete({ where: { id: getTestTaskId } }).catch(() => {});
+      }
+    });
+
     it("should return all tasks", async () => {
       const response = await request(app).get("/api/tasks");
 
@@ -337,17 +360,29 @@ describe("Task API", () => {
     });
 
     it("should return 400 when updating to duplicate slug", async () => {
-      const existingTask = await prisma.task.findFirst({
-        where: { id: { not: createdTaskId } },
+      const secondTask = await prisma.task.create({
+        data: {
+          slug: `duplicate-slug-source-${Date.now()}`,
+          title: "Second Task",
+          shortDescription: "Source for duplicate slug test",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 9997,
+          officialLinks: {},
+        },
       });
 
-      const response = await request(app)
-        .patch(`/api/tasks/${createdTaskId}`)
-        .send({ slug: existingTask!.slug })
-        .set("Content-Type", "application/json");
+      try {
+        const response = await request(app)
+          .patch(`/api/tasks/${createdTaskId}`)
+          .send({ slug: secondTask.slug })
+          .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("already exists");
+        expect(response.status).toBe(400);
+        expect(response.body.error).toContain("already exists");
+      } finally {
+        await prisma.task.delete({ where: { id: secondTask.id } }).catch(() => {});
+      }
     });
   });
 
