@@ -9,8 +9,7 @@ test.describe('Dashboard Left Panel', () => {
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
     // The sidebar should be visible on desktop - use complementary role for sidebar
-    const sidebar = page.getByRole('complementary');
-    
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
     // Check for Quick Stats section in sidebar
     const quickStatsHeading = sidebar.getByRole('heading', { name: 'Quick Stats' });
     await expect(quickStatsHeading).toBeVisible();
