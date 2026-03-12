@@ -45,6 +45,17 @@ export function AddTaskDialog({
     }
   }, [open]);
 
+  /**
+   * Formats enum keys for display in the UI
+   * Example: 'IDENTITY_BANKING' becomes 'Identity Banking'
+   */
+  const formatEnumKey = (key: string): string => {
+    return key
+      .split('_')
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   const generateSlug = (text: string): string => {
     // Generate a short random suffix (6 characters)
     const suffix = Math.random().toString(36).substring(2, 8);
@@ -183,9 +194,7 @@ export function AddTaskDialog({
             >
               {Object.entries(TaskCategory).map(([key, value]) => (
                 <option key={value} value={value}>
-                  {key.split('_').map(word => 
-                    word.charAt(0) + word.slice(1).toLowerCase()
-                  ).join(' ')}
+                  {formatEnumKey(key)}
                 </option>
               ))}
             </Select>
