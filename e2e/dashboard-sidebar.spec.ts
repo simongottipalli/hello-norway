@@ -14,9 +14,9 @@ test.describe('Dashboard Left Panel', () => {
     const quickStatsHeading = sidebar.getByRole('heading', { name: 'Quick Stats' });
     await expect(quickStatsHeading).toBeVisible();
 
-    // Check for Quick Links section in sidebar
-    const quickLinksHeading = sidebar.getByRole('heading', { name: 'Quick Links' });
-    await expect(quickLinksHeading).toBeVisible();
+    // Check for Quick Actions section in sidebar
+    const quickActionsHeading = sidebar.getByRole('heading', { name: 'Quick Actions' });
+    await expect(quickActionsHeading).toBeVisible();
 
     // Verify stats are displayed in the sidebar
     await expect(sidebar.getByText('Total Tasks')).toBeVisible();
@@ -52,19 +52,76 @@ test.describe('Dashboard Left Panel', () => {
     await expect(quickStatsHeading).not.toBeVisible();
   });
 
-  test('should navigate from quick links', async ({ page }) => {
+  test('should navigate to profile from quick actions', async ({ page }) => {
     // Set viewport to desktop size
     await page.setViewportSize({ width: 1280, height: 800 });
 
     await page.goto('/dashboard');
     
-    // Click on "All Tasks" link in the sidebar
-    const allTasksLink = page.getByRole('link', { name: 'All Tasks' });
-    await expect(allTasksLink).toBeVisible();
-    await allTasksLink.click();
+    // Click on "Profile" button in the sidebar
+    const profileButton = page.getByRole('button', { name: 'Profile' });
+    await expect(profileButton).toBeVisible();
+    await profileButton.click();
 
-    // Should navigate to tasks page
-    await expect(page).toHaveURL(/\/tasks/);
-    await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
+    // Should navigate to profile page
+    await expect(page).toHaveURL(/\/profile/);
+    await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible();
+  });
+
+  test('should open add task dialog from quick actions', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+    
+    // Click on "Add Task" button in the sidebar
+    const addTaskButton = page.getByRole('button', { name: 'Add Task' });
+    await expect(addTaskButton).toBeVisible();
+    await addTaskButton.click();
+
+    // Should open the add task dialog
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Add New Task' })).toBeVisible();
+    
+    // Verify form fields are present
+    await expect(page.getByLabel('Task Name *')).toBeVisible();
+    await expect(page.getByLabel('Description')).toBeVisible();
+    await expect(page.getByLabel('Due Date')).toBeVisible();
+    await expect(page.getByLabel('Category')).toBeVisible();
+    await expect(page.getByLabel('Links / URLs')).toBeVisible();
+    
+    // Verify buttons
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add Task' })).toBeVisible();
+  });
+
+  test('should create task from add task dialog', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+    
+    // Open the add task dialog
+    await page.getByRole('button', { name: 'Add Task' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Fill in the form
+    await page.getByLabel('Task Name *').fill('Test Custom Task');
+    await page.getByLabel('Description').fill('This is a test task created from the dashboard');
+    await page.getByLabel('Category').selectOption('HEALTHCARE');
+    await page.getByLabel('Links / URLs').fill('https://helsenorge.no\nhttps://nav.no');
+
+    // Submit the form
+    await page.getByRole('button', { name: 'Add Task' }).click();
+
+    // Wait for the page to reload (the dialog closes and page refreshes)
+    await page.waitForLoadState('networkidle');
+
+    // Verify we're still on the dashboard
+    await expect(page).toHaveURL(/\/dashboard/);
+    
+    // Verify the task appears in the task list
+    await expect(page.getByText('Test Custom Task')).toBeVisible();
   });
 });
