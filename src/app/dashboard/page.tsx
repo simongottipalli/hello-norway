@@ -123,6 +123,16 @@ export default function DashboardPage() {
     [selectedTaskId, tasks],
   );
 
+  useEffect(() => {
+    if (!selectedTaskId) {
+      return;
+    }
+
+    const exists = tasks.some((t) => t.id === selectedTaskId);
+    if (!exists) {
+      setSelectedTaskId(null);
+    }
+  }, [selectedTaskId, tasks]);
   if (authLoading || (isAuthenticated && isLoading)) {
     return <DashboardSkeleton />;
   }
