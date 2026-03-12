@@ -19,18 +19,24 @@ interface DashboardSidebarProps {
   };
   overdueCount: number;
   upcomingCount: number;
+  onTaskCreated?: () => void;
 }
 
 export function DashboardSidebar({
   stats,
   overdueCount,
   upcomingCount,
+  onTaskCreated,
 }: DashboardSidebarProps) {
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
 
   const handleTaskCreated = () => {
-    // Refresh the page data to show the new task
+    // Call the parent's fetch function to reload tasks
+    if (onTaskCreated) {
+      onTaskCreated();
+    }
+    // Also refresh router cache for good measure
     router.refresh();
   };
 
