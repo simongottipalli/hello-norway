@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
+import { TaskCategory } from "@/generated/prisma/enums";
 
 interface AddTaskDialogProps {
   open: boolean;
@@ -28,11 +29,21 @@ export function AddTaskDialog({
 }: AddTaskDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
   const [category, setCategory] = useState("OTHER");
   const [links, setLinks] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Reset form state when dialog is closed
+  useEffect(() => {
+    if (!open) {
+      setTitle("");
+      setDescription("");
+      setCategory("OTHER");
+      setLinks("");
+      setError("");
+    }
+  }, [open]);
 
   const generateSlug = (text: string): string => {
     // Generate a short random suffix (6 characters)
@@ -94,7 +105,6 @@ export function AddTaskDialog({
         category: category,
         sortOrder: Math.floor(Math.random() * 30000), // Bounded to fit SmallInt
         officialLinks: officialLinks,
-        ...(dueDate && { dueDate: new Date(dueDate).toISOString() }),
       };
 
       const response = await fetch("/api/tasks", {
@@ -113,7 +123,6 @@ export function AddTaskDialog({
       // Reset form
       setTitle("");
       setDescription("");
-      setDueDate("");
       setCategory("OTHER");
       setLinks("");
 
@@ -165,17 +174,6 @@ export function AddTaskDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="task-due-date">Due Date</Label>
-            <Input
-              id="task-due-date"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="task-category">Category</Label>
             <Select
               id="task-category"
@@ -183,13 +181,13 @@ export function AddTaskDialog({
               onChange={(e) => setCategory(e.target.value)}
               disabled={isSubmitting}
             >
-              <option value="HOUSING">Housing</option>
-              <option value="WORK">Work</option>
-              <option value="BANKING">Banking</option>
-              <option value="HEALTHCARE">Healthcare</option>
-              <option value="EDUCATION">Education</option>
-              <option value="TRANSPORT">Transport</option>
-              <option value="OTHER">Other</option>
+              {Object.entries(TaskCategory).map(([key, value]) => (
+                <option key={value} value={value}>
+                  {key.split('_').map(word => 
+                    word.charAt(0) + word.slice(1).toLowerCase()
+                  ).join(' ')}
+                </option>
+              ))}
             </Select>
           </div>
 
