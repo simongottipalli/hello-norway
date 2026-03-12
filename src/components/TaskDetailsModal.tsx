@@ -1,190 +1,19 @@
 "use client";
 
-import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import type { Task, TaskTrackingState, ApiErrorResponse } from "@/types/task";
-
-type OfficialLink = {
-  label: string;
-  url: string;
-};
-
-const DEFAULT_TRACKING_STATE: TaskTrackingState = {
-  status: "not_started",
-  dueDate: "",
-  personalNotes: "",
-};
-
-const toDateInputValue = (value?: string | null) => {
-  if (!value) {
-    return "";
-  }
-
-  return value.slice(0, 10);
-};
-
-const getInitialTaskState = (task: Task): TaskTrackingState => ({
-  status:
-    task.status === "DONE" ? "completed" : task.status === "SAVED" ? "in_progress" : "not_started",
-  dueDate: toDateInputValue(task.dueDate),
-  personalNotes: task.personalNotes ?? "",
-});
-
-const isApiErrorResponse = (value: unknown): value is ApiErrorResponse => {
-  return Boolean(
-    value &&
-      typeof value === "object" &&
-      "error" in value &&
-      typeof (value as { error?: unknown }).error === "string",
-  );
-};
-
-export const extractWhyItMatters = (body: string) => {
-  const marker = "Why it matters:";
-  const markerIndex = body.indexOf(marker);
-
-  if (markerIndex === -1) {
-    return "";
-  }
-
-  return body.slice(markerIndex + marker.length).trim();
-};
-
-export const getTaskDescription = (body: string) => {
-  const marker = "Why it matters:";
-  const markerIndex = body.indexOf(marker);
-
-  if (markerIndex === -1) {
-    return body.trim();
-  }
-
-  return body.slice(0, markerIndex).trim();
-};
-
-export const getOfficialLinks = (value: unknown): OfficialLink[] => {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((entry) => {
-    if (!entry || typeof entry !== "object") {
-      return [];
-    }
-
-    const label = "label" in entry && typeof entry.label === "string" ? entry.label : null;
-    const url = "url" in entry && typeof entry.url === "string" ? entry.url : null;
-
-    if (!label || !url) {
-      return [];
-    }
-
-    return [{ label, url }];
-  });
-};
-
-export const formatRecurrenceInfo = (
-  minDaysFromArrival?: number | null,
-  maxDaysFromArrival?: number | null,
-) => {
-  if (minDaysFromArrival == null && maxDaysFromArrival == null) {
-    return "No timing window specified.";
-  }
-
-  if (minDaysFromArrival != null && maxDaysFromArrival != null) {
-    return `Recommended timing: ${minDaysFromArrival} to ${maxDaysFromArrival} days from arrival.`;
-  }
-
-  if (minDaysFromArrival != null) {
-    return `Recommended timing: From ${minDaysFromArrival} days from arrival.`;
-  }
-
-  return `Recommended timing: Up to ${maxDaysFromArrival} days from arrival.`;
-};
-
-interface TaskTrackingControlsProps {
-  taskId: string;
-  idPrefix: string;
-  trackingState?: TaskTrackingState;
-  completedAt?: string | null;
-  error?: string;
-  isSaving: boolean;
-  notesRows: number;
-  saveButtonSize?: ComponentProps<typeof Button>["size"];
-  onFieldChange: <K extends keyof TaskTrackingState>(field: K, value: TaskTrackingState[K]) => void;
-  onSave: () => void;
-}
-
-function TaskTrackingControls({
-  taskId,
-  idPrefix,
-  trackingState,
-  completedAt,
-  error,
-  isSaving,
-  notesRows,
-  saveButtonSize,
-  onFieldChange,
-  onSave,
-}: TaskTrackingControlsProps) {
-  return (
-    <>
-      <div className="grid gap-2 sm:max-w-xs">
-        <Label htmlFor={`${idPrefix}-status-${taskId}`}>Status</Label>
-        <Select
-          id={`${idPrefix}-status-${taskId}`}
-          value={trackingState?.status ?? "not_started"}
-          onChange={(event) =>
-            onFieldChange("status", event.target.value as TaskTrackingState["status"])
-          }
-        >
-          <option value="not_started">Not started</option>
-          <option value="in_progress">In progress</option>
-          <option value="completed">Completed</option>
-        </Select>
-      </div>
-
-      <div className="grid gap-2 sm:max-w-xs">
-        <Label htmlFor={`${idPrefix}-dueDate-${taskId}`}>Personal due date</Label>
-        <Input
-          id={`${idPrefix}-dueDate-${taskId}`}
-          type="date"
-          value={trackingState?.dueDate ?? ""}
-          onChange={(event) => onFieldChange("dueDate", event.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor={`${idPrefix}-notes-${taskId}`}>Private notes</Label>
-        <Textarea
-          id={`${idPrefix}-notes-${taskId}`}
-          value={trackingState?.personalNotes ?? ""}
-          onChange={(event) => onFieldChange("personalNotes", event.target.value)}
-          rows={notesRows}
-          placeholder="Add your notes for this task"
-        />
-      </div>
-
-      {completedAt && (
-        <p className="text-xs text-muted-foreground">
-          Completed on {new Date(completedAt).toLocaleDateString("en-CA")}
-        </p>
-      )}
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <div>
-        <Button size={saveButtonSize} onClick={onSave} disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save progress"}
-        </Button>
-      </div>
-    </>
-  );
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TaskTrackingControls } from "@/components/TaskTrackingControls";
+import type { Task, TaskTrackingState } from "@/types/task";
+import {
+  getInitialTaskState,
+  isApiErrorResponse,
+  extractWhyItMatters,
+  getTaskDescription,
+  getOfficialLinks,
+  formatRecurrenceInfo,
+} from "@/lib/taskHelpers";
 
 interface TaskDetailsModalProps {
   task: Task;
@@ -193,7 +22,6 @@ interface TaskDetailsModalProps {
 }
 
 export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskDetailsModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
   const [trackingState, setTrackingState] = useState<TaskTrackingState>(() =>
     getInitialTaskState(task),
   );
@@ -203,43 +31,6 @@ export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskD
   useEffect(() => {
     setTrackingState(getInitialTaskState(task));
   }, [task]);
-
-  // Focus trap: ensure focus stays within the modal
-  useEffect(() => {
-    const modalElement = modalRef.current;
-    if (!modalElement) return;
-
-    const focusableElements = modalElement.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
-    const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-
-      if (e.shiftKey) {
-        // Shift + Tab
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement?.focus();
-        }
-      } else {
-        // Tab
-        if (document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement?.focus();
-        }
-      }
-    };
-
-    modalElement.addEventListener("keydown", handleTabKey);
-    firstElement?.focus();
-
-    return () => {
-      modalElement.removeEventListener("keydown", handleTabKey);
-    };
-  }, []);
 
   const handleTrackingFieldChange = <K extends keyof TaskTrackingState>(
     field: K,
@@ -289,36 +80,28 @@ export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskD
   const taskOfficialLinks = getOfficialLinks(task.officialLinks);
 
   return (
-    <div
-      ref={modalRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 px-4 py-8"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Task details for ${task.title}`}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          onClose();
-        }
-      }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div className="max-h-full w-full max-w-2xl overflow-y-auto rounded-lg border bg-card p-6 shadow-lg">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs text-muted-foreground">Task details</p>
-            <h2 className="text-xl font-semibold">{task.title}</h2>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto"
+        aria-labelledby="task-details-title"
+        aria-describedby="task-details-description"
+      >
+        <DialogHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Task details</p>
+              <DialogTitle id="task-details-title" className="text-xl">
+                {task.title}
+              </DialogTitle>
+            </div>
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Close
+            </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Close
-          </Button>
-        </div>
+        </DialogHeader>
 
         <div className="space-y-4">
-          <div>
+          <div id="task-details-description">
             <h3 className="text-sm font-semibold">Description</h3>
             <p className="mt-1 text-sm text-muted-foreground">{task.shortDescription}</p>
           </div>
@@ -383,7 +166,7 @@ export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskD
             onSave={handleTrackingSave}
           />
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
