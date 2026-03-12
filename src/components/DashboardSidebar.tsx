@@ -65,6 +65,11 @@ export function DashboardSidebar({
                 <div
                   className="h-full bg-primary rounded-full transition-all"
                   style={{ width: `${stats.percentComplete}%` }}
+                  role="progressbar"
+                  aria-label="Task completion progress"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={stats.percentComplete}
                 />
               </div>
             </div>
