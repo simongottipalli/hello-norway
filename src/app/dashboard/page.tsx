@@ -137,6 +137,11 @@ export default function DashboardPage() {
     });
   }, [tasks, selectedCategory, selectedStatus]);
 
+  const selectedTask = useMemo(
+    () => (selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : null),
+    [selectedTaskId, tasks],
+  );
+
   if (authLoading || (isAuthenticated && isLoading)) {
     return <DashboardSkeleton />;
   }
@@ -425,16 +430,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {(() => {
-        const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : null;
-        return selectedTask ? (
-          <TaskDetailsModal
-            task={selectedTask}
-            onClose={() => setSelectedTaskId(null)}
-            onTaskUpdated={fetchTasks}
-          />
-        ) : null;
-      })()}
+      {selectedTask && (
+        <TaskDetailsModal
+          task={selectedTask}
+          onClose={() => setSelectedTaskId(null)}
+          onTaskUpdated={fetchTasks}
+        />
+      )}
     </main>
   );
 }
