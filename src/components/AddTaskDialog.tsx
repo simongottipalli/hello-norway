@@ -100,9 +100,8 @@ export function AddTaskDialog({
           try {
             const url = new URL(link);
             if (url.protocol === "http:" || url.protocol === "https:") {
-              const hostname = url.hostname.replace("www.", "");
-              // Format hostname as label (capitalize first letter)
-              const label = hostname.charAt(0).toUpperCase() + hostname.slice(1);
+              // Use hostname without 'www.' as label
+              const label = url.hostname.replace("www.", "");
               officialLinks.push({ label, url: link });
             }
             // Links with other protocols are ignored and not persisted

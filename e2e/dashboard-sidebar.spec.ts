@@ -110,8 +110,6 @@ test.describe('Dashboard Left Panel', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
 
-    // Generate a unique task slug for cleanup
-    const uniqueSlug = `test-custom-task-${Date.now()}`;
     const taskTitle = 'Test Custom Task';
 
     // Fill in the form within the dialog
