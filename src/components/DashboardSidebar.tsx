@@ -1,6 +1,13 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AddTaskDialog } from "@/components/AddTaskDialog";
+import { Plus, User } from "lucide-react";
 
 interface DashboardSidebarProps {
   stats: {
@@ -12,13 +19,27 @@ interface DashboardSidebarProps {
   };
   overdueCount: number;
   upcomingCount: number;
+  onTaskCreated?: () => void;
 }
 
 export function DashboardSidebar({
   stats,
   overdueCount,
   upcomingCount,
+  onTaskCreated,
 }: DashboardSidebarProps) {
+  const router = useRouter();
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+
+  const handleTaskCreated = async () => {
+    // Call the parent's fetch function to reload tasks
+    if (onTaskCreated) {
+      await onTaskCreated();
+    }
+    // Refresh router cache as well for good measure
+    router.refresh();
+  };
+
   return (
     <aside className="hidden lg:block w-64 flex-shrink-0" aria-label="Dashboard sidebar">
       <div className="sticky top-24 space-y-4">
@@ -76,32 +97,38 @@ export function DashboardSidebar({
           </CardContent>
         </Card>
 
-        {/* Quick Navigation Card */}
+        {/* Quick Actions Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Quick Links</CardTitle>
+            <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link
-              href="/tasks"
-              className="block px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors"
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              asChild
             >
-              All Tasks
-            </Link>
-            <Link
-              href="/profile"
-              className="block px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors"
+              <Link href="/profile">
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </Link>
+            </Button>
+            <Button
+              variant="default"
+              className="w-full justify-start"
+              onClick={() => setIsAddTaskDialogOpen(true)}
             >
-              Profile Settings
-            </Link>
-            <Link
-              href="/onboarding"
-              className="block px-3 py-2 text-sm rounded-md hover:bg-accent transition-colors"
-            >
-              Onboarding
-            </Link>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Task
+            </Button>
           </CardContent>
         </Card>
+
+        <AddTaskDialog
+          open={isAddTaskDialogOpen}
+          onOpenChange={setIsAddTaskDialogOpen}
+          onTaskCreated={handleTaskCreated}
+        />
       </div>
     </aside>
   );

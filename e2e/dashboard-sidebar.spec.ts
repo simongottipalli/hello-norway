@@ -14,9 +14,9 @@ test.describe('Dashboard Left Panel', () => {
     const quickStatsHeading = sidebar.getByRole('heading', { name: 'Quick Stats' });
     await expect(quickStatsHeading).toBeVisible();
 
-    // Check for Quick Links section in sidebar
-    const quickLinksHeading = sidebar.getByRole('heading', { name: 'Quick Links' });
-    await expect(quickLinksHeading).toBeVisible();
+    // Check for Quick Actions section in sidebar
+    const quickActionsHeading = sidebar.getByRole('heading', { name: 'Quick Actions' });
+    await expect(quickActionsHeading).toBeVisible();
 
     // Verify stats are displayed in the sidebar
     await expect(sidebar.getByText('Total Tasks')).toBeVisible();
@@ -52,19 +52,91 @@ test.describe('Dashboard Left Panel', () => {
     await expect(quickStatsHeading).not.toBeVisible();
   });
 
-  test('should navigate from quick links', async ({ page }) => {
+  test('should navigate to profile from quick actions', async ({ page }) => {
     // Set viewport to desktop size
     await page.setViewportSize({ width: 1280, height: 800 });
 
     await page.goto('/dashboard');
     
-    // Click on "All Tasks" link in the sidebar
-    const allTasksLink = page.getByRole('link', { name: 'All Tasks' });
-    await expect(allTasksLink).toBeVisible();
-    await allTasksLink.click();
+    // Click on "Profile" link in the sidebar
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    const profileLink = sidebar.getByRole('link', { name: 'Profile' });
+    await expect(profileLink).toBeVisible();
+    await profileLink.click();
 
-    // Should navigate to tasks page
-    await expect(page).toHaveURL(/\/tasks/);
-    await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
+    // Should navigate to profile page
+    await page.waitForURL(/\/profile/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/profile/);
+  });
+
+  test('should open add task dialog from quick actions', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+    
+    // Click on "Add Task" button in the sidebar
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    const addTaskButton = sidebar.getByRole('button', { name: 'Add Task' });
+    await expect(addTaskButton).toBeVisible();
+    await addTaskButton.click();
+
+    // Should open the add task dialog
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Add New Task' })).toBeVisible();
+    
+    // Verify form fields are present in the dialog
+    await expect(dialog.getByLabel('Task Name *')).toBeVisible();
+    await expect(dialog.getByLabel('Description')).toBeVisible();
+    await expect(dialog.getByLabel('Category')).toBeVisible();
+    await expect(dialog.getByLabel('Links / URLs')).toBeVisible();
+    
+    // Verify buttons
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Add Task' })).toBeVisible();
+  });
+
+  test('should create task from add task dialog', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+    
+    // Open the add task dialog from sidebar
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    await sidebar.getByRole('button', { name: 'Add Task' }).click();
+    
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    const taskTitle = 'Test Custom Task';
+
+    // Fill in the form within the dialog
+    await dialog.getByLabel('Task Name *').fill(taskTitle);
+    await dialog.getByLabel('Description').fill('This is a test task created from the dashboard');
+    await dialog.getByLabel('Category').selectOption('HEALTH');
+    await dialog.getByLabel('Links / URLs').fill('https://helsenorge.no\nhttps://nav.no');
+
+    // Submit the form - this should close the dialog
+    await dialog.getByRole('button', { name: 'Add Task' }).click();
+
+    // Wait for the dialog to close
+    await expect(dialog).not.toBeVisible({ timeout: 15000 });
+
+    // Verify we're still on the dashboard
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    // Clean up: Delete the created task
+    // Fetch all tasks to find the one we just created
+    const response = await page.request.get('/api/tasks/personalized');
+    if (response.ok()) {
+      const tasks = await response.json();
+      const createdTask = tasks.find((task: { title: string }) => task.title === taskTitle);
+      if (createdTask) {
+        // Delete the task using the API
+        await page.request.delete(`/api/tasks/${createdTask.id}`);
+      }
+    }
   });
 });

@@ -58,28 +58,28 @@ export default function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        setError("");
-        const response = await fetch("/api/tasks/personalized");
+  const fetchTasks = async () => {
+    try {
+      setError("");
+      const response = await fetch("/api/tasks/personalized");
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch tasks");
-        }
-
-        const data = await response.json();
-        if (!Array.isArray(data)) {
-          throw new Error("Unexpected response while loading tasks");
-        }
-        setTasks(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load tasks");
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error("Failed to fetch tasks");
       }
-    };
 
+      const data = await response.json();
+      if (!Array.isArray(data)) {
+        throw new Error("Unexpected response while loading tasks");
+      }
+      setTasks(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load tasks");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (isAuthenticated && !authLoading) {
       fetchTasks();
     }
@@ -165,6 +165,7 @@ export default function DashboardPage() {
             stats={stats}
             overdueCount={overdueTasks.length}
             upcomingCount={upcomingTasks.length}
+            onTaskCreated={fetchTasks}
           />
 
           {/* Main Content */}
