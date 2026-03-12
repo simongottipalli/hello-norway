@@ -120,10 +120,10 @@ test.describe('Dashboard Left Panel', () => {
     // Submit the form - this should trigger a page reload
     await dialog.getByRole('button', { name: 'Add Task' }).click();
 
-    // Wait for navigation to complete (page reload happens after successful task creation)
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    // Wait for the dashboard to be loaded after successful task creation
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 15000 });
 
-    // Verify we're on the dashboard and the dialog is no longer present
-    await expect(page).toHaveURL(/\/dashboard/);
+    // Verify the newly created task is visible on the dashboard
+    await expect(page.getByText('Test Custom Task')).toBeVisible();
   });
 });
