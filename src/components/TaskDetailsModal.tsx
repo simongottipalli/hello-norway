@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps, useEffect, useState } from "react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -222,6 +222,7 @@ interface TaskDetailsModalProps {
 }
 
 export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskDetailsModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
   const [trackingState, setTrackingState] = useState<TaskTrackingState>(() =>
     getInitialTaskState(task),
   );
@@ -231,6 +232,43 @@ export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskD
   useEffect(() => {
     setTrackingState(getInitialTaskState(task));
   }, [task]);
+
+  // Focus trap: ensure focus stays within the modal
+  useEffect(() => {
+    const modalElement = modalRef.current;
+    if (!modalElement) return;
+
+    const focusableElements = modalElement.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    modalElement.addEventListener("keydown", handleTabKey);
+    firstElement?.focus();
+
+    return () => {
+      modalElement.removeEventListener("keydown", handleTabKey);
+    };
+  }, []);
 
   const handleTrackingFieldChange = <K extends keyof TaskTrackingState>(
     field: K,
@@ -281,6 +319,7 @@ export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskD
 
   return (
     <div
+      ref={modalRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 px-4 py-8"
       role="dialog"
       aria-modal="true"

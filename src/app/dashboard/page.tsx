@@ -425,13 +425,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {selectedTaskId && tasks.find((t) => t.id === selectedTaskId) && (
-        <TaskDetailsModal
-          task={tasks.find((t) => t.id === selectedTaskId)!}
-          onClose={() => setSelectedTaskId(null)}
-          onTaskUpdated={fetchTasks}
-        />
-      )}
+      {(() => {
+        const selectedTask = selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : null;
+        return selectedTask ? (
+          <TaskDetailsModal
+            task={selectedTask}
+            onClose={() => setSelectedTaskId(null)}
+            onTaskUpdated={fetchTasks}
+          />
+        ) : null;
+      })()}
     </main>
   );
 }
