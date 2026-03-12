@@ -31,12 +31,12 @@ export function DashboardSidebar({
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
 
-  const handleTaskCreated = () => {
+  const handleTaskCreated = async () => {
     // Call the parent's fetch function to reload tasks
     if (onTaskCreated) {
-      onTaskCreated();
+      await onTaskCreated();
     }
-    // Also refresh router cache for good measure
+    // Refresh router cache as well for good measure
     router.refresh();
   };
 
