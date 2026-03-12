@@ -95,15 +95,16 @@ export function DashboardSidebar({
             <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link href="/profile">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-              >
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              asChild
+            >
+              <Link href="/profile">
                 <User className="mr-2 h-4 w-4" />
                 Profile
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <Button
               variant="default"
               className="w-full justify-start"

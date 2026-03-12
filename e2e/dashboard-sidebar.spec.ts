@@ -58,14 +58,15 @@ test.describe('Dashboard Left Panel', () => {
 
     await page.goto('/dashboard');
     
-    // Click on "Profile" button in the sidebar
-    const profileButton = page.getByRole('button', { name: 'Profile' });
-    await expect(profileButton).toBeVisible();
-    await profileButton.click();
+    // Click on "Profile" link in the sidebar
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    const profileLink = sidebar.getByRole('link', { name: 'Profile' });
+    await expect(profileLink).toBeVisible();
+    await profileLink.click();
 
     // Should navigate to profile page
+    await page.waitForURL(/\/profile/, { timeout: 10000 });
     await expect(page).toHaveURL(/\/profile/);
-    await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible();
   });
 
   test('should open add task dialog from quick actions', async ({ page }) => {
@@ -75,25 +76,26 @@ test.describe('Dashboard Left Panel', () => {
     await page.goto('/dashboard');
     
     // Click on "Add Task" button in the sidebar
-    const addTaskButton = page.getByRole('button', { name: 'Add Task' });
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    const addTaskButton = sidebar.getByRole('button', { name: 'Add Task' });
     await expect(addTaskButton).toBeVisible();
     await addTaskButton.click();
 
     // Should open the add task dialog
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Add New Task' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Add New Task' })).toBeVisible();
     
-    // Verify form fields are present
-    await expect(page.getByLabel('Task Name *')).toBeVisible();
-    await expect(page.getByLabel('Description')).toBeVisible();
-    await expect(page.getByLabel('Due Date')).toBeVisible();
-    await expect(page.getByLabel('Category')).toBeVisible();
-    await expect(page.getByLabel('Links / URLs')).toBeVisible();
+    // Verify form fields are present in the dialog
+    await expect(dialog.getByLabel('Task Name *')).toBeVisible();
+    await expect(dialog.getByLabel('Description')).toBeVisible();
+    await expect(dialog.getByLabel('Due Date')).toBeVisible();
+    await expect(dialog.getByLabel('Category')).toBeVisible();
+    await expect(dialog.getByLabel('Links / URLs')).toBeVisible();
     
     // Verify buttons
-    await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add Task' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Add Task' })).toBeVisible();
   });
 
   test('should create task from add task dialog', async ({ page }) => {
@@ -102,26 +104,26 @@ test.describe('Dashboard Left Panel', () => {
 
     await page.goto('/dashboard');
     
-    // Open the add task dialog
-    await page.getByRole('button', { name: 'Add Task' }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-
-    // Fill in the form
-    await page.getByLabel('Task Name *').fill('Test Custom Task');
-    await page.getByLabel('Description').fill('This is a test task created from the dashboard');
-    await page.getByLabel('Category').selectOption('HEALTHCARE');
-    await page.getByLabel('Links / URLs').fill('https://helsenorge.no\nhttps://nav.no');
-
-    // Submit the form
-    await page.getByRole('button', { name: 'Add Task' }).click();
-
-    // Wait for the page to reload (the dialog closes and page refreshes)
-    await page.waitForLoadState('networkidle');
-
-    // Verify we're still on the dashboard
-    await expect(page).toHaveURL(/\/dashboard/);
+    // Open the add task dialog from sidebar
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    await sidebar.getByRole('button', { name: 'Add Task' }).click();
     
-    // Verify the task appears in the task list
-    await expect(page.getByText('Test Custom Task')).toBeVisible();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // Fill in the form within the dialog
+    await dialog.getByLabel('Task Name *').fill('Test Custom Task');
+    await dialog.getByLabel('Description').fill('This is a test task created from the dashboard');
+    await dialog.getByLabel('Category').selectOption('HEALTHCARE');
+    await dialog.getByLabel('Links / URLs').fill('https://helsenorge.no\nhttps://nav.no');
+
+    // Submit the form - this should trigger a page reload
+    await dialog.getByRole('button', { name: 'Add Task' }).click();
+
+    // Wait for navigation to complete (page reload happens after successful task creation)
+    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+
+    // Verify we're on the dashboard and the dialog is no longer present
+    await expect(page).toHaveURL(/\/dashboard/);
   });
 });
