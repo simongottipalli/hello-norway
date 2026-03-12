@@ -95,15 +95,17 @@ export function AddTaskDialog({
           .map((link) => link.trim())
           .filter((link) => link.length > 0);
 
-        linksList.forEach((link, index) => {
-          // Try to extract a meaningful key from the URL
+        linksList.forEach((link) => {
+          // Try to extract a meaningful key from the URL and only accept http/https links
           try {
             const url = new URL(link);
-            const hostname = url.hostname.replace("www.", "");
-            officialLinks[hostname] = link;
+            if (url.protocol === "http:" || url.protocol === "https:") {
+              const hostname = url.hostname.replace("www.", "");
+              officialLinks[hostname] = link;
+            }
+            // Links with other protocols are ignored and not persisted
           } catch {
-            // If not a valid URL, just use a generic key
-            officialLinks[`link${index + 1}`] = link;
+            // Invalid URLs are ignored and not persisted
           }
         });
       }
