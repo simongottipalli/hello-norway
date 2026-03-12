@@ -85,20 +85,6 @@ export function Header() {
                   >
                     <Link href="/dashboard" data-testid="nav-dashboard-link" data-active={isActivePath("/dashboard") || undefined}>Dashboard</Link>
                   </Button>
-                  <Button
-                    variant={isActivePath("/tasks") ? "secondary" : "ghost"}
-                    size="sm"
-                    asChild
-                  >
-                    <Link href="/tasks" data-testid="nav-tasks-link" data-active={isActivePath("/tasks") || undefined}>Tasks</Link>
-                  </Button>
-                  <Button
-                    variant={isActivePath("/profile") ? "secondary" : "ghost"}
-                    size="sm"
-                    asChild
-                  >
-                    <Link href="/profile" data-testid="nav-profile-link" data-active={isActivePath("/profile") || undefined}>Profile</Link>
-                  </Button>
                   <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoggingOut} data-testid="nav-logout-button">
                     {isLoggingOut ? "Logging out..." : "Logout"}
                   </Button>
@@ -148,22 +134,6 @@ export function Header() {
                   asChild
                 >
                   <Link href="/dashboard" onClick={closeMobileMenu} data-testid="mobile-dashboard-link" data-active={isActivePath("/dashboard") || undefined}>Dashboard</Link>
-                </Button>
-                <Button
-                  variant={isActivePath("/tasks") ? "secondary" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  asChild
-                >
-                  <Link href="/tasks" onClick={closeMobileMenu} data-testid="mobile-tasks-link" data-active={isActivePath("/tasks") || undefined}>Tasks</Link>
-                </Button>
-                <Button
-                  variant={isActivePath("/profile") ? "secondary" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start"
-                  asChild
-                >
-                  <Link href="/profile" onClick={closeMobileMenu} data-testid="mobile-profile-link" data-active={isActivePath("/profile") || undefined}>Profile</Link>
                 </Button>
                 <Button
                   variant="outline"
