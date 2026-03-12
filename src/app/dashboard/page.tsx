@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { TaskCategory } from "@/generated/prisma/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
 import {
   parseUtcDate,
   isTaskOverdue,
@@ -157,14 +158,24 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Track your progress and manage your tasks
-          </p>
-        </div>
+      <div className="mx-auto max-w-7xl">
+        <div className="flex gap-8">
+          {/* Left Sidebar */}
+          <DashboardSidebar
+            stats={stats}
+            overdueCount={overdueTasks.length}
+            upcomingCount={upcomingTasks.length}
+          />
+
+          {/* Main Content */}
+          <div className="flex-1 space-y-8 min-w-0">
+            {/* Header */}
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Dashboard</h1>
+              <p className="text-muted-foreground">
+                Track your progress and manage your tasks
+              </p>
+            </div>
 
         {/* Progress Summary */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -395,6 +406,8 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+          </div>
+        </div>
       </div>
     </main>
   );
