@@ -35,14 +35,22 @@ export function AddTaskDialog({
   const [error, setError] = useState("");
 
   const generateSlug = (text: string): string => {
-    return (
-      text
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-") + `-${Date.now()}`
-    );
+    // Generate a short random suffix (6 characters)
+    const suffix = Math.random().toString(36).substring(2, 8);
+    
+    // Slugify the title and truncate to leave room for suffix
+    const slugified = text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+    
+    // Ensure total length stays within 80 chars (leaving room for -suffix)
+    const maxBaseLength = 80 - suffix.length - 1; // -1 for the hyphen
+    const truncated = slugified.substring(0, maxBaseLength);
+    
+    return `${truncated}-${suffix}`;
   };
 
   const handleSubmit = async (e: FormEvent) => {
