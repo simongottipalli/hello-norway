@@ -88,7 +88,7 @@ export function AddTaskDialog({
 
     try {
       // Parse links if provided (expecting comma-separated or newline-separated URLs)
-      const officialLinks: Record<string, string> = {};
+      const officialLinks: Array<{ label: string; url: string }> = [];
       if (links.trim()) {
         const linksList = links
           .split(/[\n,]+/)
@@ -96,12 +96,14 @@ export function AddTaskDialog({
           .filter((link) => link.length > 0);
 
         linksList.forEach((link) => {
-          // Try to extract a meaningful key from the URL and only accept http/https links
+          // Try to extract a meaningful label from the URL and only accept http/https links
           try {
             const url = new URL(link);
             if (url.protocol === "http:" || url.protocol === "https:") {
               const hostname = url.hostname.replace("www.", "");
-              officialLinks[hostname] = link;
+              // Format hostname as label (capitalize first letter)
+              const label = hostname.charAt(0).toUpperCase() + hostname.slice(1);
+              officialLinks.push({ label, url: link });
             }
             // Links with other protocols are ignored and not persisted
           } catch {

@@ -110,8 +110,12 @@ test.describe('Dashboard Left Panel', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
 
+    // Generate a unique task slug for cleanup
+    const uniqueSlug = `test-custom-task-${Date.now()}`;
+    const taskTitle = 'Test Custom Task';
+
     // Fill in the form within the dialog
-    await dialog.getByLabel('Task Name *').fill('Test Custom Task');
+    await dialog.getByLabel('Task Name *').fill(taskTitle);
     await dialog.getByLabel('Description').fill('This is a test task created from the dashboard');
     await dialog.getByLabel('Category').selectOption('HEALTH');
     await dialog.getByLabel('Links / URLs').fill('https://helsenorge.no\nhttps://nav.no');
@@ -124,5 +128,17 @@ test.describe('Dashboard Left Panel', () => {
 
     // Verify we're still on the dashboard
     await expect(page).toHaveURL(/\/dashboard/);
+
+    // Clean up: Delete the created task
+    // Fetch all tasks to find the one we just created
+    const response = await page.request.get('/api/tasks/personalized');
+    if (response.ok()) {
+      const tasks = await response.json();
+      const createdTask = tasks.find((task: { title: string }) => task.title === taskTitle);
+      if (createdTask) {
+        // Delete the task using the API
+        await page.request.delete(`/api/tasks/${createdTask.id}`);
+      }
+    }
   });
 });
