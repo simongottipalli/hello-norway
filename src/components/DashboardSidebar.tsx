@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,11 +26,12 @@ export function DashboardSidebar({
   overdueCount,
   upcomingCount,
 }: DashboardSidebarProps) {
+  const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
 
   const handleTaskCreated = () => {
-    // Refresh the page to show the new task
-    window.location.reload();
+    // Refresh the page data to show the new task
+    router.refresh();
   };
 
   return (

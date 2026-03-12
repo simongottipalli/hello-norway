@@ -82,9 +82,9 @@ export function AddTaskDialog({
         slug: generateSlug(title),
         title: title.trim(),
         shortDescription: description.trim() || title.trim(),
-        body: description.trim() || title.trim(),
+        body: description.trim() || "",
         category: category,
-        sortOrder: Math.floor(Math.random() * 30000),
+        sortOrder: Date.now(), // Use timestamp for ordering
         officialLinks: officialLinks,
         ...(dueDate && { dueDate: new Date(dueDate).toISOString() }),
       };
