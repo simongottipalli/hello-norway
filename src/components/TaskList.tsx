@@ -8,42 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-interface Task {
-  id: string;
-  title: string;
-  slug: string;
-  shortDescription: string;
-  body: string;
-  category: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-  userTaskId?: string;
-  status?: "TODO" | "SAVED" | "DONE";
-  dueDate?: string | null;
-  personalNotes?: string | null;
-  completedAt?: string | null;
-  officialLinks?: unknown;
-  minDaysFromArrival?: number | null;
-  maxDaysFromArrival?: number | null;
-}
+import type { Task, TaskTrackingState, ApiErrorResponse } from "@/types/task";
 
 interface TaskListProps {
   tasks: Task[];
   onTaskDeleted: () => void;
   onTaskUpdated: () => void;
   initialSelectedTaskId?: string;
-}
-
-interface TaskTrackingState {
-  status: "not_started" | "in_progress" | "completed";
-  dueDate: string;
-  personalNotes: string;
-}
-
-interface ApiErrorResponse {
-  error: string;
 }
 
 type OfficialLink = {

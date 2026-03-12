@@ -17,26 +17,7 @@ import {
   isTaskUpcoming,
   formatDueDateWithTimezone,
 } from "@/lib/dateUtils";
-
-interface Task {
-  id: string;
-  title: string;
-  slug: string;
-  shortDescription: string;
-  body: string;
-  category: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-  userTaskId?: string;
-  status?: "TODO" | "SAVED" | "DONE";
-  dueDate?: string | null;
-  personalNotes?: string | null;
-  completedAt?: string | null;
-  officialLinks?: unknown;
-  minDaysFromArrival?: number | null;
-  maxDaysFromArrival?: number | null;
-}
+import type { Task } from "@/types/task";
 
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
