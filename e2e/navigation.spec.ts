@@ -85,8 +85,6 @@ test.describe('Navigation and Routing', () => {
 
       // Check for desktop navigation links
       await expect(page.getByTestId('nav-dashboard-link')).toBeVisible();
-      await expect(page.getByTestId('nav-tasks-link')).toBeVisible();
-      await expect(page.getByTestId('nav-profile-link')).toBeVisible();
       await expect(page.getByTestId('nav-logout-button')).toBeVisible();
     });
 
@@ -94,25 +92,21 @@ test.describe('Navigation and Routing', () => {
       await page.goto('/dashboard');
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
-      // Navigate to Tasks
-      await page.getByTestId('nav-tasks-link').click();
+      // Users can still navigate to these pages directly via URL
+      await page.goto('/tasks');
       await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
 
-      // Navigate to Profile
-      await page.getByTestId('nav-profile-link').click();
+      await page.goto('/profile');
       await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
 
       // Navigate back to Dashboard
-      await page.getByTestId('nav-dashboard-link').click();
+      await page.goto('/dashboard');
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     });
 
     test('should highlight active page in navigation', async ({ page }) => {
       await page.goto('/dashboard');
       await expect(page.getByTestId('nav-dashboard-link')).toHaveAttribute('data-active', 'true');
-
-      await page.goto('/tasks');
-      await expect(page.getByTestId('nav-tasks-link')).toHaveAttribute('data-active', 'true');
     });
 
     logoutTest('should logout successfully from navigation', async ({ page }) => {
@@ -177,13 +171,13 @@ test.describe('Navigation and Routing', () => {
       // Wait for authentication to complete by checking for user greeting
       await expect(mobileNav.getByText(/Hey .+ 👋/)).toBeVisible();
 
-      // Wait for the Tasks link to be visible before clicking
-      const tasksLink = mobileNav.getByTestId('mobile-tasks-link');
-      await expect(tasksLink).toBeVisible();
-      await tasksLink.click();
+      // Wait for the Dashboard link to be visible before clicking
+      const dashboardLink = mobileNav.getByTestId('mobile-dashboard-link');
+      await expect(dashboardLink).toBeVisible();
+      await dashboardLink.click();
 
-      // Should navigate to tasks
-      await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
+      // Should stay on dashboard
+      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
       // Mobile menu should be closed after navigation
       await expect(mobileNav).not.toBeVisible();
@@ -235,8 +229,6 @@ test.describe('Navigation and Routing', () => {
 
       // All links should be visible in mobile menu using test IDs
       await expect(mobileNav.getByTestId('mobile-dashboard-link')).toBeVisible();
-      await expect(mobileNav.getByTestId('mobile-tasks-link')).toBeVisible();
-      await expect(mobileNav.getByTestId('mobile-profile-link')).toBeVisible();
       await expect(mobileNav.getByRole('button', { name: /Logout/i })).toBeVisible();
     });
   });
