@@ -82,7 +82,7 @@ export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskD
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()} className="max-w-2xl">
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto"
+        className="w-full max-h-[90vh] overflow-y-auto"
         aria-labelledby="task-details-title"
         aria-describedby="task-details-description"
       >
