@@ -7,36 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { TaskCategory } from "@/generated/prisma/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
+import TaskDetailsModal from "@/components/TaskDetailsModal";
 import {
   parseUtcDate,
   isTaskOverdue,
   isTaskUpcoming,
   formatDueDateWithTimezone,
 } from "@/lib/dateUtils";
-
-interface Task {
-  id: string;
-  title: string;
-  slug: string;
-  shortDescription: string;
-  body: string;
-  category: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-  userTaskId?: string;
-  status?: "TODO" | "SAVED" | "DONE";
-  dueDate?: string | null;
-  personalNotes?: string | null;
-  completedAt?: string | null;
-  officialLinks?: unknown;
-  minDaysFromArrival?: number | null;
-  maxDaysFromArrival?: number | null;
-}
+import type { Task } from "@/types/task";
 
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
@@ -57,6 +38,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -136,6 +118,21 @@ export default function DashboardPage() {
     });
   }, [tasks, selectedCategory, selectedStatus]);
 
+  const selectedTask = useMemo(
+    () => (selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : null),
+    [selectedTaskId, tasks],
+  );
+
+  useEffect(() => {
+    if (!selectedTaskId) {
+      return;
+    }
+
+    const exists = tasks.some((t) => t.id === selectedTaskId);
+    if (!exists) {
+      setSelectedTaskId(null);
+    }
+  }, [selectedTaskId, tasks]);
   if (authLoading || (isAuthenticated && isLoading)) {
     return <DashboardSkeleton />;
   }
@@ -243,8 +240,12 @@ export default function DashboardPage() {
                             Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/tasks?taskId=${task.id}`}>View</Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedTaskId(task.id)}
+                        >
+                          View
                         </Button>
                       </div>
                     ))}
@@ -289,8 +290,12 @@ export default function DashboardPage() {
                             Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/tasks?taskId=${task.id}`}>View</Link>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setSelectedTaskId(task.id)}
+                        >
+                          View
                         </Button>
                       </div>
                     ))}
@@ -397,8 +402,13 @@ export default function DashboardPage() {
                               Due: {formatDueDateWithTimezone(task.dueDate)}
                             </p>
                           )}
-                          <Button variant="outline" size="sm" className="w-full" asChild>
-                            <Link href={`/tasks?taskId=${task.id}`}>View Details</Link>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => setSelectedTaskId(task.id)}
+                          >
+                            View Details
                           </Button>
                         </CardContent>
                       </Card>
@@ -410,6 +420,14 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {selectedTask && (
+        <TaskDetailsModal
+          task={selectedTask}
+          onClose={() => setSelectedTaskId(null)}
+          onTaskUpdated={fetchTasks}
+        />
+      )}
     </main>
   );
 }

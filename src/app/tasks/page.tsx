@@ -5,26 +5,7 @@ import { useSearchParams } from "next/navigation";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-interface Task {
-  id: string;
-  title: string;
-  slug: string;
-  shortDescription: string;
-  body: string;
-  category: string;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
-  userTaskId?: string;
-  status?: "TODO" | "SAVED" | "DONE";
-  dueDate?: string | null;
-  personalNotes?: string | null;
-  completedAt?: string | null;
-  officialLinks?: unknown;
-  minDaysFromArrival?: number | null;
-  maxDaysFromArrival?: number | null;
-}
+import type { Task } from "@/types/task";
 
 function TasksPageContent() {
   const searchParams = useSearchParams();
