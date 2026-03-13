@@ -15,6 +15,7 @@ import {
   formatRecurrenceInfo,
   DEFAULT_TRACKING_STATE,
 } from "@/lib/taskHelpers";
+import type { OfficialLink } from "@/lib/taskHelpers";
 
 export {
   extractWhyItMatters,

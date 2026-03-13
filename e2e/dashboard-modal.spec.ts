@@ -59,7 +59,7 @@ test.describe('Dashboard Task Details Modal', () => {
   test('should display task details correctly in modal', async ({ page }) => {
     // Ensure we have at least one task by checking/creating
     let viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
-    let hasButton = await viewButton.isVisible().catch(() => false);
+    const hasButton = await viewButton.isVisible().catch(() => false);
     
     if (!hasButton) {
       // Create a task via sidebar
