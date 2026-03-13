@@ -33,6 +33,9 @@ test.describe('Dashboard Task Details Modal', () => {
       // Now try to find the view button again
       await page.reload();
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+      
+      // Wait explicitly for at least one View button to appear
+      await expect(page.getByRole('button', { name: /view( details)?$/i }).first()).toBeVisible({ timeout: 15000 });
     }
     
     // Store the current URL
@@ -75,6 +78,9 @@ test.describe('Dashboard Task Details Modal', () => {
       
       await page.reload();
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+      
+      // Wait explicitly for at least one View button to appear
+      await expect(page.getByRole('button', { name: /view( details)?$/i }).first()).toBeVisible({ timeout: 15000 });
     }
     
     viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
