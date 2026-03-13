@@ -4,7 +4,7 @@ import {
   formatRecurrenceInfo,
   getOfficialLinks,
   getTaskDescription,
-} from "../components/TaskList";
+} from "../lib/taskHelpers";
 
 describe("Task detail helper formatting", () => {
   it("splits description and why-it-matters content from task body", () => {
