@@ -43,6 +43,17 @@ async function main() {
       data: { sessionToken: logoutSessionToken, userId: user.id, expiresAt },
     });
 
+    // Seed a handful of UserTask records so the dashboard always shows task
+    // cards with "View" buttons for the modal tests to interact with.
+    const tasks = await prisma.task.findMany({ take: 3, orderBy: { sortOrder: "asc" } });
+    for (const task of tasks) {
+      await prisma.userTask.upsert({
+        where: { userId_taskId: { userId: user.id, taskId: task.id } },
+        update: {},
+        create: { userId: user.id, taskId: task.id, status: "TODO" },
+      });
+    }
+
     // Output JSON for the calling process to parse.
     console.log(JSON.stringify({ sessionToken, logoutSessionToken, expiresAt: expiresAt.toISOString(), userId: user.id }));
   } finally {
