@@ -14,9 +14,15 @@ import {
   getOfficialLinks,
   formatRecurrenceInfo,
   DEFAULT_TRACKING_STATE,
-  type OfficialLink,
 } from "@/lib/taskHelpers";
 
+export {
+  extractWhyItMatters,
+  getTaskDescription,
+  getOfficialLinks,
+  formatRecurrenceInfo,
+};
+export type { OfficialLink };
 interface TaskListProps {
   tasks: Task[];
   onTaskDeleted: () => void;
