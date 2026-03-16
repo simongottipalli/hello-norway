@@ -121,15 +121,83 @@ playwright.config.ts        # E2E test configuration
 
 ## Environment Variables
 
-| Variable               | Description                                                                       | Example                                       |
-| ---------------------- | --------------------------------------------------------------------------------- | --------------------------------------------- |
-| `NEXT_PUBLIC_SITE_URL` | Public URL used for Open Graph metadata                                           | `https://your-domain.com`                     |
-| `DATABASE_URL`         | PostgreSQL connection string                                                      | `postgresql://user:pass@localhost:5432/myapp` |
-| `PORT`                 | Port the Next.js frontend server listens on                                       | `3000`                                        |
-| `API_PORT`             | Port the Express backend server listens on                                        | `3001`                                        |
-| `API_BASE_URL`         | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3001`                       |
-| `LOG_LEVEL`            | Logging verbosity (debug, info, warn, error)                                      | `debug` (dev), `info` (prod)                  |
-| `NODE_ENV`             | Environment mode                                                                  | `development` or `production`                 |
+Copy `.env.example` to `.env` and fill in the values:
+
+```bash
+cp .env.example .env
+```
+
+| Variable                | Description                                                                       | Example                                       |
+| ----------------------- | --------------------------------------------------------------------------------- | --------------------------------------------- |
+| `NODE_ENV`              | Environment mode                                                                  | `development` or `production`                 |
+| `PORT`                  | Port the Next.js frontend server listens on                                       | `3000`                                        |
+| `API_PORT`              | Port the Express backend server listens on                                        | `3001`                                        |
+| `API_BASE_URL`          | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3001`                       |
+| `NEXT_PUBLIC_SITE_URL`  | Public URL used for Open Graph metadata                                           | `https://your-domain.com`                     |
+| `DATABASE_URL`          | PostgreSQL connection string                                                      | `postgresql://user:pass@localhost:5432/myapp` |
+| `SESSION_COOKIE_SECRET` | Secret used to sign session cookies — use a long random string in production      | *(generate with `crypto.randomBytes(32)`)*    |
+| `EMAIL_PROVIDER`        | Email service provider                                                            | `brevo`                                       |
+| `EMAIL_FROM`            | Sender address shown to email recipients                                          | `noreply@example.com`                         |
+| `BREVO_API_KEY`         | Brevo (formerly Sendinblue) API key                                               | *(from Brevo dashboard → SMTP & API)*         |
+| `LOG_LEVEL`             | Logging verbosity (debug, info, warn, error)                                      | `debug` (dev), `info` (prod)                  |
+
+## Deployment
+
+### Docker (recommended)
+
+A `Dockerfile` (multi-stage, Alpine-based) and `docker-compose.yml` are included for containerised deployment.
+
+**Quick start with Docker Compose (includes local PostgreSQL):**
+
+```bash
+# 1. Copy and configure environment variables
+cp .env.example .env
+# Edit .env — set DATABASE_URL, SESSION_COOKIE_SECRET, BREVO_API_KEY, etc.
+
+# 2. Build and start all services
+docker compose up --build -d
+
+# 3. Verify the app is running
+curl http://localhost:3001/health   # → {"ok":true}
+```
+
+The Compose stack spins up:
+- **`app`** — Next.js frontend (port 3000) + Express API (port 3001)
+- **`postgres`** — PostgreSQL 16 with a named volume for persistent data
+
+Database migrations run automatically on container start via `prisma migrate deploy`.
+
+---
+
+### Database Hosting
+
+Any PostgreSQL 16-compatible host works. Set `DATABASE_URL` to the connection string provided by your host.
+
+| Provider | Free tier | Notes |
+|----------|-----------|-------|
+| [Railway](https://railway.app) | ✅ | Add a Postgres plugin; `DATABASE_URL` is set automatically in linked services |
+| [Supabase](https://supabase.com) | ✅ | Project Settings → Database → Connection string (URI mode) |
+| [Neon](https://neon.tech) | ✅ | Dashboard → Connection Details |
+
+---
+
+### Email Service (Brevo)
+
+1. Sign up at [brevo.com](https://www.brevo.com)
+2. Go to **SMTP & API → API Keys** and create a new key
+3. Set `BREVO_API_KEY` in your environment
+4. Set `EMAIL_FROM` to a verified sender address or domain
+
+---
+
+### Health Check
+
+The Express API exposes a health check endpoint used by load balancers and orchestrators:
+
+```
+GET http://<host>:3001/health
+→ 200 OK  {"ok":true}
+```
 
 ## Logging
 
