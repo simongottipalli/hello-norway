@@ -196,11 +196,14 @@ export const createTask = async (req: Request, res: Response) => {
     if (requiresChildren !== undefined && requiresChildren !== null && typeof requiresChildren !== "boolean") {
       return res.status(400).json({ error: "requiresChildren must be a boolean or null" });
     }
+    // Normalize requiresEmploymentStatus to a non-null array for Prisma
+    let normalizedRequiresEmploymentStatus: string[] = [];
     if (requiresEmploymentStatus !== undefined && requiresEmploymentStatus !== null) {
       if (!Array.isArray(requiresEmploymentStatus) ||
           !requiresEmploymentStatus.every((s: unknown) => typeof s === "string" && VALID_EMPLOYMENT_STATUSES.has(s))) {
         return res.status(400).json({ error: "requiresEmploymentStatus must be an array of valid employment status values" });
       }
+      normalizedRequiresEmploymentStatus = requiresEmploymentStatus as string[];
     }
     if (minDaysFromArrival !== undefined && minDaysFromArrival !== null) {
       if (typeof minDaysFromArrival !== "number" || !Number.isInteger(minDaysFromArrival) || minDaysFromArrival < 0) {
@@ -227,7 +230,7 @@ export const createTask = async (req: Request, res: Response) => {
           sortOrder,
           officialLinks: officialLinks ?? {},
           requiresEU,
-          requiresEmploymentStatus,
+          requiresEmploymentStatus: normalizedRequiresEmploymentStatus,
           requiresChildren,
           minDaysFromArrival,
           maxDaysFromArrival,
