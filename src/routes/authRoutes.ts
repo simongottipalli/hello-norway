@@ -5,19 +5,12 @@ import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { getRelevantTaskWhere, syncUserTaskAssignments } from "../services/taskAssignmentService";
 import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
+import * as taskRepo from "../repo/taskRepo";
+import * as userRepo from "../repo/userRepo";
+import * as sessionRepo from "../repo/sessionRepo";
 
 const router = Router();
 const EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
-const PROFILE_SELECT = {
-  id: true,
-  email: true,
-  name: true,
-  isEU: true,
-  hasChildren: true,
-  employmentStatus: true,
-  arrivalDate: true,
-  plannedArrivalDate: true,
-} as const;
 
 const parseDateOnly = (value: unknown): Date | null | undefined => {
   if (value === undefined) return undefined;
@@ -122,8 +115,8 @@ router.post("/onboarding/tasks", async (req, res) => {
   const { isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = parsed.value;
 
   try {
-    const tasks = await prisma.task.findMany({
-      where: getRelevantTaskWhere(
+    const tasks = await taskRepo.findOnboardingPreviewTasks(
+      getRelevantTaskWhere(
         {
           id: "onboarding-preview",
           isEU,
@@ -134,15 +127,7 @@ router.post("/onboarding/tasks", async (req, res) => {
         },
         new Date(),
       ),
-      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-      select: {
-        id: true,
-        title: true,
-        shortDescription: true,
-        category: true,
-        sortOrder: true,
-      },
-    });
+    );
 
     return res.status(200).json(tasks);
   } catch (error: unknown) {
@@ -163,10 +148,7 @@ router.get("/auth/session", authenticateSession, (req, res) => {
 
 router.get("/auth/profile", authenticateSession, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      select: PROFILE_SELECT,
-    });
+    const user = await userRepo.findUserById(req.user!.id);
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -221,9 +203,9 @@ router.patch("/auth/profile", authenticateSession, async (req, res) => {
 
   try {
     const updatedUser = await prisma.$transaction(async (tx) => {
-      const user = await tx.user.update({
-        where: { id: req.user!.id },
-        data: {
+      const user = await userRepo.updateUserProfile(
+        req.user!.id,
+        {
           ...(name !== undefined ? { name: name.trim() } : {}),
           ...(isEU !== undefined ? { isEU } : {}),
           ...(hasChildren !== undefined ? { hasChildren } : {}),
@@ -231,8 +213,8 @@ router.patch("/auth/profile", authenticateSession, async (req, res) => {
           ...(arrivalDate !== undefined ? { arrivalDate: parsedArrivalDate } : {}),
           ...(plannedArrivalDate !== undefined ? { plannedArrivalDate: parsedPlannedArrivalDate } : {}),
         },
-        select: PROFILE_SELECT,
-      });
+        tx,
+      );
 
       await syncUserTaskAssignments(user, {
         removeOutdatedTodoAssignments: true,
@@ -254,7 +236,7 @@ router.post("/auth/logout", async (req, res) => {
 
   try {
     if (sessionToken) {
-      await prisma.session.deleteMany({ where: { sessionToken } });
+      await sessionRepo.deleteSessionByToken(sessionToken);
     }
 
     return res.status(200).json({ success: true });
@@ -271,13 +253,13 @@ router.delete("/auth/profile", authenticateSession, async (req, res) => {
   try {
     await prisma.$transaction(async (tx) => {
       // Delete all user sessions
-      await tx.session.deleteMany({ where: { userId } });
+      await sessionRepo.deleteUserSessions(userId, tx);
 
       // Delete all user tasks (cascade will handle this, but explicit for clarity)
-      await tx.userTask.deleteMany({ where: { userId } });
+      await userRepo.deleteUserTasks(userId, tx);
 
       // Delete the user (this will also cascade delete sessions and userTasks due to schema)
-      await tx.user.delete({ where: { id: userId } });
+      await userRepo.deleteUser(userId, tx);
     });
 
     logger.info({ userId, email: userEmail, msg: "User profile deleted successfully" });
