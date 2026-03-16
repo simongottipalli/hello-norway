@@ -6,7 +6,7 @@ import {
   validateCreateTaskBody,
   validateUpdateTaskFields,
   validateDaysFromArrivalRange,
-} from "../utils/taskValidation";
+} from "./taskValidation";
 
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:

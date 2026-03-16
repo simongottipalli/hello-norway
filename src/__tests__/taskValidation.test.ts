@@ -2,6 +2,15 @@ import { describe, it, expect } from "vitest";
 import {
   validateStringField,
   validateIntegerField,
+  validateTaskSlug,
+  validateTaskTitle,
+  validateTaskShortDescription,
+  validateTaskBody,
+  validateTaskCategory,
+  validateTaskSortOrder,
+  validateTaskBooleanNullField,
+  validateTaskDaysFromArrivalField,
+  validateTaskEmploymentStatusArray,
   validateCreateTaskBody,
   validateUpdateTaskFields,
   validateDaysFromArrivalRange,
@@ -13,7 +22,7 @@ import {
   SORT_ORDER_MAX,
   DAYS_FROM_ARRIVAL_MIN,
   DAYS_FROM_ARRIVAL_MAX,
-} from "../utils/taskValidation";
+} from "../controllers/taskValidation";
 
 // ──────────────────────────────────────────────
 // validateStringField
@@ -71,6 +80,65 @@ describe("validateIntegerField", () => {
   it("returns null at exact min and max boundaries", () => {
     expect(validateIntegerField("val", 0, 0, 32767)).toBeNull();
     expect(validateIntegerField("val", 32767, 0, 32767)).toBeNull();
+  });
+});
+
+// ──────────────────────────────────────────────
+// Per-field task validators
+// ──────────────────────────────────────────────
+
+describe("per-field task validators", () => {
+  it("validateTaskSlug rejects values over the slug limit", () => {
+    expect(validateTaskSlug("a".repeat(SLUG_MAX_LENGTH + 1))).not.toBeNull();
+    expect(validateTaskSlug("valid-slug")).toBeNull();
+  });
+
+  it("validateTaskTitle rejects values over the title limit", () => {
+    expect(validateTaskTitle("a".repeat(TITLE_MAX_LENGTH + 1))).not.toBeNull();
+    expect(validateTaskTitle("Valid Title")).toBeNull();
+  });
+
+  it("validateTaskShortDescription rejects values over the short description limit", () => {
+    expect(validateTaskShortDescription("a".repeat(SHORT_DESCRIPTION_MAX_LENGTH + 1))).not.toBeNull();
+    expect(validateTaskShortDescription("A description")).toBeNull();
+  });
+
+  it("validateTaskBody rejects values over the body limit", () => {
+    expect(validateTaskBody("a".repeat(BODY_MAX_LENGTH + 1))).not.toBeNull();
+    expect(validateTaskBody("Body content")).toBeNull();
+  });
+
+  it("validateTaskCategory rejects invalid values", () => {
+    expect(validateTaskCategory("INVALID")).not.toBeNull();
+    expect(validateTaskCategory("OTHER")).toBeNull();
+  });
+
+  it("validateTaskSortOrder rejects out-of-range values", () => {
+    expect(validateTaskSortOrder(SORT_ORDER_MAX + 1)).not.toBeNull();
+    expect(validateTaskSortOrder(1.5)).not.toBeNull();
+    expect(validateTaskSortOrder(SORT_ORDER_MIN)).toBeNull();
+  });
+
+  it("validateTaskBooleanNullField accepts boolean, null, undefined", () => {
+    expect(validateTaskBooleanNullField("requiresEU", true)).toBeNull();
+    expect(validateTaskBooleanNullField("requiresEU", false)).toBeNull();
+    expect(validateTaskBooleanNullField("requiresEU", null)).toBeNull();
+    expect(validateTaskBooleanNullField("requiresEU", undefined)).toBeNull();
+    expect(validateTaskBooleanNullField("requiresEU", "yes")).not.toBeNull();
+  });
+
+  it("validateTaskDaysFromArrivalField accepts null/undefined and valid integers incl. negatives", () => {
+    expect(validateTaskDaysFromArrivalField("minDaysFromArrival", null)).toBeNull();
+    expect(validateTaskDaysFromArrivalField("minDaysFromArrival", undefined)).toBeNull();
+    expect(validateTaskDaysFromArrivalField("minDaysFromArrival", -30)).toBeNull();
+    expect(validateTaskDaysFromArrivalField("minDaysFromArrival", DAYS_FROM_ARRIVAL_MIN - 1)).not.toBeNull();
+    expect(validateTaskDaysFromArrivalField("maxDaysFromArrival", DAYS_FROM_ARRIVAL_MAX + 1)).not.toBeNull();
+  });
+
+  it("validateTaskEmploymentStatusArray accepts valid statuses and rejects invalid", () => {
+    expect(validateTaskEmploymentStatusArray(["EMPLOYED", "STUDENT"])).toBeNull();
+    expect(validateTaskEmploymentStatusArray(["FREELANCER"])).not.toBeNull();
+    expect(validateTaskEmploymentStatusArray([])).toBeNull();
   });
 });
 
