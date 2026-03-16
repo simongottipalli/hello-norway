@@ -36,6 +36,24 @@ const TASK_UPDATABLE_FIELDS = new Set([
   "maxDaysFromArrival",
 ]);
 
+/**
+ * Validates that a value is a non-empty string within the given max length.
+ * Returns an error message string on failure, or null on success.
+ */
+const validateStringField = (
+  name: string,
+  value: unknown,
+  maxLength: number,
+): string | null => {
+  if (typeof value !== "string" || !value) {
+    return `${name} must be a non-empty string`;
+  }
+  if (value.length > maxLength) {
+    return `${name} must not exceed ${maxLength} characters`;
+  }
+  return null;
+};
+
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:
   not_started: UserTaskStatus.TODO,
@@ -148,29 +166,18 @@ export const createTask = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Type checks for required string fields
-    if (typeof slug !== "string" || typeof title !== "string" ||
-        typeof shortDescription !== "string" || typeof body !== "string" ||
-        typeof category !== "string") {
-      return res.status(400).json({ error: "slug, title, shortDescription, body, and category must be strings" });
-    }
-
-    // Length validation
-    if (slug.length > SLUG_MAX_LENGTH) {
-      return res.status(400).json({ error: `slug must not exceed ${SLUG_MAX_LENGTH} characters` });
-    }
-    if (title.length > TITLE_MAX_LENGTH) {
-      return res.status(400).json({ error: `title must not exceed ${TITLE_MAX_LENGTH} characters` });
-    }
-    if (shortDescription.length > SHORT_DESCRIPTION_MAX_LENGTH) {
-      return res.status(400).json({ error: `shortDescription must not exceed ${SHORT_DESCRIPTION_MAX_LENGTH} characters` });
-    }
-    if (body.length > BODY_MAX_LENGTH) {
-      return res.status(400).json({ error: `body must not exceed ${BODY_MAX_LENGTH} characters` });
-    }
+    // Type and length validation for required string fields
+    const slugErr = validateStringField("slug", slug, SLUG_MAX_LENGTH);
+    if (slugErr) return res.status(400).json({ error: slugErr });
+    const titleErr = validateStringField("title", title, TITLE_MAX_LENGTH);
+    if (titleErr) return res.status(400).json({ error: titleErr });
+    const descErr = validateStringField("shortDescription", shortDescription, SHORT_DESCRIPTION_MAX_LENGTH);
+    if (descErr) return res.status(400).json({ error: descErr });
+    const bodyErr = validateStringField("body", body, BODY_MAX_LENGTH);
+    if (bodyErr) return res.status(400).json({ error: bodyErr });
 
     // Category enum validation
-    if (!VALID_TASK_CATEGORIES.has(category)) {
+    if (typeof category !== "string" || !VALID_TASK_CATEGORIES.has(category)) {
       return res.status(400).json({ error: `Invalid category. Must be one of: ${[...VALID_TASK_CATEGORIES].join(", ")}` });
     }
 
@@ -275,36 +282,20 @@ export const updateTask = async (req: Request, res: Response) => {
 
     // Per-field type validation for provided fields
     if ("slug" in updateData) {
-      if (typeof updateData.slug !== "string" || !updateData.slug) {
-        return res.status(400).json({ error: "slug must be a non-empty string" });
-      }
-      if ((updateData.slug as string).length > SLUG_MAX_LENGTH) {
-        return res.status(400).json({ error: `slug must not exceed ${SLUG_MAX_LENGTH} characters` });
-      }
+      const slugErr = validateStringField("slug", updateData.slug, SLUG_MAX_LENGTH);
+      if (slugErr) return res.status(400).json({ error: slugErr });
     }
     if ("title" in updateData) {
-      if (typeof updateData.title !== "string" || !updateData.title) {
-        return res.status(400).json({ error: "title must be a non-empty string" });
-      }
-      if ((updateData.title as string).length > TITLE_MAX_LENGTH) {
-        return res.status(400).json({ error: `title must not exceed ${TITLE_MAX_LENGTH} characters` });
-      }
+      const titleErr = validateStringField("title", updateData.title, TITLE_MAX_LENGTH);
+      if (titleErr) return res.status(400).json({ error: titleErr });
     }
     if ("shortDescription" in updateData) {
-      if (typeof updateData.shortDescription !== "string" || !updateData.shortDescription) {
-        return res.status(400).json({ error: "shortDescription must be a non-empty string" });
-      }
-      if ((updateData.shortDescription as string).length > SHORT_DESCRIPTION_MAX_LENGTH) {
-        return res.status(400).json({ error: `shortDescription must not exceed ${SHORT_DESCRIPTION_MAX_LENGTH} characters` });
-      }
+      const descErr = validateStringField("shortDescription", updateData.shortDescription, SHORT_DESCRIPTION_MAX_LENGTH);
+      if (descErr) return res.status(400).json({ error: descErr });
     }
     if ("body" in updateData) {
-      if (typeof updateData.body !== "string" || !updateData.body) {
-        return res.status(400).json({ error: "body must be a non-empty string" });
-      }
-      if ((updateData.body as string).length > BODY_MAX_LENGTH) {
-        return res.status(400).json({ error: `body must not exceed ${BODY_MAX_LENGTH} characters` });
-      }
+      const bodyErr = validateStringField("body", updateData.body, BODY_MAX_LENGTH);
+      if (bodyErr) return res.status(400).json({ error: bodyErr });
     }
     if ("category" in updateData) {
       if (typeof updateData.category !== "string" || !VALID_TASK_CATEGORIES.has(updateData.category as string)) {
@@ -312,8 +303,9 @@ export const updateTask = async (req: Request, res: Response) => {
       }
     }
     if ("sortOrder" in updateData) {
-      const so = updateData.sortOrder;
-      if (typeof so !== "number" || !Number.isInteger(so) || (so as number) < SORT_ORDER_MIN || (so as number) > SORT_ORDER_MAX) {
+      const sortOrder = updateData.sortOrder;
+      if (typeof sortOrder !== "number" || !Number.isInteger(sortOrder) ||
+          (sortOrder as number) < SORT_ORDER_MIN || (sortOrder as number) > SORT_ORDER_MAX) {
         return res.status(400).json({
           error: `sortOrder must be an integer between ${SORT_ORDER_MIN} and ${SORT_ORDER_MAX}`,
         });
@@ -326,31 +318,31 @@ export const updateTask = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "requiresChildren must be a boolean or null" });
     }
     if ("requiresEmploymentStatus" in updateData && updateData.requiresEmploymentStatus !== null) {
-      const res2 = updateData.requiresEmploymentStatus;
-      if (!Array.isArray(res2) || !(res2 as unknown[]).every((s) => typeof s === "string" && VALID_EMPLOYMENT_STATUSES.has(s as string))) {
+      const statusArray = updateData.requiresEmploymentStatus;
+      if (!Array.isArray(statusArray) || !(statusArray as unknown[]).every((s) => typeof s === "string" && VALID_EMPLOYMENT_STATUSES.has(s as string))) {
         return res.status(400).json({ error: "requiresEmploymentStatus must be an array of valid employment status values" });
       }
     }
     if ("minDaysFromArrival" in updateData && updateData.minDaysFromArrival !== null) {
-      const v = updateData.minDaysFromArrival;
-      if (typeof v !== "number" || !Number.isInteger(v) || (v as number) < 0) {
+      const minDays = updateData.minDaysFromArrival;
+      if (typeof minDays !== "number" || !Number.isInteger(minDays) || (minDays as number) < 0) {
         return res.status(400).json({ error: "minDaysFromArrival must be a non-negative integer or null" });
       }
     }
     if ("maxDaysFromArrival" in updateData && updateData.maxDaysFromArrival !== null) {
-      const v = updateData.maxDaysFromArrival;
-      if (typeof v !== "number" || !Number.isInteger(v) || (v as number) < 0) {
+      const maxDays = updateData.maxDaysFromArrival;
+      if (typeof maxDays !== "number" || !Number.isInteger(maxDays) || (maxDays as number) < 0) {
         return res.status(400).json({ error: "maxDaysFromArrival must be a non-negative integer or null" });
       }
       const minDays = updateData.minDaysFromArrival;
-      if (minDays !== undefined && minDays !== null && (v as number) < (minDays as number)) {
+      if (minDays !== undefined && minDays !== null && (maxDays as number) < (minDays as number)) {
         return res.status(400).json({ error: "maxDaysFromArrival must be greater than or equal to minDaysFromArrival" });
       }
     }
 
     const existing = await prisma.task.findUnique({
       where: { id },
-      select: { createdByUserId: true },
+      select: { createdByUserId: true, minDaysFromArrival: true, maxDaysFromArrival: true },
     });
 
     if (!existing) {
@@ -362,6 +354,19 @@ export const updateTask = async (req: Request, res: Response) => {
     if (isOwnedByAnotherUser(existing.createdByUserId, req.user!.id)) {
       req.logger.info({ msg: 'Task update denied - owned by another user', taskId: id });
       return res.status(404).json({ error: "Task not found" });
+    }
+
+    // Cross-field range check using existing DB values when only one bound is updated
+    const effectiveMin = "minDaysFromArrival" in updateData
+      ? (updateData.minDaysFromArrival as number | null)
+      : existing.minDaysFromArrival;
+    const effectiveMax = "maxDaysFromArrival" in updateData
+      ? (updateData.maxDaysFromArrival as number | null)
+      : existing.maxDaysFromArrival;
+    if (effectiveMin !== null && effectiveMax !== null &&
+        effectiveMin !== undefined && effectiveMax !== undefined &&
+        effectiveMax < effectiveMin) {
+      return res.status(400).json({ error: "maxDaysFromArrival must be greater than or equal to minDaysFromArrival" });
     }
 
     const task = await prisma.task.update({

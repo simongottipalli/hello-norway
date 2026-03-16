@@ -561,6 +561,23 @@ describe("Task API", () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("sortOrder");
     });
+
+    it("should return 400 when updating only maxDaysFromArrival to be less than the existing minDaysFromArrival", async () => {
+      // First set a minDaysFromArrival on the task
+      await request(app)
+        .patch(`/api/tasks/${createdTaskId}`)
+        .send({ minDaysFromArrival: 10, maxDaysFromArrival: 30 })
+        .set("Content-Type", "application/json");
+
+      // Now send only maxDaysFromArrival that violates the existing min
+      const response = await request(app)
+        .patch(`/api/tasks/${createdTaskId}`)
+        .send({ maxDaysFromArrival: 5 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("maxDaysFromArrival");
+    });
   });
 
   describe("DELETE /api/tasks/:id", () => {
