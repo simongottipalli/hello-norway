@@ -324,8 +324,11 @@ export const updateTask = async (req: Request, res: Response) => {
     if ("requiresChildren" in updateData && updateData.requiresChildren !== null && typeof updateData.requiresChildren !== "boolean") {
       return res.status(400).json({ error: "requiresChildren must be a boolean or null" });
     }
-    if ("requiresEmploymentStatus" in updateData && updateData.requiresEmploymentStatus !== null) {
+    if ("requiresEmploymentStatus" in updateData) {
       const statusArray = updateData.requiresEmploymentStatus;
+      if (statusArray === null) {
+        return res.status(400).json({ error: "requiresEmploymentStatus cannot be null" });
+      }
       if (!Array.isArray(statusArray) || !(statusArray as unknown[]).every((s) => typeof s === "string" && VALID_EMPLOYMENT_STATUSES.has(s as string))) {
         return res.status(400).json({ error: "requiresEmploymentStatus must be an array of valid employment status values" });
       }
