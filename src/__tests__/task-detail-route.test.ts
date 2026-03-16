@@ -15,6 +15,6 @@ describe("Task detail route", () => {
       params: Promise.resolve({ id: "task-123" }),
     });
 
-    expect(redirectMock).toHaveBeenCalledWith("/tasks?taskId=task-123");
+    expect(redirectMock).toHaveBeenCalledWith("/dashboard?taskId=task-123");
   });
 });

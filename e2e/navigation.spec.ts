@@ -37,10 +37,10 @@ test.describe('Navigation and Routing', () => {
       await expect(page).toHaveURL(/\/dashboard/);
     });
 
-    test('should allow authenticated users to access /tasks', async ({ page }) => {
+    test('should redirect authenticated users from /tasks to /dashboard', async ({ page }) => {
       await page.goto('/tasks');
-      await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
-      await expect(page).toHaveURL(/\/tasks/);
+      await expect(page).toHaveURL(/\/dashboard/);
+      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     });
 
     test('should allow authenticated users to access /profile', async ({ page }) => {
@@ -91,10 +91,6 @@ test.describe('Navigation and Routing', () => {
     test('should navigate between pages using navigation links', async ({ page }) => {
       await page.goto('/dashboard');
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-
-      // Users can still navigate to these pages directly via URL
-      await page.goto('/tasks');
-      await expect(page.getByRole('heading', { name: 'Tasks', exact: true })).toBeVisible();
 
       await page.goto('/profile');
       await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();

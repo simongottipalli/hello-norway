@@ -6,5 +6,5 @@ interface TaskDetailRedirectPageProps {
 
 export default async function TaskDetailRedirectPage({ params }: TaskDetailRedirectPageProps) {
   const { id } = await params;
-  redirect(`/tasks?taskId=${encodeURIComponent(id)}`);
+  redirect(`/dashboard?taskId=${id}`);
 }
