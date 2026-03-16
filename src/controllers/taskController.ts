@@ -1,62 +1,12 @@
 import { Request, Response } from "express";
-import { TaskCategory, UserTaskStatus } from "../generated/prisma/client.js";
+import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
-import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
-
-// Field length limits
-const SLUG_MAX_LENGTH = 80;
-const TITLE_MAX_LENGTH = 140;
-const SHORT_DESCRIPTION_MAX_LENGTH = 280;
-const BODY_MAX_LENGTH = 50000;
-
-// sortOrder must fit in PostgreSQL SmallInt
-const SORT_ORDER_MIN = 0;
-const SORT_ORDER_MAX = 32767;
-
-// Days-from-arrival must also fit in PostgreSQL SmallInt, but can be negative (before arrival)
-const DAYS_FROM_ARRIVAL_MIN = -32768;
-const DAYS_FROM_ARRIVAL_MAX = SORT_ORDER_MAX;
-
-const VALID_TASK_CATEGORIES = new Set<string>(Object.values(TaskCategory));
-const VALID_EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
-
-/**
- * Fields that are allowed to be updated via PATCH /api/tasks/:id.
- * System fields (id, createdByUserId, createdAt, updatedAt) are intentionally excluded.
- */
-const TASK_UPDATABLE_FIELDS = new Set([
-  "slug",
-  "title",
-  "shortDescription",
-  "body",
-  "category",
-  "sortOrder",
-  "officialLinks",
-  "requiresEU",
-  "requiresEmploymentStatus",
-  "requiresChildren",
-  "minDaysFromArrival",
-  "maxDaysFromArrival",
-]);
-
-/**
- * Validates that a value is a non-empty string within the given max length.
- * Returns an error message string on failure, or null on success.
- */
-const validateStringField = (
-  name: string,
-  value: unknown,
-  maxLength: number,
-): string | null => {
-  if (typeof value !== "string" || !value) {
-    return `${name} must be a non-empty string`;
-  }
-  if (value.length > maxLength) {
-    return `${name} must not exceed ${maxLength} characters`;
-  }
-  return null;
-};
+import {
+  validateCreateTaskBody,
+  validateUpdateTaskFields,
+  validateDaysFromArrivalRange,
+} from "../utils/taskValidation";
 
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:
@@ -149,101 +99,17 @@ export const getTaskById = async (req: Request, res: Response) => {
 
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const requestBody = req.body;
-
-    // Ensure body is a JSON object
-    if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody)) {
-      req.logger.info({ msg: "Task creation failed - request body is not a JSON object" });
-      return res.status(400).json({ error: "Request body must be a JSON object" });
+    const validation = validateCreateTaskBody(req.body);
+    if ("error" in validation) {
+      req.logger.info({ msg: 'Task creation failed - validation error', error: validation.error });
+      return res.status(400).json({ error: validation.error });
     }
 
     const {
-      slug,
-      title,
-      shortDescription,
-      body,
-      category,
-      sortOrder,
-      officialLinks,
-      requiresEU,
-      requiresEmploymentStatus,
-      requiresChildren,
-      minDaysFromArrival,
-      maxDaysFromArrival,
-    } = requestBody;
-
-    // Required field presence check
-    if (!slug || !title || !shortDescription || !body || !category || sortOrder === undefined) {
-      req.logger.info({ msg: 'Task creation failed - missing required fields' });
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    // Type and length validation for required string fields
-    const slugErr = validateStringField("slug", slug, SLUG_MAX_LENGTH);
-    if (slugErr) return res.status(400).json({ error: slugErr });
-    const titleErr = validateStringField("title", title, TITLE_MAX_LENGTH);
-    if (titleErr) return res.status(400).json({ error: titleErr });
-    const descErr = validateStringField("shortDescription", shortDescription, SHORT_DESCRIPTION_MAX_LENGTH);
-    if (descErr) return res.status(400).json({ error: descErr });
-    const bodyErr = validateStringField("body", body, BODY_MAX_LENGTH);
-    if (bodyErr) return res.status(400).json({ error: bodyErr });
-
-    // Category enum validation
-    if (typeof category !== "string" || !VALID_TASK_CATEGORIES.has(category)) {
-      return res.status(400).json({ error: `Invalid category. Must be one of: ${[...VALID_TASK_CATEGORIES].join(", ")}` });
-    }
-
-    // sortOrder integer and range validation
-    if (typeof sortOrder !== "number" || !Number.isInteger(sortOrder) ||
-        sortOrder < SORT_ORDER_MIN || sortOrder > SORT_ORDER_MAX) {
-      return res.status(400).json({
-        error: `sortOrder must be an integer between ${SORT_ORDER_MIN} and ${SORT_ORDER_MAX}`,
-      });
-    }
-
-    // Optional field type validation
-    if (requiresEU !== undefined && requiresEU !== null && typeof requiresEU !== "boolean") {
-      return res.status(400).json({ error: "requiresEU must be a boolean or null" });
-    }
-    if (requiresChildren !== undefined && requiresChildren !== null && typeof requiresChildren !== "boolean") {
-      return res.status(400).json({ error: "requiresChildren must be a boolean or null" });
-    }
-    // Normalize requiresEmploymentStatus to a non-null array for Prisma
-    let normalizedRequiresEmploymentStatus: string[] = [];
-    if (requiresEmploymentStatus !== undefined && requiresEmploymentStatus !== null) {
-      if (!Array.isArray(requiresEmploymentStatus) ||
-          !requiresEmploymentStatus.every((s: unknown) => typeof s === "string" && VALID_EMPLOYMENT_STATUSES.has(s))) {
-        return res.status(400).json({ error: "requiresEmploymentStatus must be an array of valid employment status values" });
-      }
-      normalizedRequiresEmploymentStatus = requiresEmploymentStatus as string[];
-    }
-    if (minDaysFromArrival !== undefined && minDaysFromArrival !== null) {
-      if (
-        typeof minDaysFromArrival !== "number" ||
-        !Number.isInteger(minDaysFromArrival) ||
-        minDaysFromArrival < DAYS_FROM_ARRIVAL_MIN ||
-        minDaysFromArrival > DAYS_FROM_ARRIVAL_MAX
-      ) {
-        return res.status(400).json({
-          error: `minDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
-        });
-      }
-    }
-    if (maxDaysFromArrival !== undefined && maxDaysFromArrival !== null) {
-      if (
-        typeof maxDaysFromArrival !== "number" ||
-        !Number.isInteger(maxDaysFromArrival) ||
-        maxDaysFromArrival < DAYS_FROM_ARRIVAL_MIN ||
-        maxDaysFromArrival > DAYS_FROM_ARRIVAL_MAX
-      ) {
-        return res.status(400).json({
-          error: `maxDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
-        });
-      }
-      if (minDaysFromArrival !== undefined && minDaysFromArrival !== null && maxDaysFromArrival < minDaysFromArrival) {
-        return res.status(400).json({ error: "maxDaysFromArrival must be greater than or equal to minDaysFromArrival" });
-      }
-    }
+      slug, title, shortDescription, body, category, sortOrder,
+      officialLinks, requiresEU, requiresEmploymentStatus, requiresChildren,
+      minDaysFromArrival, maxDaysFromArrival,
+    } = validation.data;
 
     const task = await prisma.$transaction(async (tx) => {
       const createdTask = await tx.task.create({
@@ -256,7 +122,7 @@ export const createTask = async (req: Request, res: Response) => {
           sortOrder,
           officialLinks: officialLinks ?? {},
           requiresEU,
-          requiresEmploymentStatus: normalizedRequiresEmploymentStatus,
+          requiresEmploymentStatus,
           requiresChildren,
           minDaysFromArrival,
           maxDaysFromArrival,
@@ -291,104 +157,25 @@ export const createTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    const body = req.body;
-    if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
-      req.logger.info({ msg: "Task update failed - invalid request body type", taskId: id, bodyType: typeof body });
-      return res.status(400).json({ error: "Request body must be a JSON object" });
-    }
-    if (Object.prototype.hasOwnProperty.call(body, "status")) {
+
+    // Reject attempts to use the status field (dedicated endpoint exists)
+    if (
+      req.body !== null &&
+      req.body !== undefined &&
+      typeof req.body === "object" &&
+      Object.prototype.hasOwnProperty.call(req.body, "status")
+    ) {
       req.logger.info({ msg: 'Task update failed - status requires dedicated endpoint', taskId: id });
       return res.status(400).json({ error: "Use PATCH /api/tasks/:id/status to update task status" });
     }
 
-    // Strip unknown/system fields — only allow fields in the updatable whitelist
-    const updateData: Record<string, unknown> = {};
-    for (const field of TASK_UPDATABLE_FIELDS) {
-      if (Object.prototype.hasOwnProperty.call(body, field)) {
-        updateData[field] = (body as Record<string, unknown>)[field];
-      }
+    const validation = validateUpdateTaskFields(req.body);
+    if ("error" in validation) {
+      req.logger.info({ msg: 'Task update failed - validation error', taskId: id, error: validation.error });
+      return res.status(400).json({ error: validation.error });
     }
 
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: "No valid fields to update" });
-    }
-
-    // Per-field type validation for provided fields
-    if ("slug" in updateData) {
-      const slugErr = validateStringField("slug", updateData.slug, SLUG_MAX_LENGTH);
-      if (slugErr) return res.status(400).json({ error: slugErr });
-    }
-    if ("title" in updateData) {
-      const titleErr = validateStringField("title", updateData.title, TITLE_MAX_LENGTH);
-      if (titleErr) return res.status(400).json({ error: titleErr });
-    }
-    if ("shortDescription" in updateData) {
-      const descErr = validateStringField("shortDescription", updateData.shortDescription, SHORT_DESCRIPTION_MAX_LENGTH);
-      if (descErr) return res.status(400).json({ error: descErr });
-    }
-    if ("body" in updateData) {
-      const bodyErr = validateStringField("body", updateData.body, BODY_MAX_LENGTH);
-      if (bodyErr) return res.status(400).json({ error: bodyErr });
-    }
-    if ("category" in updateData) {
-      if (typeof updateData.category !== "string" || !VALID_TASK_CATEGORIES.has(updateData.category as string)) {
-        return res.status(400).json({ error: `Invalid category. Must be one of: ${[...VALID_TASK_CATEGORIES].join(", ")}` });
-      }
-    }
-    if ("sortOrder" in updateData) {
-      const sortOrder = updateData.sortOrder;
-      if (typeof sortOrder !== "number" || !Number.isInteger(sortOrder) ||
-          (sortOrder as number) < SORT_ORDER_MIN || (sortOrder as number) > SORT_ORDER_MAX) {
-        return res.status(400).json({
-          error: `sortOrder must be an integer between ${SORT_ORDER_MIN} and ${SORT_ORDER_MAX}`,
-        });
-      }
-    }
-    if ("requiresEU" in updateData && updateData.requiresEU !== null && typeof updateData.requiresEU !== "boolean") {
-      return res.status(400).json({ error: "requiresEU must be a boolean or null" });
-    }
-    if ("requiresChildren" in updateData && updateData.requiresChildren !== null && typeof updateData.requiresChildren !== "boolean") {
-      return res.status(400).json({ error: "requiresChildren must be a boolean or null" });
-    }
-    if ("requiresEmploymentStatus" in updateData) {
-      const statusArray = updateData.requiresEmploymentStatus;
-      if (statusArray === null) {
-        return res.status(400).json({ error: "requiresEmploymentStatus cannot be null" });
-      }
-      if (!Array.isArray(statusArray) || !(statusArray as unknown[]).every((s) => typeof s === "string" && VALID_EMPLOYMENT_STATUSES.has(s as string))) {
-        return res.status(400).json({ error: "requiresEmploymentStatus must be an array of valid employment status values" });
-      }
-    }
-    if ("minDaysFromArrival" in updateData && updateData.minDaysFromArrival !== null) {
-      const minDays = updateData.minDaysFromArrival;
-      if (
-        typeof minDays !== "number" ||
-        !Number.isInteger(minDays) ||
-        (minDays as number) < DAYS_FROM_ARRIVAL_MIN ||
-        (minDays as number) > DAYS_FROM_ARRIVAL_MAX
-      ) {
-        return res.status(400).json({
-          error: `minDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
-        });
-      }
-    }
-    if ("maxDaysFromArrival" in updateData && updateData.maxDaysFromArrival !== null) {
-      const maxDays = updateData.maxDaysFromArrival;
-      if (
-        typeof maxDays !== "number" ||
-        !Number.isInteger(maxDays) ||
-        (maxDays as number) < DAYS_FROM_ARRIVAL_MIN ||
-        (maxDays as number) > DAYS_FROM_ARRIVAL_MAX
-      ) {
-        return res.status(400).json({
-          error: `maxDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
-        });
-      }
-      const minDays = updateData.minDaysFromArrival;
-      if (minDays !== undefined && minDays !== null && (maxDays as number) < (minDays as number)) {
-        return res.status(400).json({ error: "maxDaysFromArrival must be greater than or equal to minDaysFromArrival" });
-      }
-    }
+    const updateData = validation.data;
 
     const existing = await prisma.task.findUnique({
       where: { id },
@@ -407,16 +194,13 @@ export const updateTask = async (req: Request, res: Response) => {
     }
 
     // Cross-field range check using existing DB values when only one bound is updated
-    const effectiveMin = "minDaysFromArrival" in updateData
-      ? (updateData.minDaysFromArrival as number | null)
-      : existing.minDaysFromArrival;
-    const effectiveMax = "maxDaysFromArrival" in updateData
-      ? (updateData.maxDaysFromArrival as number | null)
-      : existing.maxDaysFromArrival;
-    if (effectiveMin !== null && effectiveMax !== null &&
-        effectiveMin !== undefined && effectiveMax !== undefined &&
-        effectiveMax < effectiveMin) {
-      return res.status(400).json({ error: "maxDaysFromArrival must be greater than or equal to minDaysFromArrival" });
+    const rangeError = validateDaysFromArrivalRange(
+      updateData,
+      existing.minDaysFromArrival,
+      existing.maxDaysFromArrival,
+    );
+    if (rangeError) {
+      return res.status(400).json({ error: rangeError });
     }
 
     const task = await prisma.task.update({
