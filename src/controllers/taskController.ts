@@ -14,6 +14,13 @@ const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   done: UserTaskStatus.DONE,
 };
 
+/**
+ * Returns true when a user-created task belongs to a different user.
+ * System tasks (createdByUserId === null) are always accessible.
+ */
+const isOwnedByAnotherUser = (createdByUserId: string | null, userId: string): boolean =>
+  createdByUserId !== null && createdByUserId !== userId;
+
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
     const tasks = await prisma.task.findMany({
@@ -68,7 +75,7 @@ export const getTaskById = async (req: Request, res: Response) => {
     }
 
     // User-created tasks are private — only the creator may view them
-    if (task.createdByUserId !== null && task.createdByUserId !== req.user!.id) {
+    if (isOwnedByAnotherUser(task.createdByUserId, req.user!.id)) {
       req.logger.info({ msg: 'Task not found (owned by another user)', taskId: id });
       return res.status(404).json({ error: "Task not found" });
     }
@@ -169,7 +176,7 @@ export const updateTask = async (req: Request, res: Response) => {
     }
 
     // User-created tasks may only be edited by their creator
-    if (existing.createdByUserId !== null && existing.createdByUserId !== req.user!.id) {
+    if (isOwnedByAnotherUser(existing.createdByUserId, req.user!.id)) {
       req.logger.info({ msg: 'Task update denied - owned by another user', taskId: id });
       return res.status(403).json({ error: "Access denied" });
     }
@@ -320,7 +327,7 @@ export const deleteTask = async (req: Request, res: Response) => {
     }
 
     // User-created tasks may only be deleted by their creator
-    if (existing.createdByUserId !== null && existing.createdByUserId !== req.user!.id) {
+    if (isOwnedByAnotherUser(existing.createdByUserId, req.user!.id)) {
       req.logger.info({ msg: 'Task deletion denied - owned by another user', taskId: id });
       return res.status(403).json({ error: "Access denied" });
     }
