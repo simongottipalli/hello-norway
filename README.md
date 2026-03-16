@@ -132,7 +132,7 @@ cp .env.example .env
 | `NODE_ENV`              | Environment mode                                                                  | `development` or `production`                 |
 | `PORT`                  | Port the Next.js frontend server listens on                                       | `3000`                                        |
 | `API_PORT`              | Port the Express backend server listens on                                        | `3001`                                        |
-| `API_BASE_URL`          | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3001`                       |
+| `API_BASE_URL`          | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3001/api`                   |
 | `NEXT_PUBLIC_SITE_URL`  | Public URL used for Open Graph metadata                                           | `https://your-domain.com`                     |
 | `DATABASE_URL`          | PostgreSQL connection string                                                      | `postgresql://user:pass@localhost:5432/myapp` |
 | `SESSION_COOKIE_SECRET` | Secret used to sign session cookies — use a long random string in production      | *(generate with `crypto.randomBytes(32)`)*    |
@@ -152,7 +152,8 @@ A `Dockerfile` (multi-stage, Alpine-based) and `docker-compose.yml` are included
 ```bash
 # 1. Copy and configure environment variables
 cp .env.example .env
-# Edit .env — set DATABASE_URL, SESSION_COOKIE_SECRET, BREVO_API_KEY, etc.
+# Edit .env — set SESSION_COOKIE_SECRET, BREVO_API_KEY, etc.
+# For Docker Compose, either remove DATABASE_URL or set its host to "postgres"
 
 # 2. Build and start all services
 docker compose up --build -d
