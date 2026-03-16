@@ -178,7 +178,7 @@ export const updateTask = async (req: Request, res: Response) => {
     // User-created tasks may only be edited by their creator
     if (isOwnedByAnotherUser(existing.createdByUserId, req.user!.id)) {
       req.logger.info({ msg: 'Task update denied - owned by another user', taskId: id });
-      return res.status(403).json({ error: "Access denied" });
+      return res.status(404).json({ error: "Task not found" });
     }
 
     const task = await prisma.task.update({
@@ -329,7 +329,8 @@ export const deleteTask = async (req: Request, res: Response) => {
     // User-created tasks may only be deleted by their creator
     if (isOwnedByAnotherUser(existing.createdByUserId, req.user!.id)) {
       req.logger.info({ msg: 'Task deletion denied - owned by another user', taskId: id });
-      return res.status(403).json({ error: "Access denied" });
+      // Return 404 to avoid disclosing existence of tasks owned by other users
+      return res.status(404).json({ error: "Task not found" });
     }
 
     await prisma.task.delete({
