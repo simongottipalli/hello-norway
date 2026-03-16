@@ -149,6 +149,14 @@ export const getTaskById = async (req: Request, res: Response) => {
 
 export const createTask = async (req: Request, res: Response) => {
   try {
+    const requestBody = req.body;
+
+    // Ensure body is a JSON object
+    if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody)) {
+      req.logger.info({ msg: "Task creation failed - request body is not a JSON object" });
+      return res.status(400).json({ error: "Request body must be a JSON object" });
+    }
+
     const {
       slug,
       title,
@@ -162,7 +170,7 @@ export const createTask = async (req: Request, res: Response) => {
       requiresChildren,
       minDaysFromArrival,
       maxDaysFromArrival,
-    } = req.body;
+    } = requestBody;
 
     // Required field presence check
     if (!slug || !title || !shortDescription || !body || !category || sortOrder === undefined) {
