@@ -5,9 +5,9 @@ import { handlePrismaError } from "../utils/errorHandler";
 import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
 
 // Field length limits
-const SLUG_MAX_LENGTH = 100;
-const TITLE_MAX_LENGTH = 255;
-const SHORT_DESCRIPTION_MAX_LENGTH = 500;
+const SLUG_MAX_LENGTH = 80;
+const TITLE_MAX_LENGTH = 140;
+const SHORT_DESCRIPTION_MAX_LENGTH = 280;
 const BODY_MAX_LENGTH = 50000;
 
 // sortOrder must fit in PostgreSQL SmallInt
