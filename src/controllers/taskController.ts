@@ -2,6 +2,11 @@ import { Request, Response } from "express";
 import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import { handlePrismaError } from "../utils/errorHandler";
+import {
+  validateCreateTaskBody,
+  validateUpdateTaskFields,
+  validateDaysFromArrivalRange,
+} from "./taskValidation";
 
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:
@@ -94,25 +99,17 @@ export const getTaskById = async (req: Request, res: Response) => {
 
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const {
-      slug,
-      title,
-      shortDescription,
-      body,
-      category,
-      sortOrder,
-      officialLinks,
-      requiresEU,
-      requiresEmploymentStatus,
-      requiresChildren,
-      minDaysFromArrival,
-      maxDaysFromArrival,
-    } = req.body;
-
-    if (!slug || !title || !shortDescription || !body || !category || sortOrder === undefined) {
-      req.logger.info({ msg: 'Task creation failed - missing required fields' });
-      return res.status(400).json({ error: "Missing required fields" });
+    const validation = validateCreateTaskBody(req.body);
+    if ("error" in validation) {
+      req.logger.info({ msg: 'Task creation failed - validation error', error: validation.error });
+      return res.status(400).json({ error: validation.error });
     }
+
+    const {
+      slug, title, shortDescription, body, category, sortOrder,
+      officialLinks, requiresEU, requiresEmploymentStatus, requiresChildren,
+      minDaysFromArrival, maxDaysFromArrival,
+    } = validation.data;
 
     const task = await prisma.$transaction(async (tx) => {
       const createdTask = await tx.task.create({
@@ -160,14 +157,29 @@ export const createTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    if ("status" in (req.body || {})) {
+
+    // Reject attempts to use the status field (dedicated endpoint exists)
+    if (
+      req.body !== null &&
+      req.body !== undefined &&
+      typeof req.body === "object" &&
+      Object.prototype.hasOwnProperty.call(req.body, "status")
+    ) {
       req.logger.info({ msg: 'Task update failed - status requires dedicated endpoint', taskId: id });
       return res.status(400).json({ error: "Use PATCH /api/tasks/:id/status to update task status" });
     }
 
+    const validation = validateUpdateTaskFields(req.body);
+    if ("error" in validation) {
+      req.logger.info({ msg: 'Task update failed - validation error', taskId: id, error: validation.error });
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const updateData = validation.data;
+
     const existing = await prisma.task.findUnique({
       where: { id },
-      select: { createdByUserId: true },
+      select: { createdByUserId: true, minDaysFromArrival: true, maxDaysFromArrival: true },
     });
 
     if (!existing) {
@@ -181,9 +193,19 @@ export const updateTask = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Task not found" });
     }
 
+    // Cross-field range check using existing DB values when only one bound is updated
+    const rangeError = validateDaysFromArrivalRange(
+      updateData,
+      existing.minDaysFromArrival,
+      existing.maxDaysFromArrival,
+    );
+    if (rangeError) {
+      return res.status(400).json({ error: rangeError });
+    }
+
     const task = await prisma.task.update({
       where: { id },
-      data: req.body,
+      data: updateData,
     });
 
     req.logger.info({ msg: 'Task updated', taskId: id });
