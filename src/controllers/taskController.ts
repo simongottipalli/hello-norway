@@ -361,14 +361,28 @@ export const updateTask = async (req: Request, res: Response) => {
     }
     if ("minDaysFromArrival" in updateData && updateData.minDaysFromArrival !== null) {
       const minDays = updateData.minDaysFromArrival;
-      if (typeof minDays !== "number" || !Number.isInteger(minDays) || (minDays as number) < 0) {
-        return res.status(400).json({ error: "minDaysFromArrival must be a non-negative integer or null" });
+      if (
+        typeof minDays !== "number" ||
+        !Number.isInteger(minDays) ||
+        (minDays as number) < DAYS_FROM_ARRIVAL_MIN ||
+        (minDays as number) > DAYS_FROM_ARRIVAL_MAX
+      ) {
+        return res.status(400).json({
+          error: `minDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
+        });
       }
     }
     if ("maxDaysFromArrival" in updateData && updateData.maxDaysFromArrival !== null) {
       const maxDays = updateData.maxDaysFromArrival;
-      if (typeof maxDays !== "number" || !Number.isInteger(maxDays) || (maxDays as number) < 0) {
-        return res.status(400).json({ error: "maxDaysFromArrival must be a non-negative integer or null" });
+      if (
+        typeof maxDays !== "number" ||
+        !Number.isInteger(maxDays) ||
+        (maxDays as number) < DAYS_FROM_ARRIVAL_MIN ||
+        (maxDays as number) > DAYS_FROM_ARRIVAL_MAX
+      ) {
+        return res.status(400).json({
+          error: `maxDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
+        });
       }
       const minDays = updateData.minDaysFromArrival;
       if (minDays !== undefined && minDays !== null && (maxDays as number) < (minDays as number)) {
