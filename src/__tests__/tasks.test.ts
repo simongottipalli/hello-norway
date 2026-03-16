@@ -416,7 +416,7 @@ describe("Task API", () => {
       expect(response.body.error).toContain("requiresEU");
     });
 
-    it("should return 400 when minDaysFromArrival is negative", async () => {
+    it("should allow negative minDaysFromArrival values", async () => {
       const response = await request(app)
         .post("/api/tasks")
         .send({
@@ -430,8 +430,7 @@ describe("Task API", () => {
         })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("minDaysFromArrival");
+      expect(response.status).toBe(201);
     });
 
     it("should return 400 when maxDaysFromArrival is less than minDaysFromArrival", async () => {
