@@ -262,17 +262,21 @@ export const createTask = async (req: Request, res: Response) => {
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-    if ("status" in (req.body || {})) {
+    const body = req.body;
+    if (body === null || body === undefined || typeof body !== "object" || Array.isArray(body)) {
+      req.logger.info({ msg: "Task update failed - invalid request body type", taskId: id, bodyType: typeof body });
+      return res.status(400).json({ error: "Request body must be a JSON object" });
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "status")) {
       req.logger.info({ msg: 'Task update failed - status requires dedicated endpoint', taskId: id });
       return res.status(400).json({ error: "Use PATCH /api/tasks/:id/status to update task status" });
     }
 
     // Strip unknown/system fields — only allow fields in the updatable whitelist
-    const body = req.body || {};
     const updateData: Record<string, unknown> = {};
     for (const field of TASK_UPDATABLE_FIELDS) {
-      if (field in body) {
-        updateData[field] = body[field];
+      if (Object.prototype.hasOwnProperty.call(body, field)) {
+        updateData[field] = (body as Record<string, unknown>)[field];
       }
     }
 
