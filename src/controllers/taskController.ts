@@ -206,13 +206,27 @@ export const createTask = async (req: Request, res: Response) => {
       normalizedRequiresEmploymentStatus = requiresEmploymentStatus as string[];
     }
     if (minDaysFromArrival !== undefined && minDaysFromArrival !== null) {
-      if (typeof minDaysFromArrival !== "number" || !Number.isInteger(minDaysFromArrival) || minDaysFromArrival < 0) {
-        return res.status(400).json({ error: "minDaysFromArrival must be a non-negative integer or null" });
+      if (
+        typeof minDaysFromArrival !== "number" ||
+        !Number.isInteger(minDaysFromArrival) ||
+        minDaysFromArrival < 0 ||
+        minDaysFromArrival > SORT_ORDER_MAX
+      ) {
+        return res.status(400).json({
+          error: `minDaysFromArrival must be a non-negative integer not greater than ${SORT_ORDER_MAX} or null`,
+        });
       }
     }
     if (maxDaysFromArrival !== undefined && maxDaysFromArrival !== null) {
-      if (typeof maxDaysFromArrival !== "number" || !Number.isInteger(maxDaysFromArrival) || maxDaysFromArrival < 0) {
-        return res.status(400).json({ error: "maxDaysFromArrival must be a non-negative integer or null" });
+      if (
+        typeof maxDaysFromArrival !== "number" ||
+        !Number.isInteger(maxDaysFromArrival) ||
+        maxDaysFromArrival < 0 ||
+        maxDaysFromArrival > SORT_ORDER_MAX
+      ) {
+        return res.status(400).json({
+          error: `maxDaysFromArrival must be a non-negative integer not greater than ${SORT_ORDER_MAX} or null`,
+        });
       }
       if (minDaysFromArrival !== undefined && minDaysFromArrival !== null && maxDaysFromArrival < minDaysFromArrival) {
         return res.status(400).json({ error: "maxDaysFromArrival must be greater than or equal to minDaysFromArrival" });
