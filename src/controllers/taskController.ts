@@ -14,6 +14,10 @@ const BODY_MAX_LENGTH = 50000;
 const SORT_ORDER_MIN = 0;
 const SORT_ORDER_MAX = 32767;
 
+// Days-from-arrival must also fit in PostgreSQL SmallInt, but can be negative (before arrival)
+const DAYS_FROM_ARRIVAL_MIN = -32768;
+const DAYS_FROM_ARRIVAL_MAX = SORT_ORDER_MAX;
+
 const VALID_TASK_CATEGORIES = new Set<string>(Object.values(TaskCategory));
 const VALID_EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
 
@@ -209,11 +213,11 @@ export const createTask = async (req: Request, res: Response) => {
       if (
         typeof minDaysFromArrival !== "number" ||
         !Number.isInteger(minDaysFromArrival) ||
-        minDaysFromArrival < 0 ||
-        minDaysFromArrival > SORT_ORDER_MAX
+        minDaysFromArrival < DAYS_FROM_ARRIVAL_MIN ||
+        minDaysFromArrival > DAYS_FROM_ARRIVAL_MAX
       ) {
         return res.status(400).json({
-          error: `minDaysFromArrival must be a non-negative integer not greater than ${SORT_ORDER_MAX} or null`,
+          error: `minDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
         });
       }
     }
@@ -221,11 +225,11 @@ export const createTask = async (req: Request, res: Response) => {
       if (
         typeof maxDaysFromArrival !== "number" ||
         !Number.isInteger(maxDaysFromArrival) ||
-        maxDaysFromArrival < 0 ||
-        maxDaysFromArrival > SORT_ORDER_MAX
+        maxDaysFromArrival < DAYS_FROM_ARRIVAL_MIN ||
+        maxDaysFromArrival > DAYS_FROM_ARRIVAL_MAX
       ) {
         return res.status(400).json({
-          error: `maxDaysFromArrival must be a non-negative integer not greater than ${SORT_ORDER_MAX} or null`,
+          error: `maxDaysFromArrival must be an integer between ${DAYS_FROM_ARRIVAL_MIN} and ${DAYS_FROM_ARRIVAL_MAX} or null`,
         });
       }
       if (minDaysFromArrival !== undefined && minDaysFromArrival !== null && maxDaysFromArrival < minDaysFromArrival) {
