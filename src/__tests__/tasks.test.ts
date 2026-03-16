@@ -7,6 +7,8 @@ import { prisma } from "../lib/prisma";
 
 let authUserId: string;
 let authUserEmail: string;
+let taskCreatorUserId: string;
+let taskCreatorEmail: string;
 
 const generateUniqueTestEmail = () =>
   `test+${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
@@ -24,12 +26,21 @@ const app = createApp();
 describe("Task API", () => {
   let createdTaskId: string;
 
+  beforeAll(async () => {
+    taskCreatorUserId = randomUUID();
+    taskCreatorEmail = generateUniqueTestEmail();
+    await prisma.user.create({
+      data: { id: taskCreatorUserId, email: taskCreatorEmail, name: "Task Creator" },
+    });
+  });
+
   beforeEach(() => {
     authUserId = randomUUID();
     authUserEmail = generateUniqueTestEmail();
   });
 
   afterAll(async () => {
+    await prisma.user.deleteMany({ where: { id: taskCreatorUserId } }).catch(() => {});
     await prisma.$disconnect();
   });
 
@@ -241,6 +252,12 @@ describe("Task API", () => {
   });
 
   describe("POST /api/tasks", () => {
+    beforeEach(() => {
+      // All POST tests run as the designated task creator user
+      authUserId = taskCreatorUserId;
+      authUserEmail = taskCreatorEmail;
+    });
+
     it("should create a new task with all fields", async () => {
       const newTask = {
         slug: `test-task-${Date.now()}`,
@@ -265,6 +282,7 @@ describe("Task API", () => {
       expect(response.body.slug).toBe(newTask.slug);
       expect(response.body.title).toBe(newTask.title);
       expect(response.body.requiresEU).toBe(true);
+      expect(response.body.createdByUserId).toBe(taskCreatorUserId);
 
       createdTaskId = response.body.id;
     });
@@ -287,8 +305,9 @@ describe("Task API", () => {
       expect(response.status).toBe(201);
       expect(response.body.slug).toBe(newTask.slug);
       expect(response.body.officialLinks).toEqual({});
+      expect(response.body.createdByUserId).toBe(taskCreatorUserId);
 
-      // Clean up
+      // Clean up (cascades to UserTask)
       await prisma.task.delete({ where: { id: response.body.id } });
     });
 
@@ -308,7 +327,7 @@ describe("Task API", () => {
     });
 
     it("should return 400 when slug already exists", async () => {
-      const existingTask = await prisma.task.findFirst();
+      const existingTask = await prisma.task.findFirst({ where: { createdByUserId: null } });
 
       const duplicateTask = {
         slug: existingTask!.slug,
@@ -330,6 +349,12 @@ describe("Task API", () => {
   });
 
   describe("PATCH /api/tasks/:id", () => {
+    beforeEach(() => {
+      // Must act as the task creator to be allowed to edit the task
+      authUserId = taskCreatorUserId;
+      authUserEmail = taskCreatorEmail;
+    });
+
     it("should update a task", async () => {
       const updates = {
         title: "Updated Test Task",
@@ -387,6 +412,12 @@ describe("Task API", () => {
   });
 
   describe("DELETE /api/tasks/:id", () => {
+    beforeEach(() => {
+      // Must act as the task creator to be allowed to delete the task
+      authUserId = taskCreatorUserId;
+      authUserEmail = taskCreatorEmail;
+    });
+
     it("should delete a task", async () => {
       const response = await request(app).delete(`/api/tasks/${createdTaskId}`);
 
@@ -406,6 +437,129 @@ describe("Task API", () => {
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe("Task not found");
+    });
+  });
+
+  describe("User-created task isolation", () => {
+    let ownerUserId: string;
+    let ownerUserEmail: string;
+    let isolationTaskId: string;
+
+    beforeAll(async () => {
+      ownerUserId = randomUUID();
+      ownerUserEmail = generateUniqueTestEmail();
+      await prisma.user.create({
+        data: { id: ownerUserId, email: ownerUserEmail, name: "Owner User" },
+      });
+
+      // Create the task as ownerUser
+      authUserId = ownerUserId;
+      authUserEmail = ownerUserEmail;
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `isolation-task-${Date.now()}`,
+          title: "Owner Task",
+          shortDescription: "Only visible to owner",
+          body: "Private task body",
+          category: "OTHER",
+          sortOrder: 7777,
+        })
+        .set("Content-Type", "application/json");
+
+      isolationTaskId = response.body.id;
+    });
+
+    afterAll(async () => {
+      // Cascade-deletes the task and its UserTask
+      await prisma.user.deleteMany({ where: { id: ownerUserId } }).catch(() => {});
+    });
+
+    beforeEach(() => {
+      // Default: a different, unrelated user
+      authUserId = randomUUID();
+      authUserEmail = generateUniqueTestEmail();
+    });
+
+    it("should not appear in GET /api/tasks (global task list)", async () => {
+      const response = await request(app).get("/api/tasks");
+      expect(response.status).toBe(200);
+      const ids = response.body.map((t: { id: string }) => t.id);
+      expect(ids).not.toContain(isolationTaskId);
+    });
+
+    it("should appear in GET /api/tasks/personalized for the owner", async () => {
+      authUserId = ownerUserId;
+      authUserEmail = ownerUserEmail;
+      const response = await request(app).get("/api/tasks/personalized");
+      expect(response.status).toBe(200);
+      const ids = response.body.map((t: { id: string }) => t.id);
+      expect(ids).toContain(isolationTaskId);
+    });
+
+    it("should not appear in GET /api/tasks/personalized for another user", async () => {
+      // authUserId is a random user (set by beforeEach) — they should not see the owner's task
+      const response = await request(app).get("/api/tasks/personalized");
+      expect(response.status).toBe(200);
+      const ids = response.body.map((t: { id: string }) => t.id);
+      expect(ids).not.toContain(isolationTaskId);
+    });
+
+    it("should return 404 on GET /api/tasks/:id for another user", async () => {
+      const response = await request(app).get(`/api/tasks/${isolationTaskId}`);
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe("Task not found");
+    });
+
+    it("should return 404 on PATCH /api/tasks/:id for another user", async () => {
+      const response = await request(app)
+        .patch(`/api/tasks/${isolationTaskId}`)
+        .send({ title: "Hacked Title" });
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe("Task not found");
+    });
+
+    it("should return 404 on DELETE /api/tasks/:id for another user", async () => {
+      const response = await request(app).delete(`/api/tasks/${isolationTaskId}`);
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe("Task not found");
+    });
+
+    it("should return 404 on PATCH /api/tasks/:id/status for another user", async () => {
+      const response = await request(app)
+        .patch(`/api/tasks/${isolationTaskId}/status`)
+        .send({ status: "in_progress" });
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe("Task not found");
+    });
+
+    it("should allow the owner to view their task via GET /api/tasks/:id", async () => {
+      authUserId = ownerUserId;
+      authUserEmail = ownerUserEmail;
+      const response = await request(app).get(`/api/tasks/${isolationTaskId}`);
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe(isolationTaskId);
+      expect(response.body.createdByUserId).toBe(ownerUserId);
+    });
+
+    it("should allow the owner to update their task via PATCH /api/tasks/:id", async () => {
+      authUserId = ownerUserId;
+      authUserEmail = ownerUserEmail;
+      const response = await request(app)
+        .patch(`/api/tasks/${isolationTaskId}`)
+        .send({ title: "Updated Owner Task" });
+      expect(response.status).toBe(200);
+      expect(response.body.title).toBe("Updated Owner Task");
+    });
+
+    it("should allow the owner to update task status via PATCH /api/tasks/:id/status", async () => {
+      authUserId = ownerUserId;
+      authUserEmail = ownerUserEmail;
+      const response = await request(app)
+        .patch(`/api/tasks/${isolationTaskId}/status`)
+        .send({ status: "in_progress" });
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("SAVED");
     });
   });
 });

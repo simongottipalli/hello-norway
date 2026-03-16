@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "Task" ADD COLUMN     "createdByUserId" UUID;
+
+-- CreateIndex
+CREATE INDEX "Task_createdByUserId_idx" ON "Task"("createdByUserId");
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

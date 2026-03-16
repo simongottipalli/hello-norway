@@ -75,6 +75,7 @@ function getArrivalWindowFilter(profile: AssignmentProfile, now: Date): Prisma.T
 export function getRelevantTaskWhere(profile: AssignmentProfile, now: Date): Prisma.TaskWhereInput {
   return {
     AND: [
+      { createdByUserId: null },
       getBooleanEligibilityFilter("requiresEU", profile.isEU),
       getBooleanEligibilityFilter("requiresChildren", profile.hasChildren),
       getEmploymentFilter(profile.employmentStatus),
@@ -102,7 +103,11 @@ export async function syncUserTaskAssignments(
 
   const existingAssignments = await db.userTask.findMany({
     where: { userId: profile.id },
-    select: { taskId: true, status: true },
+    select: {
+      taskId: true,
+      status: true,
+      task: { select: { createdByUserId: true } },
+    },
   });
 
   const existingTaskIds = new Set(existingAssignments.map((assignment) => assignment.taskId));
@@ -128,7 +133,12 @@ export async function syncUserTaskAssignments(
 
   const relevantTaskIdSet = new Set(relevantTaskIds);
   const staleTodoTaskIds = existingAssignments
-    .filter((assignment) => assignment.status === UserTaskStatus.TODO && !relevantTaskIdSet.has(assignment.taskId))
+    .filter(
+      (assignment) =>
+        assignment.status === UserTaskStatus.TODO &&
+        !relevantTaskIdSet.has(assignment.taskId) &&
+        assignment.task?.createdByUserId === null
+    )
     .map((assignment) => assignment.taskId);
 
   if (staleTodoTaskIds.length > 0) {
@@ -137,6 +147,7 @@ export async function syncUserTaskAssignments(
         userId: profile.id,
         taskId: { in: staleTodoTaskIds },
         status: UserTaskStatus.TODO,
+        task: { createdByUserId: null },
       },
     });
   }

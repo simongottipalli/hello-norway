@@ -16,6 +16,7 @@ vi.mock("../middleware/authMiddleware", () => ({
 vi.mock("../lib/prisma", () => ({
   prisma: {
     task: {
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
     },
@@ -33,7 +34,7 @@ describe("Task status updates", () => {
   });
 
   it("updates task status for the authenticated user", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-1" } as unknown as Task);
+    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-1" } as unknown as Task);
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-1",
       userId: "test-user-id",
@@ -59,7 +60,7 @@ describe("Task status updates", () => {
   });
 
   it("clears completedAt when status is not DONE", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-2" } as unknown as Task);
+    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-2" } as unknown as Task);
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-2",
       userId: "test-user-id",
@@ -85,7 +86,7 @@ describe("Task status updates", () => {
   });
 
   it("sets dueDate when a valid dueDate is provided", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-3" } as unknown as Task);
+    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-3" } as unknown as Task);
     const expectedDueDate = new Date("2026-03-15");
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-3",
@@ -113,7 +114,7 @@ describe("Task status updates", () => {
   });
 
   it("clears dueDate when null is provided", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-4" } as unknown as Task);
+    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-4" } as unknown as Task);
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-4",
       userId: "test-user-id",
@@ -191,7 +192,7 @@ describe("Task status updates", () => {
   });
 
   it("updates task status with private notes", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-3" } as unknown as Task);
+    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-3" } as unknown as Task);
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-3",
       userId: "test-user-id",
@@ -227,7 +228,7 @@ describe("Task status updates", () => {
   });
 
   it("returns 404 when task does not exist", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.task.findFirst).mockResolvedValue(null);
 
     const response = await request(app)
       .patch("/api/tasks/missing-task/status")
@@ -252,7 +253,7 @@ describe("Task status updates", () => {
   });
 
   it("accepts product status aliases and maps them to persisted enum values", async () => {
-    vi.mocked(prisma.task.findUnique).mockResolvedValue({ id: "task-5" } as unknown as Task);
+    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-5" } as unknown as Task);
     vi.mocked(prisma.userTask.upsert).mockResolvedValue({
       id: "user-task-5",
       userId: "test-user-id",

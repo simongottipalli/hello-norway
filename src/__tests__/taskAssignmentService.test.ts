@@ -43,6 +43,7 @@ describe("taskAssignmentService", () => {
     expect(prisma.task.findMany).toHaveBeenCalledWith({
       where: {
         AND: [
+          { createdByUserId: null },
           { requiresEU: null },
           { requiresChildren: null },
           { requiresEmploymentStatus: { isEmpty: true } },
@@ -59,8 +60,8 @@ describe("taskAssignmentService", () => {
   it("updates assignments on profile change using arrival window and removes stale TODO tasks", async () => {
     vi.mocked(prisma.task.findMany).mockResolvedValue([{ id: "task-keep" }, { id: "task-new" }]);
     vi.mocked(prisma.userTask.findMany).mockResolvedValue([
-      { taskId: "task-keep", status: "DONE" },
-      { taskId: "task-stale", status: "TODO" },
+      { taskId: "task-keep", status: "DONE", task: { createdByUserId: null } },
+      { taskId: "task-stale", status: "TODO", task: { createdByUserId: null } },
     ]);
     vi.mocked(prisma.userTask.createMany).mockResolvedValue({ count: 1 });
     vi.mocked(prisma.userTask.deleteMany).mockResolvedValue({ count: 1 });
@@ -80,6 +81,7 @@ describe("taskAssignmentService", () => {
     expect(prisma.task.findMany).toHaveBeenCalledWith({
       where: {
         AND: [
+          { createdByUserId: null },
           { OR: [{ requiresEU: null }, { requiresEU: true }] },
           { OR: [{ requiresChildren: null }, { requiresChildren: true }] },
           { OR: [{ requiresEmploymentStatus: { isEmpty: true } }, { requiresEmploymentStatus: { has: "EMPLOYED" } }] },
@@ -98,6 +100,7 @@ describe("taskAssignmentService", () => {
         userId: "user-1",
         taskId: { in: ["task-stale"] },
         status: "TODO",
+        task: { createdByUserId: null },
       },
     });
   });
