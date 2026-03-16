@@ -923,6 +923,7 @@ describe("OTP API", () => {
       expect(prisma.task.findMany).toHaveBeenCalledWith({
         where: {
           AND: [
+            { createdByUserId: null },
             { requiresEU: null },
             { requiresChildren: null },
             { requiresEmploymentStatus: { isEmpty: true } },
@@ -998,6 +999,7 @@ describe("OTP API", () => {
       expect(prisma.task.findMany).toHaveBeenCalledWith({
         where: {
           AND: [
+            { createdByUserId: null },
             { OR: [{ requiresEU: null }, { requiresEU: true }] },
             { OR: [{ requiresChildren: null }, { requiresChildren: false }] },
             { OR: [{ requiresEmploymentStatus: { isEmpty: true } }, { requiresEmploymentStatus: { has: "EMPLOYED" } }] },

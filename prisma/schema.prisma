@@ -60,6 +60,7 @@ model User {
   updatedAt           DateTime          @updatedAt @db.Timestamptz(6)
   userTasks           UserTask[]
   sessions            Session[]
+  createdTasks        Task[]
 }
 
 model Task {
@@ -76,12 +77,15 @@ model Task {
   minDaysFromArrival         Int?               @db.SmallInt
   maxDaysFromArrival         Int?               @db.SmallInt
   sortOrder                  Int                @db.SmallInt
+  createdByUserId            String?            @db.Uuid
   createdAt                  DateTime           @default(now()) @db.Timestamptz(6)
   updatedAt                  DateTime           @updatedAt @db.Timestamptz(6)
+  createdBy                  User?              @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
   userTasks                  UserTask[]
 
   @@index([category, sortOrder])
   @@index([slug])
+  @@index([createdByUserId])
 }
 
 model UserTask {

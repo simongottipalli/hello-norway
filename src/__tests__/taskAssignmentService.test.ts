@@ -43,6 +43,7 @@ describe("taskAssignmentService", () => {
     expect(prisma.task.findMany).toHaveBeenCalledWith({
       where: {
         AND: [
+          { createdByUserId: null },
           { requiresEU: null },
           { requiresChildren: null },
           { requiresEmploymentStatus: { isEmpty: true } },
@@ -80,6 +81,7 @@ describe("taskAssignmentService", () => {
     expect(prisma.task.findMany).toHaveBeenCalledWith({
       where: {
         AND: [
+          { createdByUserId: null },
           { OR: [{ requiresEU: null }, { requiresEU: true }] },
           { OR: [{ requiresChildren: null }, { requiresChildren: true }] },
           { OR: [{ requiresEmploymentStatus: { isEmpty: true } }, { requiresEmploymentStatus: { has: "EMPLOYED" } }] },
@@ -98,6 +100,7 @@ describe("taskAssignmentService", () => {
         userId: "user-1",
         taskId: { in: ["task-stale"] },
         status: "TODO",
+        task: { createdByUserId: null },
       },
     });
   });

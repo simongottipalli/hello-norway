@@ -75,6 +75,7 @@ function getArrivalWindowFilter(profile: AssignmentProfile, now: Date): Prisma.T
 export function getRelevantTaskWhere(profile: AssignmentProfile, now: Date): Prisma.TaskWhereInput {
   return {
     AND: [
+      { createdByUserId: null },
       getBooleanEligibilityFilter("requiresEU", profile.isEU),
       getBooleanEligibilityFilter("requiresChildren", profile.hasChildren),
       getEmploymentFilter(profile.employmentStatus),
@@ -137,6 +138,7 @@ export async function syncUserTaskAssignments(
         userId: profile.id,
         taskId: { in: staleTodoTaskIds },
         status: UserTaskStatus.TODO,
+        task: { createdByUserId: null },
       },
     });
   }

@@ -17,6 +17,7 @@ const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
     const tasks = await prisma.task.findMany({
+      where: { createdByUserId: null },
       orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
     });
 
@@ -66,6 +67,12 @@ export const getTaskById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Task not found" });
     }
 
+    // User-created tasks are private — only the creator may view them
+    if (task.createdByUserId !== null && task.createdByUserId !== req.user!.id) {
+      req.logger.info({ msg: 'Task not found (owned by another user)', taskId: id });
+      return res.status(404).json({ error: "Task not found" });
+    }
+
     req.logger.info({ msg: 'Fetched task by id', taskId: id });
     res.json(task);
   } catch (error: unknown) {
@@ -100,21 +107,35 @@ export const createTask = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const task = await prisma.task.create({
-      data: {
-        slug,
-        title,
-        shortDescription,
-        body,
-        category,
-        sortOrder,
-        officialLinks: officialLinks ?? {},
-        requiresEU,
-        requiresEmploymentStatus,
-        requiresChildren,
-        minDaysFromArrival,
-        maxDaysFromArrival,
-      },
+    const task = await prisma.$transaction(async (tx) => {
+      const createdTask = await tx.task.create({
+        data: {
+          slug,
+          title,
+          shortDescription,
+          body,
+          category,
+          sortOrder,
+          officialLinks: officialLinks ?? {},
+          requiresEU,
+          requiresEmploymentStatus,
+          requiresChildren,
+          minDaysFromArrival,
+          maxDaysFromArrival,
+          createdByUserId: req.user!.id,
+        },
+      });
+
+      // Auto-assign the newly created task to its creator
+      await tx.userTask.create({
+        data: {
+          userId: req.user!.id,
+          taskId: createdTask.id,
+          status: UserTaskStatus.TODO,
+        },
+      });
+
+      return createdTask;
     });
 
     req.logger.info({ msg: 'Task created', taskId: task.id, slug });
@@ -135,6 +156,22 @@ export const updateTask = async (req: Request, res: Response) => {
     if ("status" in (req.body || {})) {
       req.logger.info({ msg: 'Task update failed - status requires dedicated endpoint', taskId: id });
       return res.status(400).json({ error: "Use PATCH /api/tasks/:id/status to update task status" });
+    }
+
+    const existing = await prisma.task.findUnique({
+      where: { id },
+      select: { createdByUserId: true },
+    });
+
+    if (!existing) {
+      req.logger.info({ msg: 'Task not found', taskId: id });
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    // User-created tasks may only be edited by their creator
+    if (existing.createdByUserId !== null && existing.createdByUserId !== req.user!.id) {
+      req.logger.info({ msg: 'Task update denied - owned by another user', taskId: id });
+      return res.status(403).json({ error: "Access denied" });
     }
 
     const task = await prisma.task.update({
@@ -217,8 +254,14 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid personalNotes. 'personalNotes' must be a string or null" });
     }
 
-    const task = await prisma.task.findUnique({
-      where: { id },
+    const task = await prisma.task.findFirst({
+      where: {
+        id,
+        OR: [
+          { createdByUserId: null },
+          { createdByUserId: req.user!.id },
+        ],
+      },
       select: { id: true },
     });
 
@@ -265,6 +308,22 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
 export const deleteTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const existing = await prisma.task.findUnique({
+      where: { id },
+      select: { createdByUserId: true },
+    });
+
+    if (!existing) {
+      req.logger.info({ msg: 'Task not found', taskId: id });
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    // User-created tasks may only be deleted by their creator
+    if (existing.createdByUserId !== null && existing.createdByUserId !== req.user!.id) {
+      req.logger.info({ msg: 'Task deletion denied - owned by another user', taskId: id });
+      return res.status(403).json({ error: "Access denied" });
+    }
 
     await prisma.task.delete({
       where: { id },
