@@ -134,8 +134,11 @@ cp .env.example .env
 | `API_PORT`              | Port the Express backend server listens on                                        | `3001`                                        |
 | `API_BASE_URL`          | URL Next.js API routes use to forward requests to Express — must match `API_PORT` | `http://localhost:3001/api`                   |
 | `NEXT_PUBLIC_SITE_URL`  | Public URL used for Open Graph metadata                                           | `https://your-domain.com`                     |
-| `DATABASE_URL`          | PostgreSQL connection string                                                      | `postgresql://user:pass@localhost:5432/myapp` |
-| `SESSION_COOKIE_SECRET` | Secret used to sign session cookies — use a long random string in production      | *(generate with `crypto.randomBytes(32)`)*    |
+| `POSTGRES_USER`         | PostgreSQL username (Docker Compose bundled DB only)                              | `postgres`                                    |
+| `POSTGRES_PASSWORD`     | PostgreSQL password (Docker Compose bundled DB only) — required, no default       | *(strong random password)*                    |
+| `POSTGRES_DB`           | PostgreSQL database name (Docker Compose bundled DB only)                         | `hello_norway`                                |
+| `DATABASE_URL`          | Full PostgreSQL connection string (overrides individual Postgres vars)            | `postgresql://user:pass@localhost:5432/myapp` |
+| `SESSION_COOKIE_SECRET` | Secret used to sign session cookies — **must** be a long random string            | *(generate with `crypto.randomBytes(32)`)*    |
 | `EMAIL_PROVIDER`        | Email service provider                                                            | `brevo`                                       |
 | `EMAIL_FROM`            | Sender address shown to email recipients                                          | `noreply@example.com`                         |
 | `BREVO_API_KEY`         | Brevo (formerly Sendinblue) API key                                               | *(from Brevo dashboard → SMTP & API)*         |
@@ -152,8 +155,8 @@ A `Dockerfile` (multi-stage, Alpine-based) and `docker-compose.yml` are included
 ```bash
 # 1. Copy and configure environment variables
 cp .env.example .env
-# Edit .env — set SESSION_COOKIE_SECRET, BREVO_API_KEY, etc.
-# For Docker Compose, either remove DATABASE_URL or set its host to "postgres"
+# Required: set SESSION_COOKIE_SECRET, BREVO_API_KEY, and POSTGRES_PASSWORD
+# Tip: DATABASE_URL in .env.example already points to the bundled "postgres" service
 
 # 2. Build and start all services
 docker compose up --build -d
