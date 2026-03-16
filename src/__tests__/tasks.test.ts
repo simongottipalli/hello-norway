@@ -346,6 +346,112 @@ describe("Task API", () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("already exists");
     });
+
+    it("should return 400 when category is not a valid enum value", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `invalid-category-${Date.now()}`,
+          title: "Category Test",
+          shortDescription: "Short desc",
+          body: "Body",
+          category: "INVALID_CATEGORY",
+          sortOrder: 1,
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("Invalid category");
+    });
+
+    it("should return 400 when sortOrder is not an integer", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `float-sortorder-${Date.now()}`,
+          title: "Float sortOrder",
+          shortDescription: "Short desc",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 1.5,
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("sortOrder");
+    });
+
+    it("should return 400 when sortOrder exceeds SmallInt max", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `huge-sortorder-${Date.now()}`,
+          title: "Huge sortOrder",
+          shortDescription: "Short desc",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 99999,
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("sortOrder");
+    });
+
+    it("should return 400 when requiresEU is not a boolean", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `invalid-eu-${Date.now()}`,
+          title: "EU Test",
+          shortDescription: "Short desc",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 1,
+          requiresEU: "yes",
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("requiresEU");
+    });
+
+    it("should return 400 when minDaysFromArrival is negative", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `neg-min-days-${Date.now()}`,
+          title: "Negative days",
+          shortDescription: "Short desc",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 1,
+          minDaysFromArrival: -1,
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("minDaysFromArrival");
+    });
+
+    it("should return 400 when maxDaysFromArrival is less than minDaysFromArrival", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `invalid-days-range-${Date.now()}`,
+          title: "Invalid days range",
+          shortDescription: "Short desc",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 1,
+          minDaysFromArrival: 10,
+          maxDaysFromArrival: 5,
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("maxDaysFromArrival");
+    });
   });
 
   describe("PATCH /api/tasks/:id", () => {
@@ -408,6 +514,52 @@ describe("Task API", () => {
       } finally {
         await prisma.task.delete({ where: { id: secondTask.id } }).catch(() => {});
       }
+    });
+
+    it("should return 400 when no valid fields are provided", async () => {
+      const response = await request(app)
+        .patch(`/api/tasks/${createdTaskId}`)
+        .send({ createdByUserId: "hacker", id: "hacked-id", unknownField: "value" })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("No valid fields");
+    });
+
+    it("should not update system fields (id, createdByUserId) even if sent", async () => {
+      const original = await request(app).get(`/api/tasks/${createdTaskId}`);
+      const originalCreatedBy = original.body.createdByUserId;
+
+      const response = await request(app)
+        .patch(`/api/tasks/${createdTaskId}`)
+        .send({ title: "Legit Update", createdByUserId: "attacker-id", id: "hacked-id" })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(200);
+      expect(response.body.title).toBe("Legit Update");
+      // System fields should be unchanged
+      expect(response.body.id).toBe(createdTaskId);
+      expect(response.body.createdByUserId).toBe(originalCreatedBy);
+    });
+
+    it("should return 400 when updating category with an invalid enum value", async () => {
+      const response = await request(app)
+        .patch(`/api/tasks/${createdTaskId}`)
+        .send({ category: "NOT_A_CATEGORY" })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("Invalid category");
+    });
+
+    it("should return 400 when updating sortOrder with a non-integer", async () => {
+      const response = await request(app)
+        .patch(`/api/tasks/${createdTaskId}`)
+        .send({ sortOrder: "high" })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(400);
+      expect(response.body.error).toContain("sortOrder");
     });
   });
 
