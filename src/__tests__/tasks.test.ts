@@ -511,18 +511,18 @@ describe("Task API", () => {
       expect(response.body.error).toBe("Task not found");
     });
 
-    it("should return 403 on PATCH /api/tasks/:id for another user", async () => {
+    it("should return 404 on PATCH /api/tasks/:id for another user", async () => {
       const response = await request(app)
         .patch(`/api/tasks/${isolationTaskId}`)
         .send({ title: "Hacked Title" });
-      expect(response.status).toBe(403);
-      expect(response.body.error).toBe("Access denied");
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe("Task not found");
     });
 
-    it("should return 403 on DELETE /api/tasks/:id for another user", async () => {
+    it("should return 404 on DELETE /api/tasks/:id for another user", async () => {
       const response = await request(app).delete(`/api/tasks/${isolationTaskId}`);
-      expect(response.status).toBe(403);
-      expect(response.body.error).toBe("Access denied");
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe("Task not found");
     });
 
     it("should return 404 on PATCH /api/tasks/:id/status for another user", async () => {
