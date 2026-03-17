@@ -169,40 +169,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Progress Summary */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Total Tasks</CardDescription>
-              <CardTitle className="text-3xl">{stats.total}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Completed</CardDescription>
-              <CardTitle className="text-3xl">{stats.completed}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xs text-muted-foreground">
-                {stats.percentComplete}% complete
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>In Progress</CardDescription>
-              <CardTitle className="text-3xl">{stats.inProgress}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>To Do</CardDescription>
-              <CardTitle className="text-3xl">{stats.todo}</CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-
-        {/* Overdue Tasks */}
+            {/* Overdue Tasks */}
         {overdueTasks.length > 0 && (
               <Card className="border-destructive/50">
                 <CardHeader>
