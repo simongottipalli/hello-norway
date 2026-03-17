@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
-import { Plus, User } from "lucide-react";
+import { ListTodo, Plus, User } from "lucide-react";
 
 interface DashboardSidebarProps {
   stats: {
@@ -20,6 +20,7 @@ interface DashboardSidebarProps {
   overdueCount: number;
   upcomingCount: number;
   onTaskCreated?: () => void;
+  onShowAllTasks?: () => void;
 }
 
 export function DashboardSidebar({
@@ -27,6 +28,7 @@ export function DashboardSidebar({
   overdueCount,
   upcomingCount,
   onTaskCreated,
+  onShowAllTasks,
 }: DashboardSidebarProps) {
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -97,11 +99,20 @@ export function DashboardSidebar({
           </CardContent>
         </Card>
 
+        {/* Quick Actions Card */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={onShowAllTasks ?? (() => {})}
+            >
+              <ListTodo className="mr-2 h-4 w-4" />
+              All Tasks
+            </Button>
             <Button
               variant="outline"
               className="w-full justify-start"

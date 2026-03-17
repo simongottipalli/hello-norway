@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { TaskCategory } from "@/generated/prisma/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import TaskDetailsModal from "@/components/TaskDetailsModal";
@@ -17,12 +20,29 @@ import {
 import type { Task } from "@/types/task";
 import { formatEnumKey } from "@/lib/utils";
 
+// Use the TaskCategory enum from Prisma instead of duplicating the list
+const TASK_CATEGORIES = Object.values(TaskCategory);
+
 export default function DashboardPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [showAllTasks, setShowAllTasks] = useState(false);
+  const allTasksRef = useRef<HTMLDivElement>(null);
+
+  const handleShowAllTasks = useCallback(() => {
+    setSelectedCategory("ALL");
+    setSelectedStatus("ALL");
+    setShowAllTasks(true);
+    // Use setTimeout to allow the section to render before scrolling
+    setTimeout(() => {
+      allTasksRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
+  }, []);
 
   const fetchTasks = async () => {
     try {
@@ -82,6 +102,26 @@ export default function DashboardPage() {
     });
   }, [tasks]);
 
+  const filteredTasks = useMemo(() => {
+    let filtered = tasks;
+
+    if (selectedCategory !== "ALL") {
+      filtered = filtered.filter((task) => task.category === selectedCategory);
+    }
+
+    if (selectedStatus !== "ALL") {
+      filtered = filtered.filter((task) => task.status === selectedStatus);
+    }
+
+    // Create a copy before sorting to avoid mutating state
+    return [...filtered].sort((a, b) => {
+      if (a.category !== b.category) {
+        return a.category.localeCompare(b.category);
+      }
+      return a.sortOrder - b.sortOrder;
+    });
+  }, [tasks, selectedCategory, selectedStatus]);
+
   const selectedTask = useMemo(
     () => (selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : null),
     [selectedTaskId, tasks],
@@ -127,6 +167,7 @@ export default function DashboardPage() {
             overdueCount={overdueTasks.length}
             upcomingCount={upcomingTasks.length}
             onTaskCreated={fetchTasks}
+            onShowAllTasks={handleShowAllTasks}
           />
 
           {/* Main Content */}
@@ -250,6 +291,124 @@ export default function DashboardPage() {
                   </p>
                 </CardContent>
               </Card>
+            )}
+
+            {/* All Tasks — shown only when triggered from the sidebar */}
+            {showAllTasks && (
+              <div ref={allTasksRef} id="all-tasks-section">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>All Tasks</CardTitle>
+                    <CardDescription>
+                      Filter and view all your tasks
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Filters */}
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="flex-1">
+                        <Label htmlFor="category-filter">
+                          Filter by Category
+                        </Label>
+                        <Select
+                          id="category-filter"
+                          value={selectedCategory}
+                          onChange={(e) => setSelectedCategory(e.target.value)}
+                          className="mt-2"
+                        >
+                          <option value="ALL">All Categories</option>
+                          {TASK_CATEGORIES.map((category) => (
+                            <option key={category} value={category}>
+                              {formatEnumKey(category)}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor="status-filter">
+                          Filter by Status
+                        </Label>
+                        <Select
+                          id="status-filter"
+                          value={selectedStatus}
+                          onChange={(e) => setSelectedStatus(e.target.value)}
+                          className="mt-2"
+                        >
+                          <option value="ALL">All Statuses</option>
+                          <option value="TODO">To Do</option>
+                          <option value="SAVED">In Progress</option>
+                          <option value="DONE">Completed</option>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Task Grid */}
+                    {filteredTasks.length === 0 ? (
+                      <div className="py-12 text-center text-muted-foreground">
+                        {selectedCategory !== "ALL" || selectedStatus !== "ALL"
+                          ? "No tasks match the selected filters."
+                          : "No tasks available. Complete your onboarding to get personalized tasks."}
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {filteredTasks.map((task) => (
+                          <Card key={task.id} className="hover:bg-accent/30 transition-colors">
+                            <CardHeader className="pb-3">
+                              <div className="flex flex-wrap items-start justify-between gap-2">
+                                <CardTitle className="text-base">{task.title}</CardTitle>
+                                <Badge
+                                  variant={
+                                    task.status === "DONE"
+                                      ? "default"
+                                      : task.status === "SAVED"
+                                        ? "secondary"
+                                        : "outline"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {task.status === "DONE"
+                                    ? "Completed"
+                                    : task.status === "SAVED"
+                                      ? "In Progress"
+                                      : "To Do"}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  {formatEnumKey(task.category)}
+                                </Badge>
+                                {isTaskOverdue(task) && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Overdue
+                                  </Badge>
+                                )}
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {task.shortDescription}
+                              </p>
+                              {task.dueDate && (
+                                <p className="text-xs text-muted-foreground">
+                                  Due: {formatDueDateWithTimezone(task.dueDate)}
+                                </p>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => setSelectedTaskId(task.id)}
+                              >
+                                View Details
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         </div>
