@@ -99,7 +99,11 @@ export default function DashboardPage() {
       filtered = filtered.filter((task) => task.category === selectedCategory);
     }
 
-    if (selectedStatus !== "ALL") {
+    if (selectedStatus === "PENDING") {
+      filtered = filtered.filter(
+        (task) => task.status === "TODO" || task.status === "SAVED",
+      );
+    } else if (selectedStatus !== "ALL") {
       filtered = filtered.filter((task) => task.status === selectedStatus);
     }
 
@@ -305,8 +309,7 @@ export default function DashboardPage() {
                       className="mt-2"
                     >
                       <option value="ALL">All Statuses</option>
-                      <option value="TODO">To Do</option>
-                      <option value="SAVED">In Progress</option>
+                      <option value="PENDING">Pending</option>
                       <option value="DONE">Completed</option>
                     </Select>
                   </div>

@@ -298,6 +298,15 @@ describe("Dashboard date logic and filtering", () => {
       expect(doneTasks[0].title).toBe("Tax Task");
     });
 
+    it("filters tasks by pending status (combines TODO and SAVED)", () => {
+      const pendingTasks = mockTasks.filter(
+        (t) => t.status === "TODO" || t.status === "SAVED",
+      );
+      expect(pendingTasks).toHaveLength(2);
+      expect(pendingTasks.map((t) => t.title)).toContain("Arrival Task");
+      expect(pendingTasks.map((t) => t.title)).toContain("Health Task");
+    });
+
     it("filters tasks by both category and status", () => {
       const filtered = mockTasks.filter(
         (t) => t.category === "ARRIVAL" && t.status === "TODO",
