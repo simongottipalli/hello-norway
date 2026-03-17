@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,13 @@ export default function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const allTasksRef = useRef<HTMLDivElement>(null);
+
+  const handleShowAllTasks = useCallback(() => {
+    setSelectedCategory("ALL");
+    setSelectedStatus("ALL");
+    allTasksRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   const fetchTasks = async () => {
     try {
@@ -161,6 +168,7 @@ export default function DashboardPage() {
             overdueCount={overdueTasks.length}
             upcomingCount={upcomingTasks.length}
             onTaskCreated={fetchTasks}
+            onShowAllTasks={handleShowAllTasks}
           />
 
           {/* Main Content */}
@@ -270,6 +278,7 @@ export default function DashboardPage() {
             )}
 
             {/* Task Filters */}
+            <div ref={allTasksRef} id="all-tasks-section">
             <Card>
               <CardHeader>
                 <CardTitle>All Tasks</CardTitle>
@@ -381,6 +390,7 @@ export default function DashboardPage() {
                 )}
               </CardContent>
             </Card>
+            </div>
           </div>
         </div>
       </div>

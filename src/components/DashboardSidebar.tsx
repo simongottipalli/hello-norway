@@ -20,6 +20,7 @@ interface DashboardSidebarProps {
   overdueCount: number;
   upcomingCount: number;
   onTaskCreated?: () => void;
+  onShowAllTasks?: () => void;
 }
 
 export function DashboardSidebar({
@@ -27,6 +28,7 @@ export function DashboardSidebar({
   overdueCount,
   upcomingCount,
   onTaskCreated,
+  onShowAllTasks,
 }: DashboardSidebarProps) {
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -106,12 +108,10 @@ export function DashboardSidebar({
             <Button
               variant="outline"
               className="w-full justify-start"
-              asChild
+              onClick={onShowAllTasks ?? (() => {})}
             >
-              <Link href="/dashboard">
-                <ListTodo className="mr-2 h-4 w-4" />
-                All Tasks
-              </Link>
+              <ListTodo className="mr-2 h-4 w-4" />
+              All Tasks
             </Button>
             <Button
               variant="outline"
