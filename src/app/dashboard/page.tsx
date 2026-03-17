@@ -19,6 +19,7 @@ import {
 } from "@/lib/dateUtils";
 import type { Task } from "@/types/task";
 import { formatEnumKey } from "@/lib/utils";
+import { filterTasksByStatus, type StatusFilter } from "@/lib/taskHelpers";
 
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
@@ -31,7 +32,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("ALL");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const allTasksRef = useRef<HTMLDivElement>(null);
 
@@ -106,13 +107,7 @@ export default function DashboardPage() {
       filtered = filtered.filter((task) => task.category === selectedCategory);
     }
 
-    if (selectedStatus === "PENDING") {
-      filtered = filtered.filter(
-        (task) => task.status === "TODO" || task.status === "SAVED",
-      );
-    } else if (selectedStatus !== "ALL") {
-      filtered = filtered.filter((task) => task.status === selectedStatus);
-    }
+    filtered = filterTasksByStatus(filtered, selectedStatus);
 
     // Create a copy before sorting to avoid mutating state
     return [...filtered].sort((a, b) => {
