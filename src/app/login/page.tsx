@@ -17,8 +17,7 @@ import {
   ONBOARDING_PROFILE_STORAGE_KEY,
   sanitizeStoredOnboardingProfileForPatch,
 } from "@/lib/onboardingProfile";
-
-const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+import { EMAIL_REGEX } from "@/lib/utils";
 
 // Validate that a redirect path is safe (internal, no open redirect)
 function isSafeRedirectPath(path: string | null): boolean {

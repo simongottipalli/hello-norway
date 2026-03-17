@@ -5,6 +5,7 @@ import {
   validateUpdateTaskFields,
 } from "./taskValidation";
 import * as taskService from "../services/taskService";
+import { parseDateOnly } from "../lib/dateUtils";
 
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
@@ -135,34 +136,12 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     let dueDate: Date | null | undefined;
 
     if (rawDueDate !== undefined) {
-      if (rawDueDate === null) {
-        dueDate = null;
-      } else if (typeof rawDueDate === "string") {
-        const dueDateMatch = rawDueDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (!dueDateMatch) {
-          req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
-          return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
-        }
-
-        const [, yearRaw, monthRaw, dayRaw] = dueDateMatch;
-        const year = Number(yearRaw);
-        const month = Number(monthRaw);
-        const day = Number(dayRaw);
-        const parsedDueDate = new Date(Date.UTC(year, month - 1, day));
-        if (
-          parsedDueDate.getUTCFullYear() !== year ||
-          parsedDueDate.getUTCMonth() !== month - 1 ||
-          parsedDueDate.getUTCDate() !== day
-        ) {
-          req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
-          return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
-        }
-
-        dueDate = parsedDueDate;
-      } else {
-        req.logger.info({ msg: 'Task status update failed - invalid due date type', taskId: id, dueDate: rawDueDate });
+      const parsedDueDate = parseDateOnly(rawDueDate);
+      if (parsedDueDate === undefined) {
+        req.logger.info({ msg: 'Task status update failed - invalid due date', taskId: id, dueDate: rawDueDate });
         return res.status(400).json({ error: "Invalid dueDate. Must be a valid date string or null" });
       }
+      dueDate = parsedDueDate;
     }
 
     if (rawPersonalNotes !== undefined && rawPersonalNotes !== null && typeof rawPersonalNotes !== "string") {

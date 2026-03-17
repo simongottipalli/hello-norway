@@ -6,6 +6,7 @@ import {
   signSessionCookie,
   SESSION_SIG_COOKIE_NAME,
 } from "@/lib/sessionCookieSig";
+import { forwardRateLimitHeaders } from "../routeHelpers";
 
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
@@ -63,22 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const nextResponse = NextResponse.json(responseBody, { status: response.status });
-
-    // Propagate relevant headers from backend response
-    const headersToPropagate = [
-      'Retry-After',
-      'X-RateLimit-Limit',
-      'X-RateLimit-Remaining',
-      'X-RateLimit-Reset',
-    ];
-
-    headersToPropagate.forEach(headerName => {
-      const headerValue = response.headers.get(headerName);
-      if (headerValue) {
-        nextResponse.headers.set(headerName, headerValue);
-      }
-    });
-
+    forwardRateLimitHeaders(response, nextResponse);
     return nextResponse;
   } catch (error: unknown) {
     logger.error({ err: error, msg: "Error in OTP verify route" });

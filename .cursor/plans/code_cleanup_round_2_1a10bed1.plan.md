@@ -28,25 +28,25 @@ todos:
     status: completed
   - id: dup-formatEnum
     content: Extract formatCategory/formatEnumKey to src/lib/utils.ts; import in dashboard/page.tsx and AddTaskDialog.tsx
-    status: pending
+    status: completed
   - id: dup-emailRegex
     content: Move EMAIL_REGEX to src/lib/utils.ts; import in otpController.ts and login/page.tsx
-    status: pending
+    status: completed
   - id: dup-employmentStatus
     content: Remove local EMPLOYMENT_STATUSES copies in onboardingProfile.ts and authRoutes.ts/taskValidation.ts; import from employmentStatus.ts
-    status: pending
+    status: completed
   - id: dup-parseDateOnly
     content: Move parseDateOnly to src/lib/dateUtils.ts; remove inline duplicate in taskController.ts
-    status: pending
+    status: completed
   - id: dup-profileValidation
     content: Refactor PATCH /auth/profile handler to use parseOnboardingProfilePayload instead of re-validating inline
-    status: pending
+    status: completed
   - id: dup-cookieClearing
     content: Extract clearSessionCookie() helper; use in logout/route.ts and session/route.ts
-    status: pending
+    status: completed
   - id: dup-rateLimitHeaders
     content: Extract forwardRateLimitHeaders() helper; use in otp/generate and otp/verify routes
-    status: pending
+    status: completed
   - id: dead-userTasksRoute
     content: Remove GET /user-tasks legacy alias from src/routes/taskRoutes.ts
     status: completed

@@ -18,16 +18,10 @@ import {
   formatDueDateWithTimezone,
 } from "@/lib/dateUtils";
 import type { Task } from "@/types/task";
+import { formatEnumKey } from "@/lib/utils";
 
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
-
-function formatCategory(category: string): string {
-  return category
-    .split("_")
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(" ");
-}
 
 
 
@@ -230,7 +224,7 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-sm font-medium">{task.title}</h3>
                             <Badge variant="secondary" className="text-xs">
-                              {formatCategory(task.category)}
+                              {formatEnumKey(task.category)}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">
@@ -274,7 +268,7 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="text-sm font-medium">{task.title}</h3>
                             <Badge variant="secondary" className="text-xs">
-                              {formatCategory(task.category)}
+                              {formatEnumKey(task.category)}
                             </Badge>
                             <Badge
                               variant={task.status === "SAVED" ? "default" : "outline"}
@@ -328,7 +322,7 @@ export default function DashboardPage() {
                       <option value="ALL">All Categories</option>
                       {TASK_CATEGORIES.map((category) => (
                         <option key={category} value={category}>
-                          {formatCategory(category)}
+                          {formatEnumKey(category)}
                         </option>
                       ))}
                     </Select>
@@ -384,7 +378,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex flex-wrap gap-2 pt-1">
                             <Badge variant="secondary" className="text-xs">
-                              {formatCategory(task.category)}
+                              {formatEnumKey(task.category)}
                             </Badge>
                             {isTaskOverdue(task) && (
                               <Badge variant="destructive" className="text-xs">

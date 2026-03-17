@@ -1,3 +1,5 @@
+import { EMPLOYMENT_STATUS_VALUES } from "./employmentStatus";
+
 type OnboardingAnswers = Record<string, string>;
 
 type EmploymentStatus = "EMPLOYED" | "SELF_EMPLOYED" | "UNEMPLOYED" | "STUDENT" | "OTHER";
@@ -19,13 +21,6 @@ export type OnboardingTaskPreview = {
 };
 
 export const ONBOARDING_PROFILE_STORAGE_KEY = "onboarding-task-profile";
-const EMPLOYMENT_STATUSES: EmploymentStatus[] = [
-  "EMPLOYED",
-  "SELF_EMPLOYED",
-  "UNEMPLOYED",
-  "STUDENT",
-  "OTHER",
-];
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 const EU_EEA_COUNTRIES = new Set([
@@ -182,7 +177,7 @@ export const sanitizeStoredOnboardingProfileForPatch = (
 
     if (
       typeof value.employmentStatus === "string" &&
-      EMPLOYMENT_STATUSES.includes(value.employmentStatus as EmploymentStatus)
+      (EMPLOYMENT_STATUS_VALUES as readonly string[]).includes(value.employmentStatus)
     ) {
       payload.employmentStatus = value.employmentStatus as EmploymentStatus;
     }

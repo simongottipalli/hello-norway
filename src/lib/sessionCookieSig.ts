@@ -16,6 +16,22 @@
 
 export const SESSION_SIG_COOKIE_NAME = "session_sig";
 
+/**
+ * Expires both session cookies on a Next.js response.
+ * Use in API routes that need to clear the session (logout, expired session).
+ */
+export function clearSessionCookies(response: { cookies: { set: (name: string, value: string, options: object) => void } }): void {
+  const expiredOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 0,
+  };
+  response.cookies.set("session_token", "", expiredOptions);
+  response.cookies.set(SESSION_SIG_COOKIE_NAME, "", expiredOptions);
+}
+
 async function hmacSha256(secret: string, data: string): Promise<string> {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createChildLogger } from "@/lib/logger";
 import { API_BASE_URL } from "@/lib/config";
+import { forwardRateLimitHeaders } from "../routeHelpers";
 
 export async function POST(request: NextRequest) {
   // Generate request ID for tracing
@@ -34,22 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Create NextResponse with status
     const nextResponse = NextResponse.json(data, { status: response.status });
-
-    // Propagate relevant headers from backend response
-    const headersToPropagate = [
-      'Retry-After',
-      'X-RateLimit-Limit',
-      'X-RateLimit-Remaining',
-      'X-RateLimit-Reset',
-    ];
-
-    headersToPropagate.forEach(headerName => {
-      const headerValue = response.headers.get(headerName);
-      if (headerValue) {
-        nextResponse.headers.set(headerName, headerValue);
-      }
-    });
-
+    forwardRateLimitHeaders(response, nextResponse);
     return nextResponse;
   } catch (error: unknown) {
     logger.error({ err: error, msg: "Error in OTP generate route" });

@@ -69,6 +69,32 @@ export function isTaskUpcoming<T extends TaskWithDate>(task: T): boolean {
 }
 
 /**
+ * Parses a YYYY-MM-DD string into a UTC midnight Date.
+ * Returns undefined for missing/invalid input, null when explicitly null.
+ * Used for server-side date field validation and coercion.
+ */
+export function parseDateOnly(value: unknown): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== "string") return undefined;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return undefined;
+  const [, yearRaw, monthRaw, dayRaw] = match;
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return undefined;
+  }
+  return parsed;
+}
+
+/**
  * Formats a date string for display in Norway time (Europe/Oslo timezone).
  * Appends "(Norway time)" to provide clear context to users.
  */

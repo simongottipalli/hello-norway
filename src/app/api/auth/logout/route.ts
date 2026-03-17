@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { API_BASE_URL } from "@/lib/config";
 import { createChildLogger } from "@/lib/logger";
-import { SESSION_SIG_COOKIE_NAME } from "@/lib/sessionCookieSig";
+import { clearSessionCookies } from "@/lib/sessionCookieSig";
 
 export async function POST(request: NextRequest) {
   const requestId = randomUUID();
@@ -20,17 +20,7 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
     const nextResponse = NextResponse.json(data, { status: response.status });
-    const expiredCookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax" as const,
-      path: "/",
-      maxAge: 0,
-    };
-
-    nextResponse.cookies.set("session_token", "", expiredCookieOptions);
-    nextResponse.cookies.set(SESSION_SIG_COOKIE_NAME, "", expiredCookieOptions);
-
+    clearSessionCookies(nextResponse);
     return nextResponse;
   } catch (error: unknown) {
     logger.error({ err: error, msg: "Failed to logout" });

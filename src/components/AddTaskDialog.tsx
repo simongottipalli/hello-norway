@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { TaskCategory } from "@/generated/prisma/enums";
+import { formatEnumKey } from "@/lib/utils";
 
 interface AddTaskDialogProps {
   open: boolean;
@@ -44,17 +45,6 @@ export function AddTaskDialog({
       setError("");
     }
   }, [open]);
-
-  /**
-   * Formats enum keys for display in the UI
-   * Example: 'IDENTITY_BANKING' becomes 'Identity Banking'
-   */
-  const formatEnumKey = (key: string): string => {
-    return key
-      .split('_')
-      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-      .join(' ');
-  };
 
   const generateSlug = (text: string): string => {
     // Generate a short random suffix (6 characters)
