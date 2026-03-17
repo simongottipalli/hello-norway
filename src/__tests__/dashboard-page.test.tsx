@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { isTaskOverdue, isTaskUpcoming } from "@/lib/dateUtils";
 import type { Task } from "@/types/task";
+import { filterTasksByStatus } from "@/lib/taskHelpers";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -285,18 +286,29 @@ describe("Dashboard date logic and filtering", () => {
       expect(arrivalTasks[0].title).toBe("Arrival Task");
     });
 
-    it("filters tasks by status", () => {
-      const todoTasks = mockTasks.filter((t) => t.status === "TODO");
+    it("filters tasks by status using filterTasksByStatus helper", () => {
+      const todoTasks = filterTasksByStatus(mockTasks, "TODO");
       expect(todoTasks).toHaveLength(1);
       expect(todoTasks[0].title).toBe("Arrival Task");
 
-      const savedTasks = mockTasks.filter((t) => t.status === "SAVED");
+      const savedTasks = filterTasksByStatus(mockTasks, "SAVED");
       expect(savedTasks).toHaveLength(1);
       expect(savedTasks[0].title).toBe("Health Task");
 
-      const doneTasks = mockTasks.filter((t) => t.status === "DONE");
+      const doneTasks = filterTasksByStatus(mockTasks, "DONE");
       expect(doneTasks).toHaveLength(1);
       expect(doneTasks[0].title).toBe("Tax Task");
+
+      const allTasks = filterTasksByStatus(mockTasks, "ALL");
+      expect(allTasks).toHaveLength(3);
+    });
+
+    it("filters tasks by pending status (combines TODO and SAVED) using filterTasksByStatus helper", () => {
+      const pendingTasks = filterTasksByStatus(mockTasks, "PENDING");
+      expect(pendingTasks).toHaveLength(2);
+      expect(pendingTasks.map((t) => t.title)).toContain("Arrival Task");
+      expect(pendingTasks.map((t) => t.title)).toContain("Health Task");
+      expect(pendingTasks.map((t) => t.title)).not.toContain("Tax Task");
     });
 
     it("filters tasks by both category and status", () => {

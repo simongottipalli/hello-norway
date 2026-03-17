@@ -19,6 +19,7 @@ import {
 } from "@/lib/dateUtils";
 import type { Task } from "@/types/task";
 import { formatEnumKey } from "@/lib/utils";
+import { filterTasksByStatus, type StatusFilter } from "@/lib/taskHelpers";
 
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
@@ -30,7 +31,7 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("ALL");
   const [showAllTasks, setShowAllTasks] = useState(false);
   const allTasksRef = useRef<HTMLDivElement>(null);
 
@@ -112,9 +113,7 @@ export default function DashboardPage() {
       filtered = filtered.filter((task) => task.category === selectedCategory);
     }
 
-    if (selectedStatus !== "ALL") {
-      filtered = filtered.filter((task) => task.status === selectedStatus);
-    }
+    filtered = filterTasksByStatus(filtered, selectedStatus);
 
     // Create a copy before sorting to avoid mutating state
     return [...filtered].sort((a, b) => {
@@ -334,12 +333,11 @@ export default function DashboardPage() {
                         <Select
                           id="status-filter"
                           value={selectedStatus}
-                          onChange={(e) => setSelectedStatus(e.target.value)}
+                          onChange={(e) => setSelectedStatus(e.target.value as StatusFilter)}
                           className="mt-2"
                         >
                           <option value="ALL">All Statuses</option>
-                          <option value="TODO">To Do</option>
-                          <option value="SAVED">In Progress</option>
+                          <option value="PENDING">Pending</option>
                           <option value="DONE">Completed</option>
                         </Select>
                       </div>

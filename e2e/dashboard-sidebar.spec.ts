@@ -82,8 +82,8 @@ test.describe('Dashboard Left Panel', () => {
     await expect(categoryFilter).toBeVisible();
 
     // Apply a status filter
-    await statusFilter.selectOption('TODO');
-    await expect(statusFilter).toHaveValue('TODO');
+    await statusFilter.selectOption('PENDING');
+    await expect(statusFilter).toHaveValue('PENDING');
 
     // Click "All Tasks" again — filters should be reset to "ALL"
     await sidebar.getByRole('button', { name: 'All Tasks' }).click();
