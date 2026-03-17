@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { isTaskOverdue, isTaskUpcoming } from "@/lib/dateUtils";
+import type { Task } from "@/types/task";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -394,6 +395,133 @@ describe("Dashboard date logic and filtering", () => {
       expect(sorted[0].id).toBe("1");
       expect(sorted[1].id).toBe("2");
       expect(sorted[2].id).toBe("3");
+    });
+  });
+});
+
+describe("Dashboard view conditions", () => {
+  // Helper to build a minimal Task for filtering tests
+  const createTask = (overrides: Partial<Task> = {}): Task =>
+    ({
+      id: "1",
+      title: "Test Task",
+      slug: "test-task",
+      shortDescription: "Test description",
+      body: "Body",
+      category: "ARRIVAL",
+      sortOrder: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: "TODO",
+      dueDate: null,
+      ...overrides,
+    }) as Task;
+
+  const createUtcDateString = (daysFromNow: number): string => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() + daysFromNow);
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T00:00:00.000Z`;
+  };
+
+  describe("Empty state condition (no overdue and no upcoming tasks)", () => {
+    it("shows empty state when tasks list is empty", () => {
+      const tasks: Task[] = [];
+      const overdueTasks = tasks.filter(isTaskOverdue);
+      const upcomingTasks = tasks.filter(isTaskUpcoming);
+
+      expect(overdueTasks.length === 0 && upcomingTasks.length === 0).toBe(true);
+    });
+
+    it("shows empty state when all tasks have no due date", () => {
+      const tasks = [
+        createTask({ id: "1", dueDate: null }),
+        createTask({ id: "2", dueDate: null }),
+      ];
+      const overdueTasks = tasks.filter(isTaskOverdue);
+      const upcomingTasks = tasks.filter(isTaskUpcoming);
+
+      expect(overdueTasks.length === 0 && upcomingTasks.length === 0).toBe(true);
+    });
+
+    it("shows empty state when all tasks are due more than 14 days away", () => {
+      const tasks = [
+        createTask({ id: "1", dueDate: createUtcDateString(15) }),
+        createTask({ id: "2", dueDate: createUtcDateString(30) }),
+      ];
+      const overdueTasks = tasks.filter(isTaskOverdue);
+      const upcomingTasks = tasks.filter(isTaskUpcoming);
+
+      expect(overdueTasks.length === 0 && upcomingTasks.length === 0).toBe(true);
+    });
+
+    it("shows empty state when only completed tasks exist (even if overdue)", () => {
+      const tasks = [
+        createTask({ id: "1", status: "DONE", dueDate: createUtcDateString(-5) }),
+        createTask({ id: "2", status: "DONE", dueDate: createUtcDateString(3) }),
+      ];
+      const overdueTasks = tasks.filter(isTaskOverdue);
+      const upcomingTasks = tasks.filter(isTaskUpcoming);
+
+      expect(overdueTasks.length === 0 && upcomingTasks.length === 0).toBe(true);
+    });
+  });
+
+  describe("Overdue / upcoming sections visible when tasks exist", () => {
+    it("does not show empty state when there are overdue tasks", () => {
+      const tasks = [createTask({ dueDate: createUtcDateString(-3) })];
+      const overdueTasks = tasks.filter(isTaskOverdue);
+      const upcomingTasks = tasks.filter(isTaskUpcoming);
+
+      // At least one section has tasks — empty state should NOT show
+      expect(overdueTasks.length === 0 && upcomingTasks.length === 0).toBe(false);
+    });
+
+    it("does not show empty state when there are upcoming tasks", () => {
+      const tasks = [createTask({ dueDate: createUtcDateString(5) })];
+      const overdueTasks = tasks.filter(isTaskOverdue);
+      const upcomingTasks = tasks.filter(isTaskUpcoming);
+
+      expect(overdueTasks.length === 0 && upcomingTasks.length === 0).toBe(false);
+    });
+
+    it("does not show empty state when both overdue and upcoming tasks exist", () => {
+      const tasks = [
+        createTask({ id: "1", dueDate: createUtcDateString(-2) }),  // overdue
+        createTask({ id: "2", dueDate: createUtcDateString(7) }),   // upcoming
+      ];
+      const overdueTasks = tasks.filter(isTaskOverdue);
+      const upcomingTasks = tasks.filter(isTaskUpcoming);
+
+      expect(overdueTasks.length === 0 && upcomingTasks.length === 0).toBe(false);
+      expect(overdueTasks).toHaveLength(1);
+      expect(upcomingTasks).toHaveLength(1);
+    });
+  });
+
+  describe("All Tasks section is hidden by default", () => {
+    it("dashboard renders loading skeleton on initial mount (before tasks load)", async () => {
+      vi.mock("@/components/AuthProvider", () => ({
+        useAuth: vi.fn(() => ({
+          isAuthenticated: true,
+          isLoading: false,
+          user: { id: "1", email: "test@example.com", name: "Test User" },
+          refreshSession: vi.fn(),
+        })),
+      }));
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      });
+
+      const DashboardPage = (await import("../app/dashboard/page")).default;
+      const html = renderToStaticMarkup(<DashboardPage />);
+
+      // On initial render (tasks still loading), the skeleton is shown
+      // and the All Tasks grid is not rendered
+      expect(html).toContain("animate-pulse");
+      expect(html).not.toContain("All Tasks");
+      expect(html).not.toContain("Filter by Category");
     });
   });
 });

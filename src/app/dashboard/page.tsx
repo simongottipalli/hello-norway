@@ -38,11 +38,14 @@ export default function DashboardPage() {
     setSelectedCategory("ALL");
     setSelectedStatus("ALL");
     setShowAllTasks(true);
-    // Use setTimeout to allow the section to render before scrolling
-    setTimeout(() => {
-      allTasksRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
   }, []);
+
+  // Scroll to All Tasks section after it becomes visible in the DOM
+  useEffect(() => {
+    if (showAllTasks) {
+      allTasksRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showAllTasks]);
 
   const fetchTasks = async () => {
     try {
@@ -280,7 +283,7 @@ export default function DashboardPage() {
             {overdueTasks.length === 0 && upcomingTasks.length === 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>No Upcoming Tasks</CardTitle>
+                  <CardTitle>No Time-Sensitive Tasks</CardTitle>
                   <CardDescription>
                     You have no overdue or upcoming tasks right now.
                   </CardDescription>
