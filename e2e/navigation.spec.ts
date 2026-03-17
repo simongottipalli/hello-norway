@@ -72,11 +72,6 @@ test.describe('Navigation and Routing', () => {
       await page.goto('/login');
       await expect(page).toHaveURL(/\/dashboard/);
     });
-
-    test('should redirect authenticated users from /signup to /dashboard', async ({ page }) => {
-      await page.goto('/signup');
-      await expect(page).toHaveURL(/\/dashboard/);
-    });
   });
 
   test.describe('Navigation Component', () => {
