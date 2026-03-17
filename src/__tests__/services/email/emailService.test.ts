@@ -15,13 +15,6 @@ describe('EmailService', () => {
     };
   });
 
-  describe('constructor', () => {
-    it('should create service with provider', () => {
-      const service = new EmailService(mockProvider);
-      expect(service).toBeInstanceOf(EmailService);
-    });
-  });
-
   describe('sendEmail', () => {
     it('should handle provider errors', async () => {
       const service = new EmailService(mockProvider);

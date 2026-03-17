@@ -209,21 +209,6 @@ describe("validateUpdateTaskFields", () => {
     if ("error" in result) expect(result.error).toContain("requiresEmploymentStatus");
   });
 
-  it("accepts negative minDaysFromArrival (before-arrival window)", () => {
-    const result = validateUpdateTaskFields({ minDaysFromArrival: -14 });
-    expect("data" in result).toBe(true);
-  });
-
-  it(`returns error when minDaysFromArrival is below ${DAYS_FROM_ARRIVAL_MIN}`, () => {
-    const result = validateUpdateTaskFields({ minDaysFromArrival: DAYS_FROM_ARRIVAL_MIN - 1 });
-    expect("error" in result).toBe(true);
-  });
-
-  it(`returns error when maxDaysFromArrival exceeds ${DAYS_FROM_ARRIVAL_MAX}`, () => {
-    const result = validateUpdateTaskFields({ maxDaysFromArrival: DAYS_FROM_ARRIVAL_MAX + 1 });
-    expect("error" in result).toBe(true);
-  });
-
   it("returns a cleaned data object for a valid partial update", () => {
     const result = validateUpdateTaskFields({ title: "Updated", sortOrder: 5 });
     expect("data" in result).toBe(true);

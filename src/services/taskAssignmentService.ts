@@ -1,6 +1,7 @@
 import { UserTaskStatus } from "../generated/prisma/client.js";
 import type { EmploymentStatus, Prisma } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
+import { MS_PER_DAY } from "../lib/dateUtils";
 
 export type AssignmentProfile = {
   id: string;
@@ -11,7 +12,6 @@ export type AssignmentProfile = {
   plannedArrivalDate: Date | null;
 };
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const toUtcMidnight = (date: Date) => Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 

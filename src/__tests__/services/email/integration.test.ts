@@ -60,12 +60,16 @@ describe('Email Service Integration', () => {
   });
 
   describe('Error handling scenarios', () => {
-    it('should handle network errors gracefully', async () => {
+    it.each([
+      ['Network timeout'],
+      ['Invalid email address'],
+      ['Rate limit exceeded'],
+    ])('propagates provider error: %s', async (errorMessage) => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
       const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
-      mockSendTransacEmail.mockRejectedValue(new Error('Network timeout'));
+      mockSendTransacEmail.mockRejectedValue(new Error(errorMessage));
 
       const result = await emailService.sendEmail({
         to: 'test@example.com',
@@ -75,43 +79,7 @@ describe('Email Service Integration', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Network timeout');
-    });
-
-    it('should handle invalid email addresses', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockRejectedValue(new Error('Invalid email address'));
-
-      const result = await emailService.sendEmail({
-        to: 'invalid-email',
-        subject: 'Test',
-        html: '<p>Test</p>',
-        text: 'Test',
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid email address');
-    });
-
-    it('should handle API rate limiting', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockRejectedValue(new Error('Rate limit exceeded'));
-
-      const result = await emailService.sendEmail({
-        to: 'test@example.com',
-        subject: 'Test',
-        html: '<p>Test</p>',
-        text: 'Test',
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Rate limit exceeded');
+      expect(result.error).toContain(errorMessage);
     });
   });
 });

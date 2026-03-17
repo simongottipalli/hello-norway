@@ -52,6 +52,8 @@ export function isTaskOverdue<T extends TaskWithDate>(task: T): boolean {
  * - It's not completed (status !== "DONE")
  * - The due date is today or within the next 14 days (UTC comparison)
  */
+export const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
 export function isTaskUpcoming<T extends TaskWithDate>(task: T): boolean {
   if (!task.dueDate || task.status === "DONE") {
     return false;
@@ -60,9 +62,8 @@ export function isTaskUpcoming<T extends TaskWithDate>(task: T): boolean {
   const todayUtc = getTodayUtc();
   const dueDateUtc = parseUtcDate(task.dueDate);
 
-  const msPerDay = 1000 * 60 * 60 * 24;
   const daysDifference = Math.floor(
-    (dueDateUtc.getTime() - todayUtc.getTime()) / msPerDay
+    (dueDateUtc.getTime() - todayUtc.getTime()) / MS_PER_DAY
   );
 
   return daysDifference >= 0 && daysDifference <= 14;

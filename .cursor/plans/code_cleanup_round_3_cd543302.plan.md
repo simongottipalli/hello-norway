@@ -10,28 +10,28 @@ todos:
     status: completed
   - id: test-emailDelegation
     content: Remove thin constructor existence test from emailService.test.ts
-    status: pending
+    status: completed
   - id: test-validationTriple
     content: Remove duplicate constraint assertions from validateCreateTaskBody/validateUpdateTaskFields sections in taskValidation.test.ts
-    status: pending
+    status: completed
   - id: test-modalClose
     content: Parameterise 3 identical modal-close tests in dashboard-modal.spec.ts with test.each
-    status: pending
+    status: completed
   - id: test-mobileMenu
     content: Move standalone 'should display all navigation links' test into mobile menu open/close describe block in navigation.spec.ts
-    status: pending
+    status: completed
   - id: user-test-delete
     content: Delete src/__tests__/user.test.ts — 3 name-field migration verification tests on a stable schema
-    status: pending
+    status: completed
   - id: integration-parameterize
     content: Collapse 3 identical Error handling scenario tests in integration.test.ts into it.each
-    status: pending
+    status: completed
   - id: middleware-comment
     content: Fix stale /signup reference in middleware.ts comment on line 58
-    status: pending
+    status: completed
   - id: ms-per-day
     content: Export MS_PER_DAY from dateUtils.ts and import it in taskAssignmentService.ts to remove duplication
-    status: pending
+    status: completed
 isProject: false
 ---
 
