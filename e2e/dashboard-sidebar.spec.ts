@@ -52,6 +52,19 @@ test.describe('Dashboard Left Panel', () => {
     await expect(quickStatsHeading).not.toBeVisible();
   });
 
+  test('should navigate to all tasks from quick actions', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+
+    // Verify the "All Tasks" link is visible in the sidebar and points to the dashboard
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    const allTasksLink = sidebar.getByRole('link', { name: 'All Tasks' });
+    await expect(allTasksLink).toBeVisible();
+    await expect(allTasksLink).toHaveAttribute('href', '/dashboard');
+  });
+
   test('should navigate to profile from quick actions', async ({ page }) => {
     // Set viewport to desktop size
     await page.setViewportSize({ width: 1280, height: 800 });

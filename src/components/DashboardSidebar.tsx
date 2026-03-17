@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
-import { Plus, User } from "lucide-react";
+import { ListTodo, Plus, User } from "lucide-react";
 
 interface DashboardSidebarProps {
   stats: {
@@ -103,6 +103,16 @@ export function DashboardSidebar({
             <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              asChild
+            >
+              <Link href="/dashboard">
+                <ListTodo className="mr-2 h-4 w-4" />
+                All Tasks
+              </Link>
+            </Button>
             <Button
               variant="outline"
               className="w-full justify-start"
