@@ -22,11 +22,12 @@ export function parseUtcDate(dateString: string): Date {
  * Returns today's date at UTC midnight.
  * Used for consistent date comparisons.
  */
-export function getTodayUtc(): Date {
+function getTodayUtc(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
+export const MS_PER_DAY = 1000 * 60 * 60 * 24;
 /**
  * Checks if a task is overdue.
  * A task is overdue if:
@@ -52,6 +53,7 @@ export function isTaskOverdue<T extends TaskWithDate>(task: T): boolean {
  * - It's not completed (status !== "DONE")
  * - The due date is today or within the next 14 days (UTC comparison)
  */
+
 export function isTaskUpcoming<T extends TaskWithDate>(task: T): boolean {
   if (!task.dueDate || task.status === "DONE") {
     return false;
@@ -60,12 +62,37 @@ export function isTaskUpcoming<T extends TaskWithDate>(task: T): boolean {
   const todayUtc = getTodayUtc();
   const dueDateUtc = parseUtcDate(task.dueDate);
 
-  const msPerDay = 1000 * 60 * 60 * 24;
   const daysDifference = Math.floor(
-    (dueDateUtc.getTime() - todayUtc.getTime()) / msPerDay
+    (dueDateUtc.getTime() - todayUtc.getTime()) / MS_PER_DAY
   );
 
   return daysDifference >= 0 && daysDifference <= 14;
+}
+
+/**
+ * Parses a YYYY-MM-DD string into a UTC midnight Date.
+ * Returns undefined for missing/invalid input, null when explicitly null.
+ * Used for server-side date field validation and coercion.
+ */
+export function parseDateOnly(value: unknown): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== "string") return undefined;
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return undefined;
+  const [, yearRaw, monthRaw, dayRaw] = match;
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return undefined;
+  }
+  return parsed;
 }
 
 /**

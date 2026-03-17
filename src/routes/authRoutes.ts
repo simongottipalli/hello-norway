@@ -3,32 +3,12 @@ import type { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { logger } from "../lib/logger";
 import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
+import { parseDateOnly } from "../lib/dateUtils";
 import * as authService from "../services/authService";
 import * as onboardingService from "../services/onboardingService";
 
 const router = Router();
 const EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
-
-const parseDateOnly = (value: unknown): Date | null | undefined => {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
-  if (typeof value !== "string") return undefined;
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return undefined;
-  const [, yearRaw, monthRaw, dayRaw] = match;
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  const day = Number(dayRaw);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  if (
-    parsed.getUTCFullYear() !== year ||
-    parsed.getUTCMonth() !== month - 1 ||
-    parsed.getUTCDate() !== day
-  ) {
-    return undefined;
-  }
-  return parsed;
-};
 
 type OnboardingProfilePayload = {
   isEU: boolean | null;
@@ -145,7 +125,8 @@ router.get("/auth/profile", authenticateSession, async (req, res) => {
 });
 
 router.patch("/auth/profile", authenticateSession, async (req, res) => {
-  const { name, isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = req.body ?? {};
+  const body = req.body ?? {};
+  const { name } = body;
 
   if (name !== undefined) {
     if (typeof name !== "string") {
@@ -160,38 +141,21 @@ router.patch("/auth/profile", authenticateSession, async (req, res) => {
     }
   }
 
-  if (isEU !== undefined && isEU !== null && typeof isEU !== "boolean") {
-    return res.status(400).json({ error: "Invalid isEU. Must be boolean or null." });
+  const parsed = parseOnboardingProfilePayload(body);
+  if (parsed.error) {
+    return res.status(parsed.error.status).json(parsed.error.body);
   }
 
-  if (hasChildren !== undefined && hasChildren !== null && typeof hasChildren !== "boolean") {
-    return res.status(400).json({ error: "Invalid hasChildren. Must be boolean or null." });
-  }
-
-  if (employmentStatus !== undefined && employmentStatus !== null) {
-    if (typeof employmentStatus !== "string" || !EMPLOYMENT_STATUSES.has(employmentStatus)) {
-      return res.status(400).json({ error: "Invalid employmentStatus." });
-    }
-  }
-
-  const parsedArrivalDate = parseDateOnly(arrivalDate);
-  if (arrivalDate !== undefined && parsedArrivalDate === undefined) {
-    return res.status(400).json({ error: "Invalid arrivalDate. Must be YYYY-MM-DD or null." });
-  }
-
-  const parsedPlannedArrivalDate = parseDateOnly(plannedArrivalDate);
-  if (plannedArrivalDate !== undefined && parsedPlannedArrivalDate === undefined) {
-    return res.status(400).json({ error: "Invalid plannedArrivalDate. Must be YYYY-MM-DD or null." });
-  }
+  const { isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = parsed.value;
 
   try {
     const result = await authService.updateProfile(req.user!.id, {
       ...(name !== undefined ? { name: name.trim() } : {}),
-      ...(isEU !== undefined ? { isEU } : {}),
-      ...(hasChildren !== undefined ? { hasChildren } : {}),
-      ...(employmentStatus !== undefined ? { employmentStatus } : {}),
-      ...(arrivalDate !== undefined ? { arrivalDate: parsedArrivalDate } : {}),
-      ...(plannedArrivalDate !== undefined ? { plannedArrivalDate: parsedPlannedArrivalDate } : {}),
+      ...("isEU" in body ? { isEU } : {}),
+      ...("hasChildren" in body ? { hasChildren } : {}),
+      ...("employmentStatus" in body ? { employmentStatus } : {}),
+      ...("arrivalDate" in body ? { arrivalDate } : {}),
+      ...("plannedArrivalDate" in body ? { plannedArrivalDate } : {}),
     });
 
     return res.status(200).json({ success: true, user: result.data });

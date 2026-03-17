@@ -154,7 +154,7 @@ export function OnboardingSurvey() {
     setSaveError("");
     try {
       const taskProfile = deriveTaskProfileFromOnboardingAnswers(answers);
-      
+
       // Only send fields that have been inferred (omit null/undefined to avoid clearing existing data)
       const sanitizedTaskProfile = Object.fromEntries(
         Object.entries(taskProfile).filter(([, value]) => value !== null && value !== undefined),
@@ -178,9 +178,9 @@ export function OnboardingSurvey() {
       } catch {
         // Ignore localStorage errors
       }
-      
+
       // Redirect to tasks page on success
-      router.push("/tasks");
+      router.push("/dashboard");
     } catch (error) {
       console.error("Failed to save onboarding profile:", error);
       setSaveError("Failed to save your onboarding profile. Please try again or update your profile later from the Profile page.");
@@ -415,8 +415,8 @@ export function OnboardingSurvey() {
                       {saveError}
                     </div>
                   )}
-                  <Button 
-                    onClick={handleSaveForAuthenticatedUser} 
+                  <Button
+                    onClick={handleSaveForAuthenticatedUser}
                     className="w-full"
                     disabled={isSavingProfile}
                   >

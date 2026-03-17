@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createChildLogger } from "@/lib/logger";
 import { API_BASE_URL } from "@/lib/config";
-import { SESSION_SIG_COOKIE_NAME } from "@/lib/sessionCookieSig";
+import { clearSessionCookies } from "@/lib/sessionCookieSig";
 
 export async function GET(request: NextRequest) {
   const requestId = randomUUID();
@@ -21,15 +21,7 @@ export async function GET(request: NextRequest) {
     const nextResponse = NextResponse.json(data, { status: response.status });
 
     if (response.status === 401) {
-      const expiredCookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
-        path: "/",
-        maxAge: 0,
-      };
-      nextResponse.cookies.set("session_token", "", expiredCookieOptions);
-      nextResponse.cookies.set(SESSION_SIG_COOKIE_NAME, "", expiredCookieOptions);
+      clearSessionCookies(nextResponse);
     }
 
     return nextResponse;

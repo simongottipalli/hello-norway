@@ -1,11 +1,6 @@
 import { Request, Response } from "express";
 import { otpService } from "../services/otpService";
-
-/**
- * RFC 5321 compliant email regex
- * Validates email format according to RFC 5321 specification
- */
-const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+import { EMAIL_REGEX } from "../lib/utils";
 
 /**
  * Maximum email length according to RFC 5321

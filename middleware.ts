@@ -9,11 +9,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Routes that authenticated users should not access
-  const authOnlyPaths = ["/login", "/signup"];
+  const authOnlyPaths = ["/login"];
 
   // Protected routes that require authentication
-  // Exact match or any sub-path (e.g. /tasks protects /tasks/123 but not /tasks-review)
-  const protectedPaths = ["/dashboard", "/tasks", "/profile"];
+  // Exact match or any sub-path (e.g. /profile protects /profile/edit but not /profiles)
+  const protectedPaths = ["/dashboard", "/profile"];
 
   // Allow static files and API routes to pass through
   if (
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from login/signup to dashboard
+  // Redirect authenticated users away from login to dashboard
   if (isAuthPath && isAuthenticated) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }

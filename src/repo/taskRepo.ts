@@ -4,12 +4,6 @@ import { prisma } from "../lib/prisma";
 
 type TaskDb = Pick<typeof prisma, "task" | "userTask">;
 
-export const findAllSystemTasks = (db: TaskDb = prisma) =>
-  db.task.findMany({
-    where: { createdByUserId: null },
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-  });
-
 export const findUserTasksWithTask = (userId: string, db: TaskDb = prisma) =>
   db.userTask.findMany({
     where: { userId },
@@ -19,12 +13,6 @@ export const findUserTasksWithTask = (userId: string, db: TaskDb = prisma) =>
 
 export const findTaskById = (id: string, db: TaskDb = prisma) =>
   db.task.findUnique({ where: { id } });
-
-export const findTaskOwnership = (id: string, db: TaskDb = prisma) =>
-  db.task.findUnique({
-    where: { id },
-    select: { createdByUserId: true, minDaysFromArrival: true, maxDaysFromArrival: true },
-  });
 
 export const findOwnedOrSystemTask = (id: string, userId: string, db: TaskDb = prisma) =>
   db.task.findFirst({
@@ -49,9 +37,6 @@ export const createUserTaskAssignment = (
   db.userTask.create({
     data: { userId, taskId, status: UserTaskStatus.TODO },
   });
-
-export const updateTask = (id: string, data: Prisma.TaskUpdateInput, db: TaskDb = prisma) =>
-  db.task.update({ where: { id }, data });
 
 export const upsertUserTaskStatus = (
   userId: string,
@@ -81,9 +66,6 @@ export const upsertUserTaskStatus = (
       ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
     },
   });
-
-export const deleteTask = (id: string, db: TaskDb = prisma) =>
-  db.task.delete({ where: { id } });
 
 export const findOnboardingPreviewTasks = (
   where: Prisma.TaskWhereInput,

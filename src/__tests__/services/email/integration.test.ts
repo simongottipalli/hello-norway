@@ -23,8 +23,7 @@ vi.mock('@getbrevo/brevo', () => {
 });
 
 describe('Email Service Integration', () => {
-  let getEmailService: () => { sendEmail: (options: unknown) => Promise<unknown>; validateConfig: () => Promise<boolean> };
-  let emailService: { sendEmail: (options: unknown) => Promise<unknown>; validateConfig: () => Promise<boolean> };
+  let emailService: { sendEmail: (options: unknown) => Promise<unknown> };
 
   beforeAll(async () => {
     process.env.EMAIL_PROVIDER = 'brevo';
@@ -32,27 +31,11 @@ describe('Email Service Integration', () => {
     process.env.BREVO_API_KEY = 'test-api-key';
 
     const emailModule = await import('../../../services/email');
-    getEmailService = emailModule.getEmailService;
     emailService = emailModule.emailService;
   });
 
   afterAll(() => {
     process.env = originalEnv;
-  });
-
-  describe('getEmailService', () => {
-    it('should return singleton instance', () => {
-      const service1 = getEmailService();
-      const service2 = getEmailService();
-
-      expect(service1).toBe(service2);
-    });
-
-    it('should return same instance as exported emailService', () => {
-      const service = getEmailService();
-
-      expect(service).toBe(emailService);
-    });
   });
 
   describe('emailService singleton', () => {
@@ -74,136 +57,19 @@ describe('Email Service Integration', () => {
       expect(result.messageId).toBe('integration-test-id');
     });
 
-    it('should be able to validate config', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockGetAccount = (mockClient.account as { getAccount: ReturnType<typeof vi.fn> }).getAccount;
-
-      mockGetAccount.mockResolvedValue({ email: 'test@example.com' });
-
-      const result = await emailService.validateConfig();
-
-      expect(result).toBe(true);
-    });
-  });
-
-  describe('Real-world usage scenarios', () => {
-    it('should send OTP email', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockResolvedValue({ messageId: 'otp-test-id' });
-
-      const code = '123456';
-      const email = 'user@example.com';
-
-      const result = await emailService.sendEmail({
-        to: email,
-        subject: 'Your Hello Norway Login Code',
-        html: `<h2>${code}</h2><p>Expires in 10 minutes</p>`,
-        text: `Your code: ${code}\nExpires in 10 minutes`,
-      });
-
-      expect(result.success).toBe(true);
-      expect(mockSendTransacEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: [{ email }],
-          subject: 'Your Hello Norway Login Code',
-        })
-      );
-    });
-
-    it('should send task reminder email', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockResolvedValue({ messageId: 'reminder-test-id' });
-
-      const taskTitle = 'Complete registration';
-      const dueDate = '2026-03-01';
-      const email = 'user@example.com';
-
-      const result = await emailService.sendEmail({
-        to: email,
-        subject: `Reminder: ${taskTitle}`,
-        html: `<p>Task due: ${dueDate}</p>`,
-        text: `Task due: ${dueDate}`,
-      });
-
-      expect(result.success).toBe(true);
-      expect(mockSendTransacEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: [{ email }],
-          subject: `Reminder: ${taskTitle}`,
-        })
-      );
-    });
-
-    it('should send welcome email with custom sender', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockResolvedValue({ messageId: 'welcome-test-id' });
-
-      const result = await emailService.sendEmail({
-        to: 'newuser@example.com',
-        subject: 'Welcome to Hello Norway',
-        html: '<h1>Welcome!</h1><p>We are glad to have you.</p>',
-        text: 'Welcome! We are glad to have you.',
-        from: 'Hello Norway Team <hello@hellonorway.com>',
-        replyTo: 'support@hellonorway.com',
-      });
-
-      expect(result.success).toBe(true);
-      expect(mockSendTransacEmail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          sender: { name: 'Hello Norway Team', email: 'hello@hellonorway.com' },
-          replyTo: { email: 'support@hellonorway.com' },
-        })
-      );
-    });
-
-    it('should handle bulk email sending', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockClear();
-      mockSendTransacEmail.mockResolvedValue({ messageId: 'bulk-test-id' });
-
-      const recipients = [
-        'user1@example.com',
-        'user2@example.com',
-        'user3@example.com',
-      ];
-
-      const results = await Promise.all(
-        recipients.map((recipient) =>
-          emailService.sendEmail({
-            to: recipient,
-            subject: 'Bulk Email',
-            html: '<p>Bulk Email Content</p>',
-            text: 'Bulk Email Content',
-          })
-        )
-      );
-
-      expect(results).toHaveLength(3);
-      expect(results.every((r) => r.success)).toBe(true);
-      expect(mockSendTransacEmail).toHaveBeenCalledTimes(3);
-    });
   });
 
   describe('Error handling scenarios', () => {
-    it('should handle network errors gracefully', async () => {
+    it.each([
+      ['Network timeout'],
+      ['Invalid email address'],
+      ['Rate limit exceeded'],
+    ])('propagates provider error: %s', async (errorMessage) => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
       const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
-      mockSendTransacEmail.mockRejectedValue(new Error('Network timeout'));
+      mockSendTransacEmail.mockRejectedValue(new Error(errorMessage));
 
       const result = await emailService.sendEmail({
         to: 'test@example.com',
@@ -213,43 +79,7 @@ describe('Email Service Integration', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Network timeout');
-    });
-
-    it('should handle invalid email addresses', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockRejectedValue(new Error('Invalid email address'));
-
-      const result = await emailService.sendEmail({
-        to: 'invalid-email',
-        subject: 'Test',
-        html: '<p>Test</p>',
-        text: 'Test',
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid email address');
-    });
-
-    it('should handle API rate limiting', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
-
-      mockSendTransacEmail.mockRejectedValue(new Error('Rate limit exceeded'));
-
-      const result = await emailService.sendEmail({
-        to: 'test@example.com',
-        subject: 'Test',
-        html: '<p>Test</p>',
-        text: 'Test',
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Rate limit exceeded');
+      expect(result.error).toContain(errorMessage);
     });
   });
 });

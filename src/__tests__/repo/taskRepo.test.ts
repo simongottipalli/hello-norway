@@ -10,8 +10,6 @@ vi.mock("../../lib/prisma", () => ({
       findUnique: vi.fn(),
       findFirst: vi.fn(),
       create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
     },
     userTask: {
       findMany: vi.fn(),
@@ -24,24 +22,6 @@ vi.mock("../../lib/prisma", () => ({
 describe("taskRepo", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe("findAllSystemTasks", () => {
-    it("queries for system tasks ordered by category and sortOrder", async () => {
-      vi.mocked(prisma.task.findMany).mockResolvedValue([]);
-      await taskRepo.findAllSystemTasks();
-      expect(prisma.task.findMany).toHaveBeenCalledWith({
-        where: { createdByUserId: null },
-        orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-      });
-    });
-
-    it("accepts a custom db instance", async () => {
-      const mockDb = { task: { findMany: vi.fn().mockResolvedValue([]) }, userTask: {} };
-      await taskRepo.findAllSystemTasks(mockDb as Parameters<typeof taskRepo.findAllSystemTasks>[0]);
-      expect(mockDb.task.findMany).toHaveBeenCalled();
-      expect(prisma.task.findMany).not.toHaveBeenCalled();
-    });
   });
 
   describe("findUserTasksWithTask", () => {
@@ -61,17 +41,6 @@ describe("taskRepo", () => {
       vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
       await taskRepo.findTaskById("task-1");
       expect(prisma.task.findUnique).toHaveBeenCalledWith({ where: { id: "task-1" } });
-    });
-  });
-
-  describe("findTaskOwnership", () => {
-    it("selects only ownership-related fields", async () => {
-      vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
-      await taskRepo.findTaskOwnership("task-1");
-      expect(prisma.task.findUnique).toHaveBeenCalledWith({
-        where: { id: "task-1" },
-        select: { createdByUserId: true, minDaysFromArrival: true, maxDaysFromArrival: true },
-      });
     });
   });
 
@@ -115,17 +84,6 @@ describe("taskRepo", () => {
       await taskRepo.createUserTaskAssignment("user-1", "task-1");
       expect(prisma.userTask.create).toHaveBeenCalledWith({
         data: { userId: "user-1", taskId: "task-1", status: UserTaskStatus.TODO },
-      });
-    });
-  });
-
-  describe("updateTask", () => {
-    it("updates a task by id with the provided data", async () => {
-      vi.mocked(prisma.task.update).mockResolvedValue({} as never);
-      await taskRepo.updateTask("task-1", { title: "Updated Title" });
-      expect(prisma.task.update).toHaveBeenCalledWith({
-        where: { id: "task-1" },
-        data: { title: "Updated Title" },
       });
     });
   });
@@ -190,14 +148,6 @@ describe("taskRepo", () => {
       });
       const call = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
       expect(call.update).not.toHaveProperty("dueDate");
-    });
-  });
-
-  describe("deleteTask", () => {
-    it("deletes a task by id", async () => {
-      vi.mocked(prisma.task.delete).mockResolvedValue({} as never);
-      await taskRepo.deleteTask("task-1");
-      expect(prisma.task.delete).toHaveBeenCalledWith({ where: { id: "task-1" } });
     });
   });
 

@@ -201,40 +201,15 @@ export class OtpService {
 // Singleton instance management
 let otpServiceInstance: OtpService | null = null;
 
-/**
- * Initialize the OTP service with an email service
- * This should be called during application startup
- */
-export function initializeOtpService(emailService: EmailService): void {
-  otpServiceInstance = new OtpService(emailService);
-}
-
-/**
- * Get the initialized OTP service instance
- * Lazy-loads on first call in production if not explicitly initialized
- */
 function getOtpServiceInstance(): OtpService {
   if (!otpServiceInstance) {
-    // Lazy load email service for backward compatibility
-    // In production, prefer calling initializeOtpService() during startup
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { emailService } = require('./email');
-      otpServiceInstance = new OtpService(emailService);
-    } catch {
-      throw new Error(
-        'OTP service not initialized. Call initializeOtpService() with an EmailService instance during application startup.'
-      );
-    }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { emailService } = require('./email');
+    otpServiceInstance = new OtpService(emailService);
   }
   return otpServiceInstance;
 }
 
-/**
- * Exported OTP service singleton
- * Provides lazy initialization for backward compatibility
- * For new code, prefer calling initializeOtpService() during startup
- */
 export const otpService = {
   requestOtp: (email: string, logger?: Logger) => getOtpServiceInstance().requestOtp(email, logger),
   verifyOtp: (email: string, code: number, logger?: Logger) => getOtpServiceInstance().verifyOtp(email, code, logger),

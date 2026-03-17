@@ -56,16 +56,6 @@ export class BrevoProvider implements EmailProvider {
     }
   }
 
-  async validateConfig(): Promise<boolean> {
-    try {
-      await this.client.account.getAccount();
-      return true;
-    } catch (error) {
-      console.error('Brevo configuration validation failed:', error);
-      return false;
-    }
-  }
-
   private parseSender(email: string): { email: string; name?: string } {
     const match = email.match(/^(.+?)\s*<(.+?)>$/);
     if (match) {

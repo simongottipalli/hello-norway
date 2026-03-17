@@ -14,16 +14,12 @@ vi.mock("../middleware/authMiddleware", () => ({
 }));
 
 vi.mock("../repo/taskRepo", () => ({
-  findAllSystemTasks: vi.fn(),
   findUserTasksWithTask: vi.fn(),
   findTaskById: vi.fn(),
-  findTaskOwnership: vi.fn(),
   findOwnedOrSystemTask: vi.fn(),
   createTask: vi.fn(),
   createUserTaskAssignment: vi.fn(),
-  updateTask: vi.fn(),
   upsertUserTaskStatus: vi.fn(),
-  deleteTask: vi.fn(),
   findOnboardingPreviewTasks: vi.fn(),
 }));
 
@@ -225,18 +221,6 @@ describe("Task status updates", () => {
     expect(response.status).toBe(404);
     expect(response.body.error).toBe("Task not found");
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
-  });
-
-  it("returns 400 when status is sent to task metadata endpoint", async () => {
-    const response = await request(app)
-      .patch("/api/tasks/task-1")
-      .send({ status: "DONE" })
-      .set("Content-Type", "application/json");
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain("/api/tasks/:id/status");
-    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
-    expect(taskRepo.updateTask).not.toHaveBeenCalled();
   });
 
   it("accepts product status aliases and maps them to persisted enum values", async () => {

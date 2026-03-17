@@ -21,11 +21,6 @@ test.describe('Navigation and Routing', () => {
       await expect(page).toHaveURL(/\/login/);
     });
 
-    unauthenticatedTest('should redirect unauthenticated users from /tasks to /login', async ({ page }) => {
-      await page.goto('/tasks');
-      await expect(page).toHaveURL(/\/login/);
-    });
-
     unauthenticatedTest('should redirect unauthenticated users from /profile to /login', async ({ page }) => {
       await page.goto('/profile');
       await expect(page).toHaveURL(/\/login/);
@@ -35,12 +30,6 @@ test.describe('Navigation and Routing', () => {
       await page.goto('/dashboard');
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
       await expect(page).toHaveURL(/\/dashboard/);
-    });
-
-    test('should redirect authenticated users from /tasks to /dashboard', async ({ page }) => {
-      await page.goto('/tasks');
-      await expect(page).toHaveURL(/\/dashboard/);
-      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     });
 
     test('should allow authenticated users to access /profile', async ({ page }) => {
@@ -70,11 +59,6 @@ test.describe('Navigation and Routing', () => {
   test.describe('Authenticated User Redirects', () => {
     test('should redirect authenticated users from /login to /dashboard', async ({ page }) => {
       await page.goto('/login');
-      await expect(page).toHaveURL(/\/dashboard/);
-    });
-
-    test('should redirect authenticated users from /signup to /dashboard', async ({ page }) => {
-      await page.goto('/signup');
       await expect(page).toHaveURL(/\/dashboard/);
     });
   });
@@ -130,102 +114,48 @@ test.describe('Navigation and Routing', () => {
       await expect(page.getByLabel('Toggle menu')).toBeVisible();
     });
 
-    test('should toggle mobile menu when button is clicked', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
+    test.describe('mobile menu open/close', () => {
+      test.beforeEach(async ({ page }) => {
+        await page.setViewportSize({ width: 375, height: 667 });
+        await page.goto('/dashboard');
+        await expect(page.getByLabel('Toggle menu')).toBeVisible();
+        await page.getByLabel('Toggle menu').click();
+        await expect(page.getByTestId('mobile-nav')).toBeVisible();
+      });
 
-      await page.goto('/dashboard');
-      await expect(page.getByLabel('Toggle menu')).toBeVisible();
+      test('should toggle mobile menu closed when button is clicked again', async ({ page }) => {
+        await page.getByLabel('Toggle menu').click();
+        await expect(page.getByTestId('mobile-nav')).not.toBeVisible();
+      });
 
-      // Mobile menu should not be visible initially
-      const mobileNav = page.getByTestId('mobile-nav');
-      await expect(mobileNav).not.toBeVisible();
+      test('should close mobile menu when navigating via link', async ({ page }) => {
+        const mobileNav = page.getByTestId('mobile-nav');
+        await expect(mobileNav.getByText(/Hey .+ 👋/)).toBeVisible();
+        await mobileNav.getByTestId('mobile-dashboard-link').click();
+        await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+        await expect(mobileNav).not.toBeVisible();
+      });
 
-      // Click menu button
-      await page.getByLabel('Toggle menu').click();
+      test('should close mobile menu when Escape key is pressed', async ({ page }) => {
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('mobile-nav')).not.toBeVisible();
+      });
 
-      // Mobile menu should be visible
-      await expect(mobileNav).toBeVisible();
+      test('should close mobile menu when clicking outside', async ({ page }) => {
+        await page.getByRole('heading', { name: 'Dashboard' }).click();
+        await expect(page.getByTestId('mobile-nav')).not.toBeVisible();
+      });
 
-      // Click menu button again to close
-      await page.getByLabel('Toggle menu').click();
+      test('should display all navigation links in mobile menu', async ({ page }) => {
+        const mobileNav = page.getByTestId('mobile-nav');
 
-      // Mobile menu should be hidden
-      await expect(mobileNav).not.toBeVisible();
-    });
+        // Wait for authentication to complete by checking for user greeting
+        await expect(mobileNav.getByText(/Hey .+ 👋/)).toBeVisible();
 
-    test('should close mobile menu when navigating', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
-
-      await page.goto('/dashboard');
-
-      // Open mobile menu
-      await page.getByLabel('Toggle menu').click();
-
-      const mobileNav = page.getByTestId('mobile-nav');
-      await expect(mobileNav).toBeVisible();
-
-      // Wait for authentication to complete by checking for user greeting
-      await expect(mobileNav.getByText(/Hey .+ 👋/)).toBeVisible();
-
-      // Wait for the Dashboard link to be visible before clicking
-      const dashboardLink = mobileNav.getByTestId('mobile-dashboard-link');
-      await expect(dashboardLink).toBeVisible();
-      await dashboardLink.click();
-
-      // Should stay on dashboard
-      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-
-      // Mobile menu should be closed after navigation
-      await expect(mobileNav).not.toBeVisible();
-    });
-
-    test('should close mobile menu when Escape key is pressed', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
-
-      await page.goto('/dashboard');
-      await page.getByLabel('Toggle menu').click();
-
-      const mobileNav = page.getByTestId('mobile-nav');
-      await expect(mobileNav).toBeVisible();
-
-      await page.keyboard.press('Escape');
-
-      await expect(mobileNav).not.toBeVisible();
-    });
-
-    test('should close mobile menu when clicking outside', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
-
-      await page.goto('/dashboard');
-      await page.getByLabel('Toggle menu').click();
-
-      const mobileNav = page.getByTestId('mobile-nav');
-      await expect(mobileNav).toBeVisible();
-
-      // Click on the page content outside the header
-      await page.getByRole('heading', { name: 'Dashboard' }).click();
-
-      await expect(mobileNav).not.toBeVisible();
-    });
-
-    test('should display all navigation links in mobile menu', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
-
-      await page.goto('/dashboard');
-
-      // Open mobile menu
-      await page.getByLabel('Toggle menu').click();
-
-      // Wait for mobile menu to be visible
-      const mobileNav = page.getByTestId('mobile-nav');
-      await expect(mobileNav).toBeVisible();
-
-      // Wait for authentication to complete by checking for user greeting
-      await expect(mobileNav.getByText(/Hey .+ 👋/)).toBeVisible();
-
-      // All links should be visible in mobile menu using test IDs
-      await expect(mobileNav.getByTestId('mobile-dashboard-link')).toBeVisible();
-      await expect(mobileNav.getByRole('button', { name: /Logout/i })).toBeVisible();
+        // All links should be visible in mobile menu using test IDs
+        await expect(mobileNav.getByTestId('mobile-dashboard-link')).toBeVisible();
+        await expect(mobileNav.getByRole('button', { name: /Logout/i })).toBeVisible();
+      });
     });
   });
 });

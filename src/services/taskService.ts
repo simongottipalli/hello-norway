@@ -1,10 +1,7 @@
 import { UserTaskStatus } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma";
 import * as taskRepo from "../repo/taskRepo";
-import {
-  validateDaysFromArrivalRange,
-  type CreateTaskPayload,
-} from "../controllers/taskValidation";
+import { type CreateTaskPayload } from "../controllers/taskValidation";
 
 // ──────────────────────────────────────────────
 // Types
@@ -45,11 +42,6 @@ const isOwnedByAnotherUser = (createdByUserId: string | null, userId: string): b
 // ──────────────────────────────────────────────
 // Service functions
 // ──────────────────────────────────────────────
-
-/**
- * Fetches all system (non-user-created) tasks.
- */
-export const getAllTasks = () => taskRepo.findAllSystemTasks();
 
 /**
  * Fetches all tasks assigned to a user, merging task fields with user-task metadata.
@@ -141,39 +133,6 @@ export const createTask = async (
 };
 
 /**
- * Updates an existing task after verifying ownership and field-range constraints.
- * Only the creator of a user-defined task may edit it.
- */
-export const updateTask = async (
-  taskId: string,
-  updateData: Record<string, unknown>,
-  userId: string,
-): Promise<TaskServiceResult<Awaited<ReturnType<typeof taskRepo.updateTask>>>> => {
-  const existing = await taskRepo.findTaskOwnership(taskId);
-
-  if (!existing) {
-    return { success: false, statusCode: 404, error: "Task not found" };
-  }
-
-  if (isOwnedByAnotherUser(existing.createdByUserId, userId)) {
-    return { success: false, statusCode: 404, error: "Task not found" };
-  }
-
-  const rangeError = validateDaysFromArrivalRange(
-    updateData,
-    existing.minDaysFromArrival,
-    existing.maxDaysFromArrival,
-  );
-  if (rangeError) {
-    return { success: false, statusCode: 400, error: rangeError };
-  }
-
-  const task = await taskRepo.updateTask(taskId, updateData);
-
-  return { success: true, data: task };
-};
-
-/**
  * Updates or creates a user's task-status record.
  *
  * Accepts a raw status string and resolves it via STATUS_ALIAS_MAP.
@@ -211,27 +170,4 @@ export const updateTaskStatus = async (
   });
 
   return { success: true, data: userTask };
-};
-
-/**
- * Deletes a user-created task.
- * Only the creator may delete their own tasks; system tasks cannot be deleted.
- */
-export const deleteTask = async (
-  taskId: string,
-  userId: string,
-): Promise<TaskServiceResult<void>> => {
-  const existing = await taskRepo.findTaskOwnership(taskId);
-
-  if (!existing) {
-    return { success: false, statusCode: 404, error: "Task not found" };
-  }
-
-  if (isOwnedByAnotherUser(existing.createdByUserId, userId)) {
-    return { success: false, statusCode: 404, error: "Task not found" };
-  }
-
-  await taskRepo.deleteTask(taskId);
-
-  return { success: true };
 };

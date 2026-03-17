@@ -264,41 +264,6 @@ describe('BrevoProvider', () => {
     });
   });
 
-  describe('validateConfig', () => {
-    let mockGetAccount: ReturnType<typeof vi.fn>;
-
-    beforeEach(async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: mockApiKey });
-      mockGetAccount = (mockClient.account as { getAccount: ReturnType<typeof vi.fn> }).getAccount;
-    });
-
-    it('should return true when API key is valid', async () => {
-      mockGetAccount.mockResolvedValue({ email: 'test@example.com' });
-
-      const result = await provider.validateConfig();
-
-      expect(result).toBe(true);
-      expect(mockGetAccount).toHaveBeenCalled();
-    });
-
-    it('should return false when API key is invalid', async () => {
-      mockGetAccount.mockRejectedValue(new Error('Unauthorized'));
-
-      const result = await provider.validateConfig();
-
-      expect(result).toBe(false);
-    });
-
-    it('should return false on network errors', async () => {
-      mockGetAccount.mockRejectedValue(new Error('Network error'));
-
-      const result = await provider.validateConfig();
-
-      expect(result).toBe(false);
-    });
-  });
-
   describe('parseSender', () => {
     let mockSendTransacEmail: ReturnType<typeof vi.fn>;
 

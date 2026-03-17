@@ -5,16 +5,12 @@ import * as taskRepo from "../../repo/taskRepo";
 import { prisma } from "../../lib/prisma";
 
 vi.mock("../../repo/taskRepo", () => ({
-  findAllSystemTasks: vi.fn(),
   findUserTasksWithTask: vi.fn(),
   findTaskById: vi.fn(),
-  findTaskOwnership: vi.fn(),
   findOwnedOrSystemTask: vi.fn(),
   createTask: vi.fn(),
   createUserTaskAssignment: vi.fn(),
-  updateTask: vi.fn(),
   upsertUserTaskStatus: vi.fn(),
-  deleteTask: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma", () => ({
@@ -26,22 +22,6 @@ vi.mock("../../lib/prisma", () => ({
 describe("taskService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  // ──────────────────────────────────────────────
-  // getAllTasks
-  // ──────────────────────────────────────────────
-
-  describe("getAllTasks", () => {
-    it("delegates to taskRepo.findAllSystemTasks", async () => {
-      const mockTasks = [{ id: "task-1", title: "Task 1" }];
-      vi.mocked(taskRepo.findAllSystemTasks).mockResolvedValue(mockTasks as never);
-
-      const result = await taskService.getAllTasks();
-
-      expect(taskRepo.findAllSystemTasks).toHaveBeenCalledOnce();
-      expect(result).toEqual(mockTasks);
-    });
   });
 
   // ──────────────────────────────────────────────
@@ -175,56 +155,6 @@ describe("taskService", () => {
   });
 
   // ──────────────────────────────────────────────
-  // updateTask
-  // ──────────────────────────────────────────────
-
-  describe("updateTask", () => {
-    it("returns the updated task on success", async () => {
-      const existing = { createdByUserId: "user-1", minDaysFromArrival: null, maxDaysFromArrival: null };
-      const updatedTask = { id: "task-1", title: "Updated" };
-      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue(existing as never);
-      vi.mocked(taskRepo.updateTask).mockResolvedValue(updatedTask as never);
-
-      const result = await taskService.updateTask("task-1", { title: "Updated" }, "user-1");
-
-      expect(result).toEqual({ success: true, data: updatedTask });
-    });
-
-    it("returns 404 when the task does not exist", async () => {
-      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue(null);
-
-      const result = await taskService.updateTask("nonexistent", { title: "X" }, "user-1");
-
-      expect(result).toEqual({ success: false, statusCode: 404, error: "Task not found" });
-      expect(taskRepo.updateTask).not.toHaveBeenCalled();
-    });
-
-    it("returns 404 when the task is owned by another user", async () => {
-      const existing = { createdByUserId: "other-user", minDaysFromArrival: null, maxDaysFromArrival: null };
-      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue(existing as never);
-
-      const result = await taskService.updateTask("task-1", { title: "X" }, "user-1");
-
-      expect(result).toEqual({ success: false, statusCode: 404, error: "Task not found" });
-      expect(taskRepo.updateTask).not.toHaveBeenCalled();
-    });
-
-    it("returns 400 when maxDaysFromArrival < minDaysFromArrival", async () => {
-      const existing = { createdByUserId: "user-1", minDaysFromArrival: 10, maxDaysFromArrival: 20 };
-      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue(existing as never);
-
-      const result = await taskService.updateTask("task-1", { maxDaysFromArrival: 5 }, "user-1");
-
-      expect(result).toEqual({
-        success: false,
-        statusCode: 400,
-        error: "maxDaysFromArrival must be greater than or equal to minDaysFromArrival",
-      });
-      expect(taskRepo.updateTask).not.toHaveBeenCalled();
-    });
-  });
-
-  // ──────────────────────────────────────────────
   // updateTaskStatus
   // ──────────────────────────────────────────────
 
@@ -310,37 +240,4 @@ describe("taskService", () => {
     });
   });
 
-  // ──────────────────────────────────────────────
-  // deleteTask
-  // ──────────────────────────────────────────────
-
-  describe("deleteTask", () => {
-    it("deletes the task and returns success", async () => {
-      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue({ createdByUserId: "user-1", minDaysFromArrival: null, maxDaysFromArrival: null } as never);
-      vi.mocked(taskRepo.deleteTask).mockResolvedValue({} as never);
-
-      const result = await taskService.deleteTask("task-1", "user-1");
-
-      expect(taskRepo.deleteTask).toHaveBeenCalledWith("task-1");
-      expect(result).toEqual({ success: true });
-    });
-
-    it("returns 404 when the task does not exist", async () => {
-      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue(null);
-
-      const result = await taskService.deleteTask("nonexistent", "user-1");
-
-      expect(result).toEqual({ success: false, statusCode: 404, error: "Task not found" });
-      expect(taskRepo.deleteTask).not.toHaveBeenCalled();
-    });
-
-    it("returns 404 when the task is owned by another user", async () => {
-      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue({ createdByUserId: "other-user", minDaysFromArrival: null, maxDaysFromArrival: null } as never);
-
-      const result = await taskService.deleteTask("task-1", "user-1");
-
-      expect(result).toEqual({ success: false, statusCode: 404, error: "Task not found" });
-      expect(taskRepo.deleteTask).not.toHaveBeenCalled();
-    });
-  });
 });

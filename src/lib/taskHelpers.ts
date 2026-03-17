@@ -10,12 +10,6 @@ export type OfficialLink = {
   url: string;
 };
 
-export const DEFAULT_TRACKING_STATE: TaskTrackingState = {
-  status: "not_started",
-  dueDate: "",
-  personalNotes: "",
-};
-
 /**
  * Converts a date string to the format expected by date input fields
  */

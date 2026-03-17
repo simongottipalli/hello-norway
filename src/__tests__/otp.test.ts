@@ -79,7 +79,6 @@ describe("OTP API", () => {
     // Create mock email service
     mockEmailService = {
       sendEmail: vi.fn(),
-      validateConfig: vi.fn(),
     } as unknown as EmailService;
 
     otpService = new OtpService(mockEmailService);
@@ -832,16 +831,6 @@ describe("OTP API", () => {
       vi.mocked(otpRepo.findValidOtp).mockResolvedValue(null);
 
       const result = await otpService.verifyOtp(testEmail, 123456);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Invalid or expired OTP");
-      expect(result.statusCode).toBe(401);
-    });
-
-    it("should reject invalid OTP code", async () => {
-      vi.mocked(otpRepo.findValidOtp).mockResolvedValue(null);
-
-      const result = await otpService.verifyOtp(testEmail, 999999);
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("Invalid or expired OTP");

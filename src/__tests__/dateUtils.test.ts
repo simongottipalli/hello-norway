@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   parseUtcDate,
-  getTodayUtc,
   isTaskOverdue,
   isTaskUpcoming,
   formatDueDateWithTimezone,
@@ -32,19 +31,6 @@ describe("Date Utility Functions", () => {
       expect(date.getUTCFullYear()).toBe(2026);
       expect(date.getUTCMonth()).toBe(2);
       expect(date.getUTCDate()).toBe(15);
-    });
-  });
-
-  describe("getTodayUtc", () => {
-    it("returns today's date at UTC midnight", () => {
-      const today = getTodayUtc();
-      const now = new Date();
-      expect(today.getUTCFullYear()).toBe(now.getUTCFullYear());
-      expect(today.getUTCMonth()).toBe(now.getUTCMonth());
-      expect(today.getUTCDate()).toBe(now.getUTCDate());
-      expect(today.getUTCHours()).toBe(0);
-      expect(today.getUTCMinutes()).toBe(0);
-      expect(today.getUTCSeconds()).toBe(0);
     });
   });
 
