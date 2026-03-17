@@ -19,7 +19,6 @@ export interface EmailResult {
 
 export interface EmailProvider {
   sendEmail(options: EmailOptions, logger?: Logger): Promise<EmailResult>;
-  validateConfig(): Promise<boolean>;
 }
 
 export interface EmailServiceConfig {

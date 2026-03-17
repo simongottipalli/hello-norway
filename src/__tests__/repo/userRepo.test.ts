@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as userRepo from "../../repo/userRepo";
-import { PROFILE_SELECT } from "../../repo/userRepo";
+
+const PROFILE_SELECT = {
+  id: true, email: true, name: true, isEU: true,
+  hasChildren: true, employmentStatus: true, arrivalDate: true, plannedArrivalDate: true,
+} as const;
 import { prisma } from "../../lib/prisma";
 
 vi.mock("../../lib/prisma", () => ({

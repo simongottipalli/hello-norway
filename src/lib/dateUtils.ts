@@ -22,7 +22,7 @@ export function parseUtcDate(dateString: string): Date {
  * Returns today's date at UTC midnight.
  * Used for consistent date comparisons.
  */
-export function getTodayUtc(): Date {
+function getTodayUtc(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }

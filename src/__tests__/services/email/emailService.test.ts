@@ -12,7 +12,6 @@ describe('EmailService', () => {
   beforeEach(() => {
     mockProvider = {
       sendEmail: vi.fn(),
-      validateConfig: vi.fn(),
     };
   });
 
@@ -67,26 +66,6 @@ describe('EmailService', () => {
     });
   });
 
-  describe('validateConfig', () => {
-    it('should delegate to provider', async () => {
-      const service = new EmailService(mockProvider);
-      (mockProvider.validateConfig as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-
-      const result = await service.validateConfig();
-
-      expect(result).toBe(true);
-      expect(mockProvider.validateConfig).toHaveBeenCalled();
-    });
-
-    it('should return false when validation fails', async () => {
-      const service = new EmailService(mockProvider);
-      (mockProvider.validateConfig as ReturnType<typeof vi.fn>).mockResolvedValue(false);
-
-      const result = await service.validateConfig();
-
-      expect(result).toBe(false);
-    });
-  });
 });
 
 describe('createEmailService', () => {

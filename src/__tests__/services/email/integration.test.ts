@@ -23,8 +23,7 @@ vi.mock('@getbrevo/brevo', () => {
 });
 
 describe('Email Service Integration', () => {
-  let getEmailService: () => { sendEmail: (options: unknown) => Promise<unknown>; validateConfig: () => Promise<boolean> };
-  let emailService: { sendEmail: (options: unknown) => Promise<unknown>; validateConfig: () => Promise<boolean> };
+  let emailService: { sendEmail: (options: unknown) => Promise<unknown> };
 
   beforeAll(async () => {
     process.env.EMAIL_PROVIDER = 'brevo';
@@ -32,27 +31,11 @@ describe('Email Service Integration', () => {
     process.env.BREVO_API_KEY = 'test-api-key';
 
     const emailModule = await import('../../../services/email');
-    getEmailService = emailModule.getEmailService;
     emailService = emailModule.emailService;
   });
 
   afterAll(() => {
     process.env = originalEnv;
-  });
-
-  describe('getEmailService', () => {
-    it('should return singleton instance', () => {
-      const service1 = getEmailService();
-      const service2 = getEmailService();
-
-      expect(service1).toBe(service2);
-    });
-
-    it('should return same instance as exported emailService', () => {
-      const service = getEmailService();
-
-      expect(service).toBe(emailService);
-    });
   });
 
   describe('emailService singleton', () => {
@@ -74,17 +57,6 @@ describe('Email Service Integration', () => {
       expect(result.messageId).toBe('integration-test-id');
     });
 
-    it('should be able to validate config', async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockGetAccount = (mockClient.account as { getAccount: ReturnType<typeof vi.fn> }).getAccount;
-
-      mockGetAccount.mockResolvedValue({ email: 'test@example.com' });
-
-      const result = await emailService.validateConfig();
-
-      expect(result).toBe(true);
-    });
   });
 
   describe('Real-world usage scenarios', () => {

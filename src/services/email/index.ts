@@ -2,7 +2,7 @@ import { createEmailServiceFromEnv } from './emailService';
 
 let emailServiceInstance: ReturnType<typeof createEmailServiceFromEnv> | null = null;
 
-export function getEmailService() {
+function getEmailService() {
   if (!emailServiceInstance) {
     emailServiceInstance = createEmailServiceFromEnv();
   }

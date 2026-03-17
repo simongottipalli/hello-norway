@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Routes that authenticated users should not access
-  const authOnlyPaths = ["/login", "/signup"];
+  const authOnlyPaths = ["/login"];
 
   // Protected routes that require authentication
   // Exact match or any sub-path (e.g. /tasks protects /tasks/123 but not /tasks-review)

@@ -12,10 +12,6 @@ export class EmailService {
   async sendEmail(options: EmailOptions, logger?: Logger): Promise<EmailResult> {
     return this.provider.sendEmail(options, logger);
   }
-
-  async validateConfig(): Promise<boolean> {
-    return this.provider.validateConfig();
-  }
 }
 
 export function createEmailService(config: EmailServiceConfig): EmailService {
