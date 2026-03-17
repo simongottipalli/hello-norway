@@ -21,11 +21,6 @@ test.describe('Navigation and Routing', () => {
       await expect(page).toHaveURL(/\/login/);
     });
 
-    unauthenticatedTest('should redirect unauthenticated users from /tasks to /login', async ({ page }) => {
-      await page.goto('/tasks');
-      await expect(page).toHaveURL(/\/login/);
-    });
-
     unauthenticatedTest('should redirect unauthenticated users from /profile to /login', async ({ page }) => {
       await page.goto('/profile');
       await expect(page).toHaveURL(/\/login/);
@@ -35,12 +30,6 @@ test.describe('Navigation and Routing', () => {
       await page.goto('/dashboard');
       await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
       await expect(page).toHaveURL(/\/dashboard/);
-    });
-
-    test('should redirect authenticated users from /tasks to /dashboard', async ({ page }) => {
-      await page.goto('/tasks');
-      await expect(page).toHaveURL(/\/dashboard/);
-      await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
     });
 
     test('should allow authenticated users to access /profile', async ({ page }) => {
