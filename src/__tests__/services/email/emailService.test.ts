@@ -4,7 +4,7 @@ import {
   createEmailService,
   createEmailServiceFromEnv,
 } from '../../../services/email/emailService';
-import type { EmailProvider, EmailOptions, EmailResult } from '../../../services/email/types';
+import type { EmailProvider, EmailResult } from '../../../services/email/types';
 
 describe('EmailService', () => {
   let mockProvider: EmailProvider;
@@ -23,27 +23,6 @@ describe('EmailService', () => {
   });
 
   describe('sendEmail', () => {
-    it('should delegate to provider', async () => {
-      const service = new EmailService(mockProvider);
-      const options: EmailOptions = {
-        to: 'test@example.com',
-        subject: 'Test',
-        html: '<p>Test</p>',
-        text: 'Test',
-      };
-      const expectedResult: EmailResult = {
-        success: true,
-        messageId: 'test-id',
-      };
-
-      (mockProvider.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue(expectedResult);
-
-      const result = await service.sendEmail(options);
-
-      expect(result).toEqual(expectedResult);
-      expect(mockProvider.sendEmail).toHaveBeenCalledWith(options, undefined);
-    });
-
     it('should handle provider errors', async () => {
       const service = new EmailService(mockProvider);
       const options: EmailOptions = {

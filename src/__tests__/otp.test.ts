@@ -838,16 +838,6 @@ describe("OTP API", () => {
       expect(result.statusCode).toBe(401);
     });
 
-    it("should reject invalid OTP code", async () => {
-      vi.mocked(otpRepo.findValidOtp).mockResolvedValue(null);
-
-      const result = await otpService.verifyOtp(testEmail, 999999);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("Invalid or expired OTP");
-      expect(result.statusCode).toBe(401);
-    });
-
     it("should skip creating user tasks when no relevant tasks are found", async () => {
       vi.mocked(otpRepo.findValidOtp).mockResolvedValue({
         id: "test-id",

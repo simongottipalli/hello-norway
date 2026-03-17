@@ -52,79 +52,40 @@ test.describe('Dashboard Task Details Modal', () => {
     await expect(dialog.getByLabel('Private notes')).toBeVisible();
   });
 
-  test('should close modal when clicking "Close" button', async ({ page }) => {
-    const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
-    const hasButton = await viewButton.isVisible().catch(() => false);
+  test.describe('modal dismissal', () => {
+    test.beforeEach(async ({ page }) => {
+      const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
+      const hasButton = await viewButton.isVisible().catch(() => false);
+      if (!hasButton) {
+        test.skip();
+        return;
+      }
+      await viewButton.click();
+      await expect(page.getByRole('dialog')).toBeVisible();
+    });
 
-    if (!hasButton) {
-      test.skip('No tasks available - skipping close button test');
-      return;
-    }
+    test('should close modal when clicking "Close" button', async ({ page }) => {
+      const dialog = page.getByRole('dialog');
+      await dialog.getByRole('button', { name: 'Close' }).click();
+      await expect(dialog).not.toBeVisible();
+      expect(page.url()).toContain('/dashboard');
+    });
 
-    await viewButton.click();
+    test('should close modal when pressing Escape key', async ({ page }) => {
+      const dialog = page.getByRole('dialog');
+      await page.keyboard.press('Escape');
+      await expect(dialog).not.toBeVisible();
+      expect(page.url()).toContain('/dashboard');
+    });
 
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-
-    // Click the close button
-    const closeButton = dialog.getByRole('button', { name: 'Close' });
-    await closeButton.click();
-
-    // Verify dialog is closed
-    await expect(dialog).not.toBeVisible();
-
-    // Verify we're still on dashboard
-    expect(page.url()).toContain('/dashboard');
-  });
-
-  test('should close modal when pressing Escape key', async ({ page }) => {
-    const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
-    const hasButton = await viewButton.isVisible().catch(() => false);
-
-    if (!hasButton) {
-      test.skip('No tasks available - skipping escape key test');
-      return;
-    }
-
-    await viewButton.click();
-
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-
-    // Press Escape key
-    await page.keyboard.press('Escape');
-
-    // Verify dialog is closed
-    await expect(dialog).not.toBeVisible();
-
-    // Verify we're still on dashboard
-    expect(page.url()).toContain('/dashboard');
-  });
-
-  test('should close modal when clicking outside the modal', async ({ page }) => {
-    const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
-    const hasButton = await viewButton.isVisible().catch(() => false);
-
-    if (!hasButton) {
-      test.skip('No tasks available - skipping click outside test');
-      return;
-    }
-
-    await viewButton.click();
-
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-
-    // Click on the backdrop area outside the centered dialog content.
-    // The dialog is max-w-2xl (~672px) centered in a 1280px viewport, so
-    // x=10 is well within the dark overlay and outside the dialog box.
-    await page.mouse.click(10, 400);
-
-    // Verify dialog is closed
-    await expect(dialog).not.toBeVisible();
-
-    // Verify we're still on dashboard
-    expect(page.url()).toContain('/dashboard');
+    test('should close modal when clicking outside the modal', async ({ page }) => {
+      const dialog = page.getByRole('dialog');
+      // The dialog is max-w-2xl (~672px) centered in a 1280px viewport,
+      // so x=10 is well within the dark overlay and outside the dialog box.
+      await page.mouse.click(10, 400);
+      await expect(dialog).not.toBeVisible();
+      expect(page.url()).toContain('/dashboard');
+    });
   });
 
   test('should trap focus within modal', async ({ page }) => {

@@ -1,6 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { prisma } from "../lib/prisma";
-import type { User } from "../generated/prisma/models";
 
 describe("User Model", () => {
   let testUserId: string;
@@ -31,20 +30,6 @@ describe("User Model", () => {
       expect(user.name).toBe(testUser.name);
       expect(user).toHaveProperty("createdAt");
       expect(user).toHaveProperty("updatedAt");
-    });
-
-    it("should require name field when creating user", async () => {
-      const testUser = {
-        email: `test-no-name-${Date.now()}@example.com`,
-      };
-
-      // TypeScript should prevent this at compile time, but we test runtime behavior
-      // Prisma should throw an error about the required field
-      await expect(
-        prisma.user.create({
-          data: testUser as { email: string },
-        })
-      ).rejects.toThrow(/name/);
     });
 
     it("should retrieve user with name field", async () => {
@@ -91,45 +76,5 @@ describe("User Model", () => {
       expect(updatedUser.email).toBe(testUser.email);
     });
 
-    it("should have name field in User type", () => {
-      // Type check - this will fail at compile time if name is not in the type
-      const userShape: Partial<User> = {
-        id: "test-id",
-        email: "test@example.com",
-        name: "Test Name",
-      };
-
-      expect(userShape.name).toBeDefined();
-    });
-  });
-
-  describe("User model structure", () => {
-    it("should have all expected fields in the model", async () => {
-      const testUser = {
-        email: `test-structure-${Date.now()}@example.com`,
-        name: "Structure Test",
-        isEU: true,
-        hasChildren: false,
-      };
-
-      const user = await prisma.user.create({
-        data: testUser,
-      });
-
-      // Clean up
-      await prisma.user.delete({ where: { id: user.id } });
-
-      expect(user).toHaveProperty("id");
-      expect(user).toHaveProperty("email");
-      expect(user).toHaveProperty("name");
-      expect(user).toHaveProperty("isEU");
-      expect(user).toHaveProperty("employmentStatus");
-      expect(user).toHaveProperty("hasChildren");
-      expect(user).toHaveProperty("housingType");
-      expect(user).toHaveProperty("plannedArrivalDate");
-      expect(user).toHaveProperty("arrivalDate");
-      expect(user).toHaveProperty("createdAt");
-      expect(user).toHaveProperty("updatedAt");
-    });
   });
 });

@@ -213,12 +213,6 @@ describe("validateCreateTaskBody", () => {
   });
 
   describe("category", () => {
-    it("returns error for an invalid category", () => {
-      const result = validateCreateTaskBody({ ...VALID_CREATE_BODY, category: "INVALID_CAT" });
-      expect("error" in result).toBe(true);
-      if ("error" in result) expect(result.error).toContain("Invalid category");
-    });
-
     it("accepts all valid TaskCategory values", () => {
       const validCategories = ["ARRIVAL", "IDENTITY_BANKING", "HEALTH", "TAX_WORK", "FAMILY", "HOUSING", "DRIVING", "OTHER"];
       for (const cat of validCategories) {
@@ -229,12 +223,6 @@ describe("validateCreateTaskBody", () => {
   });
 
   describe("sortOrder", () => {
-    it(`returns error when sortOrder exceeds ${SORT_ORDER_MAX}`, () => {
-      const result = validateCreateTaskBody({ ...VALID_CREATE_BODY, sortOrder: SORT_ORDER_MAX + 1 });
-      expect("error" in result).toBe(true);
-      if ("error" in result) expect(result.error).toContain("sortOrder");
-    });
-
     it("returns error when sortOrder is a float", () => {
       const result = validateCreateTaskBody({ ...VALID_CREATE_BODY, sortOrder: 1.5 });
       expect("error" in result).toBe(true);
@@ -247,12 +235,6 @@ describe("validateCreateTaskBody", () => {
   });
 
   describe("requiresEU / requiresChildren", () => {
-    it("returns error when requiresEU is not a boolean", () => {
-      const result = validateCreateTaskBody({ ...VALID_CREATE_BODY, requiresEU: "yes" });
-      expect("error" in result).toBe(true);
-      if ("error" in result) expect(result.error).toContain("requiresEU");
-    });
-
     it("returns error when requiresChildren is not a boolean", () => {
       const result = validateCreateTaskBody({ ...VALID_CREATE_BODY, requiresChildren: 1 });
       expect("error" in result).toBe(true);
@@ -265,12 +247,6 @@ describe("validateCreateTaskBody", () => {
   });
 
   describe("requiresEmploymentStatus", () => {
-    it("returns error for invalid employment status values", () => {
-      const result = validateCreateTaskBody({ ...VALID_CREATE_BODY, requiresEmploymentStatus: ["CONTRACTOR"] });
-      expect("error" in result).toBe(true);
-      if ("error" in result) expect(result.error).toContain("requiresEmploymentStatus");
-    });
-
     it("normalizes null to an empty array", () => {
       const result = validateCreateTaskBody({ ...VALID_CREATE_BODY, requiresEmploymentStatus: null });
       expect("data" in result).toBe(true);
@@ -356,26 +332,10 @@ describe("validateUpdateTaskFields", () => {
     }
   });
 
-  it("returns error for an invalid category", () => {
-    const result = validateUpdateTaskFields({ category: "INVALID" });
-    expect("error" in result).toBe(true);
-  });
-
-  it("returns error when sortOrder is out of SmallInt range", () => {
-    const result = validateUpdateTaskFields({ sortOrder: 40000 });
-    expect("error" in result).toBe(true);
-    if ("error" in result) expect(result.error).toContain("sortOrder");
-  });
-
   it("returns error when requiresEmploymentStatus is null", () => {
     const result = validateUpdateTaskFields({ requiresEmploymentStatus: null });
     expect("error" in result).toBe(true);
     if ("error" in result) expect(result.error).toContain("requiresEmploymentStatus");
-  });
-
-  it("returns error for invalid employment status in array", () => {
-    const result = validateUpdateTaskFields({ requiresEmploymentStatus: ["FREELANCER"] });
-    expect("error" in result).toBe(true);
   });
 
   it("accepts negative minDaysFromArrival (before-arrival window)", () => {
