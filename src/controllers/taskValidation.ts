@@ -48,7 +48,7 @@ export const TASK_UPDATABLE_FIELDS = new Set([
  * Validates that a value is a non-empty string within the given max length.
  * Returns an error message on failure, or null on success.
  */
-export const validateStringField = (
+const validateStringField = (
   name: string,
   value: unknown,
   maxLength: number,
@@ -66,7 +66,7 @@ export const validateStringField = (
  * Validates that a value is an integer within [min, max].
  * Returns an error message on failure, or null on success.
  */
-export const validateIntegerField = (
+const validateIntegerField = (
   name: string,
   value: unknown,
   min: number,
@@ -83,33 +83,33 @@ export const validateIntegerField = (
 // Shared by both validateCreateTaskBody and validateUpdateTaskFields.
 // ──────────────────────────────────────────────
 
-export const validateTaskSlug = (v: unknown): string | null =>
+const validateTaskSlug = (v: unknown): string | null =>
   validateStringField("slug", v, SLUG_MAX_LENGTH);
 
-export const validateTaskTitle = (v: unknown): string | null =>
+const validateTaskTitle = (v: unknown): string | null =>
   validateStringField("title", v, TITLE_MAX_LENGTH);
 
-export const validateTaskShortDescription = (v: unknown): string | null =>
+const validateTaskShortDescription = (v: unknown): string | null =>
   validateStringField("shortDescription", v, SHORT_DESCRIPTION_MAX_LENGTH);
 
-export const validateTaskBody = (v: unknown): string | null =>
+const validateTaskBody = (v: unknown): string | null =>
   validateStringField("body", v, BODY_MAX_LENGTH);
 
-export const validateTaskCategory = (v: unknown): string | null => {
+const validateTaskCategory = (v: unknown): string | null => {
   if (typeof v !== "string" || !VALID_TASK_CATEGORIES.has(v)) {
     return `Invalid category. Must be one of: ${[...VALID_TASK_CATEGORIES].join(", ")}`;
   }
   return null;
 };
 
-export const validateTaskSortOrder = (v: unknown): string | null =>
+const validateTaskSortOrder = (v: unknown): string | null =>
   validateIntegerField("sortOrder", v, SORT_ORDER_MIN, SORT_ORDER_MAX);
 
 /**
  * Validates an optional boolean-or-null field (requiresEU, requiresChildren).
  * undefined is accepted (field not provided); null is accepted (explicit null).
  */
-export const validateTaskBooleanNullField = (name: string, v: unknown): string | null => {
+const validateTaskBooleanNullField = (name: string, v: unknown): string | null => {
   if (v !== undefined && v !== null && typeof v !== "boolean") {
     return `${name} must be a boolean or null`;
   }
@@ -120,7 +120,7 @@ export const validateTaskBooleanNullField = (name: string, v: unknown): string |
  * Validates an optional SmallInt days-from-arrival field.
  * Allows negative values (before arrival). null/undefined are accepted.
  */
-export const validateTaskDaysFromArrivalField = (name: string, v: unknown): string | null => {
+const validateTaskDaysFromArrivalField = (name: string, v: unknown): string | null => {
   if (v === undefined || v === null) return null;
   const err = validateIntegerField(name, v, DAYS_FROM_ARRIVAL_MIN, DAYS_FROM_ARRIVAL_MAX);
   return err ? `${err} or null` : null;
@@ -130,7 +130,7 @@ export const validateTaskDaysFromArrivalField = (name: string, v: unknown): stri
  * Validates an array of employment status values.
  * The array itself must already be confirmed to be an array before calling.
  */
-export const validateTaskEmploymentStatusArray = (v: unknown[]): string | null => {
+const validateTaskEmploymentStatusArray = (v: unknown[]): string | null => {
   if (!v.every((s: unknown) => typeof s === "string" && VALID_EMPLOYMENT_STATUSES.has(s as string))) {
     return "requiresEmploymentStatus must be an array of valid employment status values";
   }
