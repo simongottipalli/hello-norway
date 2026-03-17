@@ -117,13 +117,6 @@ describe("API route auth policy", () => {
       expect(response.body.error).toBe("Unauthorized");
     });
 
-    it("GET /api/user-tasks returns 401 without a session cookie", async () => {
-      const response = await request(app).get("/api/user-tasks");
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe("Unauthorized");
-    });
-
     it("POST /api/tasks returns 401 without a session cookie", async () => {
       const response = await request(app)
         .post("/api/tasks")

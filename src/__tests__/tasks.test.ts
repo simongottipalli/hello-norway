@@ -51,7 +51,7 @@ describe("Task API", () => {
     });
   });
 
-  describe("GET /api/user-tasks", () => {
+  describe("GET /api/tasks/personalized", () => {
     it("should return only assigned user tasks for the authenticated user", async () => {
       await prisma.user.upsert({
         where: { id: authUserId },
