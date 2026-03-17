@@ -203,17 +203,9 @@ let otpServiceInstance: OtpService | null = null;
 
 function getOtpServiceInstance(): OtpService {
   if (!otpServiceInstance) {
-    // Lazy load email service for backward compatibility
-    // In production, prefer calling initializeOtpService() during startup
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { emailService } = require('./email');
-      otpServiceInstance = new OtpService(emailService);
-    } catch {
-      throw new Error(
-        'OTP service not initialized. Call initializeOtpService() with an EmailService instance during application startup.'
-      );
-    }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { emailService } = require('./email');
+    otpServiceInstance = new OtpService(emailService);
   }
   return otpServiceInstance;
 }

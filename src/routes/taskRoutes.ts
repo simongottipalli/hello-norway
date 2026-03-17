@@ -5,7 +5,6 @@ const router = Router();
 
 router.get("/tasks", getAllTasks);
 router.get("/tasks/personalized", getUserTasks);
-router.get("/user-tasks", getUserTasks);
 router.get("/tasks/:id", getTaskById);
 router.post("/tasks", createTask);
 router.patch("/tasks/:id/status", updateTaskStatus);

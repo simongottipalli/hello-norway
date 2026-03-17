@@ -72,7 +72,7 @@ export default function DashboardPage() {
     const completedTasks = tasks.filter((task) => task.status === "DONE").length;
     const inProgressTasks = tasks.filter((task) => task.status === "SAVED").length;
     const todoTasks = tasks.filter((task) => task.status === "TODO").length;
-    
+
     return {
       total: totalTasks,
       completed: completedTasks,
@@ -240,8 +240,8 @@ export default function DashboardPage() {
                             Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                           </p>
                         </div>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => setSelectedTaskId(task.id)}
                         >
@@ -290,8 +290,8 @@ export default function DashboardPage() {
                             Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
                           </p>
                         </div>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => setSelectedTaskId(task.id)}
                         >
@@ -370,7 +370,7 @@ export default function DashboardPage() {
                                 task.status === "DONE"
                                   ? "default"
                                   : task.status === "SAVED"
-                                    ? "default"
+                                    ? "secondary"
                                     : "outline"
                               }
                               className="text-xs"
@@ -402,9 +402,9 @@ export default function DashboardPage() {
                               Due: {formatDueDateWithTimezone(task.dueDate)}
                             </p>
                           )}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="w-full"
                             onClick={() => setSelectedTaskId(task.id)}
                           >

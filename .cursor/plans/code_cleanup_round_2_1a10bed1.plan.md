@@ -49,22 +49,22 @@ todos:
     status: pending
   - id: dead-userTasksRoute
     content: Remove GET /user-tasks legacy alias from src/routes/taskRoutes.ts
-    status: pending
+    status: completed
   - id: dead-undefinedGuards
     content: Remove always-true !== undefined guards on number|null values in taskValidation.ts ~line 370
-    status: pending
+    status: completed
   - id: dead-badgeVariant
     content: Fix DONE/SAVED badge variant in dashboard/page.tsx — give SAVED a distinct variant
-    status: pending
+    status: completed
   - id: dead-isAuthenticated
     content: Remove unreachable isAuthenticated branch on src/app/page.tsx landing page
-    status: pending
+    status: completed
   - id: dead-otpCatch
     content: Remove unreachable catch block in otpService.ts getOtpServiceInstance lazy-load
-    status: pending
+    status: completed
   - id: dead-taskId
     content: Either wire up taskId query param in dashboard/page.tsx or simplify the tasks/[id] redirect to plain /dashboard
-    status: pending
+    status: completed
   - id: test-assignmentService
     content: Delete src/__tests__/taskAssignmentService.test.ts (superseded by integration tests)
     status: pending

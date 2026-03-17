@@ -367,8 +367,6 @@ export function validateDaysFromArrivalRange(
   if (
     effectiveMin !== null &&
     effectiveMax !== null &&
-    effectiveMin !== undefined &&
-    effectiveMax !== undefined &&
     effectiveMax < effectiveMin
   ) {
     return "maxDaysFromArrival must be greater than or equal to minDaysFromArrival";
