@@ -177,7 +177,7 @@ function LoginForm() {
           if (redirectPath && isSafeRedirectPath(redirectPath)) {
             router.push(redirectPath);
           } else if (fromOnboarding) {
-            router.push("/tasks");
+            router.push("/dashboard");
           } else {
             router.push("/dashboard");
           }

@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   validateCreateTaskBody,
-  validateUpdateTaskFields,
-  validateDaysFromArrivalRange,
   SLUG_MAX_LENGTH,
   TITLE_MAX_LENGTH,
   SHORT_DESCRIPTION_MAX_LENGTH,
@@ -173,92 +171,5 @@ describe("validateCreateTaskBody", () => {
         expect(result.data.requiresEmploymentStatus).toEqual([]);
       }
     });
-  });
-});
-
-// ──────────────────────────────────────────────
-// validateUpdateTaskFields
-// ──────────────────────────────────────────────
-
-describe("validateUpdateTaskFields", () => {
-  it("returns error for a non-object body", () => {
-    const result = validateUpdateTaskFields(null);
-    expect("error" in result).toBe(true);
-    if ("error" in result) expect(result.error).toContain("JSON object");
-  });
-
-  it("returns error when no valid fields are present", () => {
-    const result = validateUpdateTaskFields({ id: "hack", createdByUserId: "attacker" });
-    expect("error" in result).toBe(true);
-    if ("error" in result) expect(result.error).toContain("No valid fields");
-  });
-
-  it("strips system fields from the update payload", () => {
-    const result = validateUpdateTaskFields({ title: "New Title", id: "hacked", createdByUserId: "attacker" });
-    expect("data" in result).toBe(true);
-    if ("data" in result) {
-      expect(result.data).toHaveProperty("title", "New Title");
-      expect(result.data).not.toHaveProperty("id");
-      expect(result.data).not.toHaveProperty("createdByUserId");
-    }
-  });
-
-  it("returns error when requiresEmploymentStatus is null", () => {
-    const result = validateUpdateTaskFields({ requiresEmploymentStatus: null });
-    expect("error" in result).toBe(true);
-    if ("error" in result) expect(result.error).toContain("requiresEmploymentStatus");
-  });
-
-  it("returns a cleaned data object for a valid partial update", () => {
-    const result = validateUpdateTaskFields({ title: "Updated", sortOrder: 5 });
-    expect("data" in result).toBe(true);
-    if ("data" in result) {
-      expect(result.data).toEqual({ title: "Updated", sortOrder: 5 });
-    }
-  });
-});
-
-// ──────────────────────────────────────────────
-// validateDaysFromArrivalRange
-// ──────────────────────────────────────────────
-
-describe("validateDaysFromArrivalRange", () => {
-  it("returns null when both effective values are null", () => {
-    expect(validateDaysFromArrivalRange({}, null, null)).toBeNull();
-  });
-
-  it("returns null when effective max >= effective min", () => {
-    expect(validateDaysFromArrivalRange({ minDaysFromArrival: 5, maxDaysFromArrival: 10 }, null, null)).toBeNull();
-  });
-
-  it("returns error when effective max < effective min (both from payload)", () => {
-    const result = validateDaysFromArrivalRange({ minDaysFromArrival: 10, maxDaysFromArrival: 5 }, null, null);
-    expect(result).not.toBeNull();
-    expect(result).toContain("maxDaysFromArrival");
-  });
-
-  it("uses existing DB min when only max is being updated", () => {
-    // Existing min = 10, updating max to 5 → violation
-    const result = validateDaysFromArrivalRange({ maxDaysFromArrival: 5 }, 10, 20);
-    expect(result).not.toBeNull();
-  });
-
-  it("uses existing DB max when only min is being updated", () => {
-    // Existing max = 5, updating min to 10 → violation
-    const result = validateDaysFromArrivalRange({ minDaysFromArrival: 10 }, 1, 5);
-    expect(result).not.toBeNull();
-  });
-
-  it("returns null when one side is null (constraint not applicable)", () => {
-    expect(validateDaysFromArrivalRange({ minDaysFromArrival: null }, null, 20)).toBeNull();
-    expect(validateDaysFromArrivalRange({ maxDaysFromArrival: null }, 5, null)).toBeNull();
-  });
-
-  it("works correctly with negative before-arrival values", () => {
-    // min = -30, max = -5 → valid
-    expect(validateDaysFromArrivalRange({ minDaysFromArrival: -30, maxDaysFromArrival: -5 }, null, null)).toBeNull();
-    // min = -5, max = -30 → violation
-    const result = validateDaysFromArrivalRange({ minDaysFromArrival: -5, maxDaysFromArrival: -30 }, null, null);
-    expect(result).not.toBeNull();
   });
 });

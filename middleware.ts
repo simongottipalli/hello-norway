@@ -12,8 +12,8 @@ export async function middleware(request: NextRequest) {
   const authOnlyPaths = ["/login"];
 
   // Protected routes that require authentication
-  // Exact match or any sub-path (e.g. /tasks protects /tasks/123 but not /tasks-review)
-  const protectedPaths = ["/dashboard", "/tasks", "/profile"];
+  // Exact match or any sub-path (e.g. /profile protects /profile/edit but not /profiles)
+  const protectedPaths = ["/dashboard", "/profile"];
 
   // Allow static files and API routes to pass through
   if (

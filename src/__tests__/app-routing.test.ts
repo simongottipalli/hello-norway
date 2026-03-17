@@ -24,16 +24,12 @@ vi.mock("../repo/sessionRepo", () => ({
 
 vi.mock("../repo/taskRepo", () => ({
   findOnboardingPreviewTasks: vi.fn().mockResolvedValue([]),
-  findAllSystemTasks: vi.fn(),
   findUserTasksWithTask: vi.fn(),
   findTaskById: vi.fn(),
-  findTaskOwnership: vi.fn(),
   findOwnedOrSystemTask: vi.fn(),
   createTask: vi.fn(),
   createUserTaskAssignment: vi.fn(),
-  updateTask: vi.fn(),
   upsertUserTaskStatus: vi.fn(),
-  deleteTask: vi.fn(),
 }));
 
 // Stub otpService so public-route tests don't trigger real email/DB calls.
@@ -114,13 +110,6 @@ describe("API route auth policy", () => {
   });
 
   describe("Protected routes — require a valid session cookie", () => {
-    it("GET /api/tasks returns 401 without a session cookie", async () => {
-      const response = await request(app).get("/api/tasks");
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe("Unauthorized");
-    });
-
     it("GET /api/tasks/personalized returns 401 without a session cookie", async () => {
       const response = await request(app).get("/api/tasks/personalized");
 
@@ -145,30 +134,11 @@ describe("API route auth policy", () => {
       expect(response.body.error).toBe("Unauthorized");
     });
 
-    it("PATCH /api/tasks/:id returns 401 without a session cookie", async () => {
-      const response = await request(app)
-        .patch("/api/tasks/00000000-0000-0000-0000-000000000000")
-        .send({ title: "Updated" })
-        .set("Content-Type", "application/json");
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe("Unauthorized");
-    });
-
     it("PATCH /api/tasks/:id/status returns 401 without a session cookie", async () => {
       const response = await request(app)
         .patch("/api/tasks/00000000-0000-0000-0000-000000000000/status")
         .send({ status: "DONE" })
         .set("Content-Type", "application/json");
-
-      expect(response.status).toBe(401);
-      expect(response.body.error).toBe("Unauthorized");
-    });
-
-    it("DELETE /api/tasks/:id returns 401 without a session cookie", async () => {
-      const response = await request(app).delete(
-        "/api/tasks/00000000-0000-0000-0000-000000000000"
-      );
 
       expect(response.status).toBe(401);
       expect(response.body.error).toBe("Unauthorized");
