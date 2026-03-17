@@ -58,11 +58,31 @@ test.describe('Dashboard Left Panel', () => {
 
     await page.goto('/dashboard');
 
-    // Verify the "All Tasks" link is visible in the sidebar and points to the dashboard
+    // Verify the "All Tasks" button is visible in the sidebar
     const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
-    const allTasksLink = sidebar.getByRole('link', { name: 'All Tasks' });
-    await expect(allTasksLink).toBeVisible();
-    await expect(allTasksLink).toHaveAttribute('href', '/dashboard');
+    const allTasksButton = sidebar.getByRole('button', { name: 'All Tasks' });
+    await expect(allTasksButton).toBeVisible();
+  });
+
+  test('should reset filters when clicking all tasks from quick actions', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+
+    // Apply a status filter first
+    const statusFilter = page.getByLabel('Filter by Status');
+    await statusFilter.selectOption('TODO');
+    await expect(statusFilter).toHaveValue('TODO');
+
+    // Click "All Tasks" in the sidebar
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    await sidebar.getByRole('button', { name: 'All Tasks' }).click();
+
+    // Filters should be reset to "ALL"
+    await expect(statusFilter).toHaveValue('ALL');
+    const categoryFilter = page.getByLabel('Filter by Category');
+    await expect(categoryFilter).toHaveValue('ALL');
   });
 
   test('should navigate to profile from quick actions', async ({ page }) => {
