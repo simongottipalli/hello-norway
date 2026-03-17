@@ -1,13 +1,10 @@
 import { Router } from "express";
 import type { EmploymentStatus } from "../generated/prisma/client.js";
 import { authenticateSession } from "../middleware/authMiddleware";
-import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
-import { getRelevantTaskWhere, syncUserTaskAssignments } from "../services/taskAssignmentService";
 import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
-import * as taskRepo from "../repo/taskRepo";
-import * as userRepo from "../repo/userRepo";
-import * as sessionRepo from "../repo/sessionRepo";
+import * as authService from "../services/authService";
+import * as onboardingService from "../services/onboardingService";
 
 const router = Router();
 const EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
@@ -112,22 +109,8 @@ router.post("/onboarding/tasks", async (req, res) => {
     return res.status(parsed.error.status).json(parsed.error.body);
   }
 
-  const { isEU, hasChildren, employmentStatus, arrivalDate, plannedArrivalDate } = parsed.value;
-
   try {
-    const tasks = await taskRepo.findOnboardingPreviewTasks(
-      getRelevantTaskWhere(
-        {
-          id: "onboarding-preview",
-          isEU,
-          hasChildren,
-          employmentStatus,
-          arrivalDate,
-          plannedArrivalDate,
-        },
-        new Date(),
-      ),
-    );
+    const tasks = await onboardingService.getTaskPreview(parsed.value);
 
     return res.status(200).json(tasks);
   } catch (error: unknown) {
@@ -148,13 +131,13 @@ router.get("/auth/session", authenticateSession, (req, res) => {
 
 router.get("/auth/profile", authenticateSession, async (req, res) => {
   try {
-    const user = await userRepo.findUserById(req.user!.id);
+    const result = await authService.getProfile(req.user!.id);
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (!result.success) {
+      return res.status(result.statusCode ?? 404).json({ error: result.error });
     }
 
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: result.data });
   } catch (error: unknown) {
     logger.error({ err: error, userId: req.user!.id, msg: "Failed to fetch profile" });
     return res.status(500).json({ error: "Failed to fetch profile" });
@@ -202,29 +185,16 @@ router.patch("/auth/profile", authenticateSession, async (req, res) => {
   }
 
   try {
-    const updatedUser = await prisma.$transaction(async (tx) => {
-      const user = await userRepo.updateUserProfile(
-        req.user!.id,
-        {
-          ...(name !== undefined ? { name: name.trim() } : {}),
-          ...(isEU !== undefined ? { isEU } : {}),
-          ...(hasChildren !== undefined ? { hasChildren } : {}),
-          ...(employmentStatus !== undefined ? { employmentStatus } : {}),
-          ...(arrivalDate !== undefined ? { arrivalDate: parsedArrivalDate } : {}),
-          ...(plannedArrivalDate !== undefined ? { plannedArrivalDate: parsedPlannedArrivalDate } : {}),
-        },
-        tx,
-      );
-
-      await syncUserTaskAssignments(user, {
-        removeOutdatedTodoAssignments: true,
-        db: tx,
-      });
-
-      return user;
+    const result = await authService.updateProfile(req.user!.id, {
+      ...(name !== undefined ? { name: name.trim() } : {}),
+      ...(isEU !== undefined ? { isEU } : {}),
+      ...(hasChildren !== undefined ? { hasChildren } : {}),
+      ...(employmentStatus !== undefined ? { employmentStatus } : {}),
+      ...(arrivalDate !== undefined ? { arrivalDate: parsedArrivalDate } : {}),
+      ...(plannedArrivalDate !== undefined ? { plannedArrivalDate: parsedPlannedArrivalDate } : {}),
     });
 
-    return res.status(200).json({ success: true, user: updatedUser });
+    return res.status(200).json({ success: true, user: result.data });
   } catch (error: unknown) {
     logger.error({ err: error, userId: req.user!.id, msg: "Failed to update profile" });
     return res.status(500).json({ error: "Failed to update profile" });
@@ -235,9 +205,7 @@ router.post("/auth/logout", async (req, res) => {
   const sessionToken = req.cookies.session_token;
 
   try {
-    if (sessionToken) {
-      await sessionRepo.deleteSessionByToken(sessionToken);
-    }
+    await authService.logout(sessionToken);
 
     return res.status(200).json({ success: true });
   } catch (error: unknown) {
@@ -251,16 +219,7 @@ router.delete("/auth/profile", authenticateSession, async (req, res) => {
   const userEmail = req.user!.email;
 
   try {
-    await prisma.$transaction(async (tx) => {
-      // Delete all user sessions
-      await sessionRepo.deleteUserSessions(userId, tx);
-
-      // Delete all user tasks (cascade will handle this, but explicit for clarity)
-      await userRepo.deleteUserTasks(userId, tx);
-
-      // Delete the user (this will also cascade delete sessions and userTasks due to schema)
-      await userRepo.deleteUser(userId, tx);
-    });
+    await authService.deleteProfile(userId);
 
     logger.info({ userId, email: userEmail, msg: "User profile deleted successfully" });
     return res.status(200).json({ success: true });
