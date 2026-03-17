@@ -227,7 +227,7 @@ describe("Task API", () => {
           },
         });
 
-        const response = await request(app).get("/api/user-tasks");
+        const response = await request(app).get("/api/tasks/personalized");
         const taskIds = response.body.map((task: { id: string }) => task.id);
         const assignedResponseTask = response.body.find((task: { id: string }) => task.id === assignedTask.id);
 
