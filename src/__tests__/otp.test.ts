@@ -79,7 +79,6 @@ describe("OTP API", () => {
     // Create mock email service
     mockEmailService = {
       sendEmail: vi.fn(),
-      validateConfig: vi.fn(),
     } as unknown as EmailService;
 
     otpService = new OtpService(mockEmailService);

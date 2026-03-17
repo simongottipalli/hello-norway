@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma";
 
 type UserDb = Pick<typeof prisma, "user" | "userTask">;
 
-const PROFILE_SELECT = {
+export const PROFILE_SELECT = {
   id: true,
   email: true,
   name: true,

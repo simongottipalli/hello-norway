@@ -4,7 +4,7 @@ import {
   createEmailService,
   createEmailServiceFromEnv,
 } from '../../../services/email/emailService';
-import type { EmailProvider, EmailResult } from '../../../services/email/types';
+import type { EmailOptions, EmailProvider, EmailResult } from '../../../services/email/types';
 
 describe('EmailService', () => {
   let mockProvider: EmailProvider;
