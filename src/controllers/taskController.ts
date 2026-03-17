@@ -7,6 +7,7 @@ import {
   validateUpdateTaskFields,
   validateDaysFromArrivalRange,
 } from "./taskValidation";
+import * as taskRepo from "../repo/taskRepo";
 
 const STATUS_ALIAS_MAP: Record<string, UserTaskStatus> = {
   // Canonical API values:
@@ -28,10 +29,7 @@ const isOwnedByAnotherUser = (createdByUserId: string | null, userId: string): b
 
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
-    const tasks = await prisma.task.findMany({
-      where: { createdByUserId: null },
-      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-    });
+    const tasks = await taskRepo.findAllSystemTasks();
 
     req.logger.info({ msg: 'Fetched all tasks', count: tasks.length });
     res.json(tasks);
@@ -43,11 +41,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
 
 export const getUserTasks = async (req: Request, res: Response) => {
   try {
-    const assignedUserTasks = await prisma.userTask.findMany({
-      where: { userId: req.user!.id },
-      include: { task: true },
-      orderBy: [{ task: { category: "asc" } }, { task: { sortOrder: "asc" } }],
-    });
+    const assignedUserTasks = await taskRepo.findUserTasksWithTask(req.user!.id);
 
     const tasks = assignedUserTasks.map(({ task, id, status, dueDate, personalNotes, completedAt }) => ({
       ...task,
@@ -70,9 +64,7 @@ export const getTaskById = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-    const task = await prisma.task.findUnique({
-      where: { id },
-    });
+    const task = await taskRepo.findTaskById(id);
 
     if (!task) {
       req.logger.info({ msg: 'Task not found', taskId: id });
@@ -112,8 +104,8 @@ export const createTask = async (req: Request, res: Response) => {
     } = validation.data;
 
     const task = await prisma.$transaction(async (tx) => {
-      const createdTask = await tx.task.create({
-        data: {
+      const createdTask = await taskRepo.createTask(
+        {
           slug,
           title,
           shortDescription,
@@ -128,16 +120,11 @@ export const createTask = async (req: Request, res: Response) => {
           maxDaysFromArrival,
           createdByUserId: req.user!.id,
         },
-      });
+        tx,
+      );
 
       // Auto-assign the newly created task to its creator
-      await tx.userTask.create({
-        data: {
-          userId: req.user!.id,
-          taskId: createdTask.id,
-          status: UserTaskStatus.TODO,
-        },
-      });
+      await taskRepo.createUserTaskAssignment(req.user!.id, createdTask.id, tx);
 
       return createdTask;
     });
@@ -177,10 +164,7 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const updateData = validation.data;
 
-    const existing = await prisma.task.findUnique({
-      where: { id },
-      select: { createdByUserId: true, minDaysFromArrival: true, maxDaysFromArrival: true },
-    });
+    const existing = await taskRepo.findTaskOwnership(id);
 
     if (!existing) {
       req.logger.info({ msg: 'Task not found', taskId: id });
@@ -203,10 +187,7 @@ export const updateTask = async (req: Request, res: Response) => {
       return res.status(400).json({ error: rangeError });
     }
 
-    const task = await prisma.task.update({
-      where: { id },
-      data: updateData,
-    });
+    const task = await taskRepo.updateTask(id, updateData);
 
     req.logger.info({ msg: 'Task updated', taskId: id });
     res.json(task);
@@ -283,44 +264,23 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid personalNotes. 'personalNotes' must be a string or null" });
     }
 
-    const task = await prisma.task.findFirst({
-      where: {
-        id,
-        OR: [
-          { createdByUserId: null },
-          { createdByUserId: req.user!.id },
-        ],
-      },
-      select: { id: true },
-    });
+    const task = await taskRepo.findOwnedOrSystemTask(id, req.user!.id);
 
     if (!task) {
       req.logger.info({ msg: 'Task not found', taskId: id });
       return res.status(404).json({ error: "Task not found" });
     }
 
-    const userTask = await prisma.userTask.upsert({
-      where: {
-        userId_taskId: {
-          userId: req.user!.id,
-          taskId: id,
-        },
-      },
-      update: {
+    const userTask = await taskRepo.upsertUserTaskStatus(
+      req.user!.id,
+      id,
+      {
         status,
-        ...(rawPersonalNotes !== undefined ? { personalNotes: rawPersonalNotes } : {}),
+        personalNotes: rawPersonalNotes,
         completedAt: status === UserTaskStatus.DONE ? new Date() : null,
-        ...(dueDate !== undefined ? { dueDate } : {}),
+        dueDate,
       },
-      create: {
-        userId: req.user!.id,
-        taskId: id,
-        status,
-        personalNotes: rawPersonalNotes ?? null,
-        completedAt: status === UserTaskStatus.DONE ? new Date() : null,
-        ...(dueDate !== undefined ? { dueDate } : {}),
-      },
-    });
+    );
 
     req.logger.info({ msg: 'User task status updated', taskId: id, status, userId: req.user!.id });
     return res.json(userTask);
@@ -338,10 +298,7 @@ export const deleteTask = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-    const existing = await prisma.task.findUnique({
-      where: { id },
-      select: { createdByUserId: true },
-    });
+    const existing = await taskRepo.findTaskOwnership(id);
 
     if (!existing) {
       req.logger.info({ msg: 'Task not found', taskId: id });
@@ -355,9 +312,7 @@ export const deleteTask = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    await prisma.task.delete({
-      where: { id },
-    });
+    await taskRepo.deleteTask(id);
 
     req.logger.info({ msg: 'Task deleted', taskId: id });
     res.status(204).send();

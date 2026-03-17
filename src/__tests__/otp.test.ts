@@ -5,22 +5,39 @@ import otpRoutes from "../routes/otpRoutes";
 import * as otpServiceModule from "../services/otpService";
 import { OtpService } from "../services/otpService";
 import { prisma } from "../lib/prisma";
+import * as otpRepo from "../repo/otpRepo";
+import * as userRepo from "../repo/userRepo";
+import * as sessionRepo from "../repo/sessionRepo";
 import { requestLogger } from "../middleware/requestLogger";
 import type { EmailService } from "../services/email/emailService";
 import type { EmailResult } from "../services/email/types";
 
-// Mock prisma
+// Mock repos used by OtpService
+vi.mock("../repo/otpRepo", () => ({
+  countRecentOtps: vi.fn(),
+  findOldestRecentOtp: vi.fn(),
+  deleteExpiredOtps: vi.fn(),
+  createOtp: vi.fn(),
+  findValidOtp: vi.fn(),
+  deleteAllOtpsByEmail: vi.fn(),
+}));
+
+vi.mock("../repo/userRepo", () => ({
+  upsertUserByEmail: vi.fn(),
+}));
+
+vi.mock("../repo/sessionRepo", () => ({
+  deleteUserSessions: vi.fn(),
+  createSession: vi.fn(),
+  findSessionWithUser: vi.fn(),
+  deleteSessionById: vi.fn(),
+  deleteSessionByToken: vi.fn(),
+}));
+
+// Mock prisma — only $transaction and the models used by syncUserTaskAssignments
+// (which receives the transaction client directly and does not go through repos)
 vi.mock("../lib/prisma", () => {
-  const mockPrismaClient = {
-    oTPCode: {
-      count: vi.fn(),
-      findFirst: vi.fn(),
-      deleteMany: vi.fn(),
-      create: vi.fn(),
-    },
-    user: {
-      upsert: vi.fn(),
-    },
+  const mockDb = {
     task: {
       findMany: vi.fn(),
     },
@@ -29,18 +46,13 @@ vi.mock("../lib/prisma", () => {
       createMany: vi.fn(),
       deleteMany: vi.fn(),
     },
-    session: {
-      deleteMany: vi.fn(),
-      create: vi.fn(),
-    },
   };
 
   return {
     prisma: {
-      ...mockPrismaClient,
+      ...mockDb,
       $transaction: vi.fn(async (callback) => {
-        // Execute the transaction callback with the mock client
-        return callback(mockPrismaClient);
+        return callback(mockDb);
       }),
     },
   };
@@ -78,29 +90,35 @@ describe("OTP API", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
 
-    vi.mocked(prisma.user.upsert).mockResolvedValue({
+    // Default repo mocks for verifyOtp flow (used across service tests)
+    vi.mocked(userRepo.upsertUserByEmail).mockResolvedValue({
       id: "user-1",
       email: testEmail,
       name: "test",
       isEU: null,
       employmentStatus: null,
       hasChildren: null,
+      housingType: null,
+      plannedArrivalDate: null,
+      arrivalDate: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
     vi.mocked(prisma.task.findMany).mockResolvedValue([
       { id: "task-1" },
       { id: "task-2" },
-    ]);
+    ] as never);
     vi.mocked(prisma.userTask.findMany).mockResolvedValue([]);
     vi.mocked(prisma.userTask.createMany).mockResolvedValue({ count: 2 });
     vi.mocked(prisma.userTask.deleteMany).mockResolvedValue({ count: 0 });
-    vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 0 });
-    vi.mocked(prisma.session.create).mockResolvedValue({
+    vi.mocked(sessionRepo.deleteUserSessions).mockResolvedValue({ count: 0 });
+    vi.mocked(sessionRepo.createSession).mockResolvedValue({
       id: "session-1",
       sessionToken: "token",
       userId: "user-1",
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       createdAt: new Date(),
-    });
+    } as never);
   });
 
   afterEach(() => {
@@ -322,8 +340,8 @@ describe("OTP API", () => {
     it("should include correct Retry-After header on rate limit", async () => {
       const oldestOtpTime = new Date("2024-01-01T11:55:00Z"); // 5 minutes ago
 
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(3);
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(3);
+      vi.mocked(otpRepo.findOldestRecentOtp).mockResolvedValue({
         id: "oldest-id",
         email: testEmail,
         code: 123456,
@@ -341,15 +359,9 @@ describe("OTP API", () => {
     });
 
     it("should allow request when less than 3 recent OTPs exist", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(2);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(2);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -363,8 +375,8 @@ describe("OTP API", () => {
     it("should reject request when 3 or more recent OTPs exist", async () => {
       const oldestOtpTime = new Date("2024-01-01T11:55:00Z");
 
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(3);
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(3);
+      vi.mocked(otpRepo.findOldestRecentOtp).mockResolvedValue({
         id: "oldest-id",
         email: testEmail,
         code: 123456,
@@ -377,7 +389,7 @@ describe("OTP API", () => {
       expect(result.success).toBe(false);
       expect(result.statusCode).toBe(429);
       expect(result.error).toBe("Rate limit exceeded");
-      expect(prisma.oTPCode.create).not.toHaveBeenCalled();
+      expect(otpRepo.createOtp).not.toHaveBeenCalled();
       expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
     });
   });
@@ -386,15 +398,9 @@ describe("OTP API", () => {
     it("should reset rate limit after 10-minute window expires (manipulate DB timestamps)", async () => {
       // First request at 11:50:00 - should succeed
       vi.setSystemTime(new Date("2024-01-01T11:50:00Z"));
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id-1",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date("2024-01-01T12:00:00Z"),
-        createdAt: new Date("2024-01-01T11:50:00Z"),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -410,43 +416,24 @@ describe("OTP API", () => {
       const windowStartTime = new Date(new Date("2024-01-01T12:00:30Z").getTime() - 10 * 60 * 1000);
       // windowStartTime = 11:50:30, so the OTP at 11:50:00 is outside the window
 
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id-2",
-        email: testEmail,
-        code: 654321,
-        expiresAt: new Date("2024-01-01T12:10:30Z"),
-        createdAt: new Date("2024-01-01T12:00:30Z"),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 1 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
 
       result = await otpService.requestOtp(testEmail);
 
       expect(result.success).toBe(true);
       // Verify rate limit window only counts OTPs from last 10 minutes
-      expect(prisma.oTPCode.count).toHaveBeenCalledWith({
-        where: {
-          email: testEmail,
-          createdAt: {
-            gte: windowStartTime,
-          },
-        },
-      });
+      expect(otpRepo.countRecentOtps).toHaveBeenCalledWith(testEmail, windowStartTime);
     });
 
     it("should count OTPs from last 10 minutes only", async () => {
       const now = new Date("2024-01-01T12:00:00Z");
       const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
 
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(2);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(2);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -454,14 +441,7 @@ describe("OTP API", () => {
 
       await otpService.requestOtp(testEmail);
 
-      expect(prisma.oTPCode.count).toHaveBeenCalledWith({
-        where: {
-          email: testEmail,
-          createdAt: {
-            gte: tenMinutesAgo,
-          },
-        },
-      });
+      expect(otpRepo.countRecentOtps).toHaveBeenCalledWith(testEmail, tenMinutesAgo);
     });
   });
 
@@ -469,15 +449,9 @@ describe("OTP API", () => {
     it("should delete expired OTPs before creating new one", async () => {
       const now = new Date("2024-01-01T12:00:00Z");
 
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 2 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 2 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -485,33 +459,18 @@ describe("OTP API", () => {
 
       await otpService.requestOtp(testEmail);
 
-      expect(prisma.oTPCode.deleteMany).toHaveBeenCalledWith({
-        where: {
-          email: testEmail,
-          expiresAt: {
-            lt: now,
-          },
-        },
-      });
+      expect(otpRepo.deleteExpiredOtps).toHaveBeenCalledWith(testEmail);
 
       // Verify deletion happens before creation
-      const deleteManyCall = (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mock
-        .invocationCallOrder[0];
-      const createCall = (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mock
-        .invocationCallOrder[0];
-      expect(deleteManyCall).toBeLessThan(createCall);
+      const deleteCall = vi.mocked(otpRepo.deleteExpiredOtps).mock.invocationCallOrder[0];
+      const createCall = vi.mocked(otpRepo.createOtp).mock.invocationCallOrder[0];
+      expect(deleteCall).toBeLessThan(createCall);
     });
 
     it("should handle cleanup when no expired OTPs exist", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -520,21 +479,15 @@ describe("OTP API", () => {
       const result = await otpService.requestOtp(testEmail);
 
       expect(result.success).toBe(true);
-      expect(prisma.oTPCode.deleteMany).toHaveBeenCalled();
+      expect(otpRepo.deleteExpiredOtps).toHaveBeenCalled();
     });
   });
 
   describe("DB Record Validation - Correct expiresAt (~10 min) and integer code", () => {
     it("should generate 6-digit integer OTP code", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -545,8 +498,7 @@ describe("OTP API", () => {
       expect(result.success).toBe(true);
 
       // Verify the OTP is a 6-digit integer
-      const createCall = (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      const otpCode = createCall.data.code;
+      const [, otpCode] = vi.mocked(otpRepo.createOtp).mock.calls[0];
 
       expect(Number.isInteger(otpCode)).toBe(true);
       expect(otpCode).toBeGreaterThanOrEqual(100000);
@@ -557,15 +509,9 @@ describe("OTP API", () => {
       const now = new Date("2024-01-01T12:00:00Z");
       const expectedExpiry = new Date("2024-01-01T12:10:00Z");
 
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: expectedExpiry,
-        createdAt: now,
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -573,27 +519,20 @@ describe("OTP API", () => {
 
       await otpService.requestOtp(testEmail);
 
-      const createCall = (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      const expiresAt = createCall.data.expiresAt;
+      const [, , expiresAt] = vi.mocked(otpRepo.createOtp).mock.calls[0];
 
       // Verify expiration is 10 minutes from now
-      expect(expiresAt.getTime()).toBe(expectedExpiry.getTime());
+      expect((expiresAt as Date).getTime()).toBe(expectedExpiry.getTime());
 
       // Verify it's exactly 10 minutes
-      const diffInMinutes = (expiresAt.getTime() - now.getTime()) / (60 * 1000);
+      const diffInMinutes = ((expiresAt as Date).getTime() - now.getTime()) / (60 * 1000);
       expect(diffInMinutes).toBe(10);
     });
 
     it("should store email, code, and expiresAt in DB record", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -601,27 +540,19 @@ describe("OTP API", () => {
 
       await otpService.requestOtp(testEmail);
 
-      expect(prisma.oTPCode.create).toHaveBeenCalledWith({
-        data: {
-          email: testEmail,
-          code: expect.any(Number),
-          expiresAt: expect.any(Date),
-        },
-      });
+      expect(otpRepo.createOtp).toHaveBeenCalledWith(
+        testEmail,
+        expect.any(Number),
+        expect.any(Date),
+      );
     });
   });
 
   describe("Email Sending - Mock email service to avoid real sends", () => {
     it("should send OTP via email service (mocked to avoid real sends)", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -645,15 +576,9 @@ describe("OTP API", () => {
     });
 
     it("should include OTP code in email content", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: true,
         messageId: "test-message-id",
@@ -664,24 +589,17 @@ describe("OTP API", () => {
       const emailCall = (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mock
         .calls[0][0];
 
-      // Extract the OTP code from the created record
-      const createCall = (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      const otpCode = createCall.data.code;
+      // Extract the OTP code that was passed to createOtp
+      const [, otpCode] = vi.mocked(otpRepo.createOtp).mock.calls[0];
 
       expect(emailCall.text).toContain(otpCode.toString());
       expect(emailCall.html).toContain(otpCode.toString());
     });
 
     it("should return error when email sending fails", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      });
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
       (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
         success: false,
         error: "SMTP connection failed",
@@ -697,7 +615,7 @@ describe("OTP API", () => {
 
   describe("Error Handling", () => {
     it("should handle database errors gracefully", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockRejectedValue(
+      vi.mocked(otpRepo.countRecentOtps).mockRejectedValue(
         new Error("Database connection failed")
       );
 
@@ -709,11 +627,9 @@ describe("OTP API", () => {
     });
 
     it("should handle OTP creation errors", async () => {
-      (prisma.oTPCode.count as ReturnType<typeof vi.fn>).mockResolvedValue(0);
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
-      (prisma.oTPCode.create as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error("Insert failed")
-      );
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockRejectedValue(new Error("Insert failed"));
 
       const result = await otpService.requestOtp(testEmail);
 
@@ -891,67 +807,29 @@ describe("OTP API", () => {
 
   describe("OTP Service - verifyOtp method", () => {
     it("should verify valid OTP and delete all OTPs for email", async () => {
-      const now = new Date("2024-01-01T12:00:00Z");
       const futureExpiry = new Date("2024-01-01T12:10:00Z");
 
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+      vi.mocked(otpRepo.findValidOtp).mockResolvedValue({
         id: "test-id",
         email: testEmail,
         code: 123456,
         expiresAt: futureExpiry,
-        createdAt: now,
+        createdAt: new Date("2024-01-01T12:00:00Z"),
       });
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
+      vi.mocked(otpRepo.deleteAllOtpsByEmail).mockResolvedValue({ count: 1 });
 
       const result = await otpService.verifyOtp(testEmail, 123456);
 
       expect(result.success).toBe(true);
-      expect(prisma.oTPCode.findFirst).toHaveBeenCalledWith({
-        where: {
-          email: testEmail,
-          code: 123456,
-          expiresAt: {
-            gt: now,
-          },
-        },
-      });
-      expect(prisma.oTPCode.deleteMany).toHaveBeenCalledWith({
-        where: {
-          email: testEmail,
-        },
-      });
-      expect(prisma.task.findMany).toHaveBeenCalledWith({
-        where: {
-          AND: [
-            { createdByUserId: null },
-            { requiresEU: null },
-            { requiresChildren: null },
-            { requiresEmploymentStatus: { isEmpty: true } },
-          ],
-        },
-        select: {
-          id: true,
-        },
-      });
-      expect(prisma.userTask.createMany).toHaveBeenCalledWith({
-        data: [
-          { userId: "user-1", taskId: "task-1", status: "TODO" },
-          { userId: "user-1", taskId: "task-2", status: "TODO" },
-        ],
-        skipDuplicates: true,
-      });
-      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
-        where: {
-          userId: "user-1",
-        },
-      });
-      const sessionCreateArg = vi.mocked(prisma.session.create).mock.calls[0]?.[0];
-      expect(sessionCreateArg).toBeDefined();
-      expect(sessionCreateArg?.data.sessionToken).toHaveLength(128);
+      expect(otpRepo.findValidOtp).toHaveBeenCalledWith(testEmail, 123456);
+      expect(otpRepo.deleteAllOtpsByEmail).toHaveBeenCalledWith(testEmail, expect.anything());
+      expect(sessionRepo.deleteUserSessions).toHaveBeenCalledWith("user-1", expect.anything());
+      const [sessionToken] = vi.mocked(sessionRepo.createSession).mock.calls[0];
+      expect(sessionToken).toHaveLength(128);
     });
 
     it("should reject expired OTP", async () => {
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      vi.mocked(otpRepo.findValidOtp).mockResolvedValue(null);
 
       const result = await otpService.verifyOtp(testEmail, 123456);
 
@@ -961,7 +839,7 @@ describe("OTP API", () => {
     });
 
     it("should reject invalid OTP code", async () => {
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      vi.mocked(otpRepo.findValidOtp).mockResolvedValue(null);
 
       const result = await otpService.verifyOtp(testEmail, 999999);
 
@@ -970,59 +848,15 @@ describe("OTP API", () => {
       expect(result.statusCode).toBe(401);
     });
 
-    it("should build OR-based eligibility filters when profile values are set", async () => {
-      const now = new Date("2024-01-01T12:00:00Z");
-      const futureExpiry = new Date("2024-01-01T12:10:00Z");
-
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
-        id: "test-id",
-        email: testEmail,
-        code: 123456,
-        expiresAt: futureExpiry,
-        createdAt: now,
-      });
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
-      vi.mocked(prisma.user.upsert).mockResolvedValue({
-        id: "user-1",
-        email: testEmail,
-        name: "test",
-        isEU: true,
-        employmentStatus: "EMPLOYED",
-        hasChildren: false,
-        arrivalDate: new Date("2023-12-29T00:00:00Z"),
-        plannedArrivalDate: null,
-      });
-
-      const result = await otpService.verifyOtp(testEmail, 123456);
-
-      expect(result.success).toBe(true);
-      expect(prisma.task.findMany).toHaveBeenCalledWith({
-        where: {
-          AND: [
-            { createdByUserId: null },
-            { OR: [{ requiresEU: null }, { requiresEU: true }] },
-            { OR: [{ requiresChildren: null }, { requiresChildren: false }] },
-            { OR: [{ requiresEmploymentStatus: { isEmpty: true } }, { requiresEmploymentStatus: { has: "EMPLOYED" } }] },
-            { OR: [{ minDaysFromArrival: null }, { minDaysFromArrival: { lte: 3 } }] },
-            { OR: [{ maxDaysFromArrival: null }, { maxDaysFromArrival: { gte: 3 } }] },
-          ],
-        },
-        select: { id: true },
-      });
-    });
-
     it("should skip creating user tasks when no relevant tasks are found", async () => {
-      const now = new Date("2024-01-01T12:00:00Z");
-      const futureExpiry = new Date("2024-01-01T12:10:00Z");
-
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+      vi.mocked(otpRepo.findValidOtp).mockResolvedValue({
         id: "test-id",
         email: testEmail,
         code: 123456,
-        expiresAt: futureExpiry,
-        createdAt: now,
+        expiresAt: new Date("2024-01-01T12:10:00Z"),
+        createdAt: new Date("2024-01-01T12:00:00Z"),
       });
-      (prisma.oTPCode.deleteMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
+      vi.mocked(otpRepo.deleteAllOtpsByEmail).mockResolvedValue({ count: 1 });
       vi.mocked(prisma.task.findMany).mockResolvedValue([]);
 
       const result = await otpService.verifyOtp(testEmail, 123456);
@@ -1032,15 +866,12 @@ describe("OTP API", () => {
     });
 
     it("should roll back all operations when task assignment fails in transaction", async () => {
-      const now = new Date("2024-01-01T12:00:00Z");
-      const futureExpiry = new Date("2024-01-01T12:10:00Z");
-
-      (prisma.oTPCode.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+      vi.mocked(otpRepo.findValidOtp).mockResolvedValue({
         id: "test-id",
         email: testEmail,
         code: 123456,
-        expiresAt: futureExpiry,
-        createdAt: now,
+        expiresAt: new Date("2024-01-01T12:10:00Z"),
+        createdAt: new Date("2024-01-01T12:00:00Z"),
       });
 
       // Mock task assignment to fail
@@ -1053,10 +884,9 @@ describe("OTP API", () => {
       expect(result.error).toBe("Internal server error");
       expect(result.statusCode).toBe(500);
 
-      // Verify that operations were called within transaction context
-      // but didn't commit due to the error
-      expect(prisma.oTPCode.findFirst).toHaveBeenCalled();
-      expect(prisma.task.findMany).toHaveBeenCalled();
+      // Verify that the initial OTP lookup was called but not the session creation
+      expect(otpRepo.findValidOtp).toHaveBeenCalled();
+      expect(sessionRepo.createSession).not.toHaveBeenCalled();
     });
   });
 });

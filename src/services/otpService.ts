@@ -3,6 +3,9 @@ import { prisma } from '../lib/prisma';
 import type { EmailService } from './email/emailService';
 import type { Logger } from '../lib/logger';
 import { syncUserTaskAssignments } from './taskAssignmentService';
+import * as otpRepo from '../repo/otpRepo';
+import * as userRepo from '../repo/userRepo';
+import * as sessionRepo from '../repo/sessionRepo';
 
 /**
  * OTP Service
@@ -48,28 +51,11 @@ export class OtpService {
       // Check rate limiting - count OTPs created in last window
       const rateLimitWindowMs = OTP_EXPIRATION_MINUTES * 60 * 1000;
       const windowStartTime = new Date(Date.now() - rateLimitWindowMs);
-      const recentOtpCount = await prisma.oTPCode.count({
-        where: {
-          email,
-          createdAt: {
-            gte: windowStartTime,
-          },
-        },
-      });
+      const recentOtpCount = await otpRepo.countRecentOtps(email, windowStartTime);
 
       if (recentOtpCount >= OTP_RATE_LIMIT_MAX_ATTEMPTS) {
         // Calculate retry after in seconds (time until oldest OTP expires)
-        const oldestOtp = await prisma.oTPCode.findFirst({
-          where: {
-            email,
-            createdAt: {
-              gte: windowStartTime,
-            },
-          },
-          orderBy: {
-            createdAt: 'asc',
-          },
-        });
+        const oldestOtp = await otpRepo.findOldestRecentOtp(email, windowStartTime);
 
         const retryAfter = oldestOtp
           ? Math.ceil((oldestOtp.createdAt.getTime() + rateLimitWindowMs - Date.now()) / 1000)
@@ -86,27 +72,14 @@ export class OtpService {
       }
 
       // Delete expired OTP records for this email
-      await prisma.oTPCode.deleteMany({
-        where: {
-          email,
-          expiresAt: {
-            lt: new Date(),
-          },
-        },
-      });
+      await otpRepo.deleteExpiredOtps(email);
 
       // Generate cryptographically secure 6-digit OTP
       const code = randomInt(OTP_MIN_VALUE, OTP_MAX_VALUE);
 
       // Store OTP with configured expiration
       const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
-      await prisma.oTPCode.create({
-        data: {
-          email,
-          code,
-          expiresAt,
-        },
-      });
+      await otpRepo.createOtp(email, code, expiresAt);
 
       logger?.info({
         msg: 'OTP generated',
@@ -164,15 +137,7 @@ export class OtpService {
   async verifyOtp(email: string, code: number, logger?: Logger): Promise<OtpServiceResult> {
     try {
       // Find valid OTP for this email
-      const otpRecord = await prisma.oTPCode.findFirst({
-        where: {
-          email,
-          code,
-          expiresAt: {
-            gt: new Date(),
-          },
-        },
-      });
+      const otpRecord = await otpRepo.findValidOtp(email, code);
 
       if (!otpRecord) {
         logger?.warn({ msg: 'Invalid or expired OTP', email });
@@ -187,40 +152,24 @@ export class OtpService {
       // If any step fails, the OTP is not consumed and the user can retry
       const result = await prisma.$transaction(async (tx) => {
         // Delete all OTP records for this email after successful verification
-        await tx.oTPCode.deleteMany({
-          where: {
-            email,
-          },
-        });
+        await otpRepo.deleteAllOtpsByEmail(email, tx);
 
-        const user = await tx.user.upsert({
-          where: { email },
-          update: {},
-          create: {
-            email,
-            name: email.split('@')[0],
-          },
-        });
+        const user = await userRepo.upsertUserByEmail(email, tx);
 
         // Sync task assignments within the transaction
         await syncUserTaskAssignments(user, { db: tx });
 
         // Clean up old sessions for this user
-        await tx.session.deleteMany({
-          where: {
-            userId: user.id,
-          },
-        });
+        await sessionRepo.deleteUserSessions(user.id, tx);
 
         // Create new session
         const sessionToken = randomBytes(SESSION_TOKEN_BYTES).toString('hex');
-        await tx.session.create({
-          data: {
-            sessionToken,
-            userId: user.id,
-            expiresAt: new Date(Date.now() + SESSION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
-          },
-        });
+        await sessionRepo.createSession(
+          sessionToken,
+          user.id,
+          new Date(Date.now() + SESSION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
+          tx,
+        );
 
         return {
           sessionToken,

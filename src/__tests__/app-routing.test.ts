@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
 import { createApp } from "../app";
-import { prisma } from "../lib/prisma";
+import * as sessionRepo from "../repo/sessionRepo";
+import * as taskRepo from "../repo/taskRepo";
 
 /**
  * Routing auth policy tests
@@ -11,19 +12,28 @@ import { prisma } from "../lib/prisma";
  * If the routing in app.ts ever regresses, these will catch it.
  */
 
-// Stub prisma so authenticateSession doesn't need a real DB connection.
-// Returning null from findUnique simulates "session not found → 401".
-vi.mock("../lib/prisma", () => ({
-  prisma: {
-    session: {
-      findUnique: vi.fn().mockResolvedValue(null),
-      delete: vi.fn(),
-      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-    },
-    task: {
-      findMany: vi.fn().mockResolvedValue([]),
-    },
-  },
+// Stub sessionRepo so authenticateSession doesn't need a real DB connection.
+// Returning null from findSessionWithUser simulates "session not found → 401".
+vi.mock("../repo/sessionRepo", () => ({
+  findSessionWithUser: vi.fn().mockResolvedValue(null),
+  deleteSessionById: vi.fn(),
+  deleteSessionByToken: vi.fn().mockResolvedValue({ count: 0 }),
+  deleteUserSessions: vi.fn(),
+  createSession: vi.fn(),
+}));
+
+vi.mock("../repo/taskRepo", () => ({
+  findOnboardingPreviewTasks: vi.fn().mockResolvedValue([]),
+  findAllSystemTasks: vi.fn(),
+  findUserTasksWithTask: vi.fn(),
+  findTaskById: vi.fn(),
+  findTaskOwnership: vi.fn(),
+  findOwnedOrSystemTask: vi.fn(),
+  createTask: vi.fn(),
+  createUserTaskAssignment: vi.fn(),
+  updateTask: vi.fn(),
+  upsertUserTaskStatus: vi.fn(),
+  deleteTask: vi.fn(),
 }));
 
 // Stub otpService so public-route tests don't trigger real email/DB calls.
@@ -79,13 +89,11 @@ describe("API route auth policy", () => {
         .set("Cookie", ["session_token=test-token"]);
 
       expect(response.status).toBe(200);
-      expect(vi.mocked(prisma.session.deleteMany)).toHaveBeenCalledWith({
-        where: { sessionToken: "test-token" },
-      });
+      expect(vi.mocked(sessionRepo.deleteSessionByToken)).toHaveBeenCalledWith("test-token");
     });
 
     it("POST /api/auth/logout returns 500 when session deletion fails", async () => {
-      vi.mocked(prisma.session.deleteMany).mockRejectedValueOnce(new Error("db down"));
+      vi.mocked(sessionRepo.deleteSessionByToken).mockRejectedValueOnce(new Error("db down"));
 
       const response = await request(app)
         .post("/api/auth/logout")

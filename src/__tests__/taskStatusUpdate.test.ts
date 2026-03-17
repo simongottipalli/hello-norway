@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import type { NextFunction, Request, Response } from "express";
-import type { Task, UserTask } from "@prisma/client";
+import type { UserTask } from "@prisma/client";
 import { createApp } from "../app";
-import { prisma } from "../lib/prisma";
+import * as taskRepo from "../repo/taskRepo";
 
 vi.mock("../middleware/authMiddleware", () => ({
   authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
@@ -13,17 +13,18 @@ vi.mock("../middleware/authMiddleware", () => ({
   },
 }));
 
-vi.mock("../lib/prisma", () => ({
-  prisma: {
-    task: {
-      findFirst: vi.fn(),
-      findUnique: vi.fn(),
-      update: vi.fn(),
-    },
-    userTask: {
-      upsert: vi.fn(),
-    },
-  },
+vi.mock("../repo/taskRepo", () => ({
+  findAllSystemTasks: vi.fn(),
+  findUserTasksWithTask: vi.fn(),
+  findTaskById: vi.fn(),
+  findTaskOwnership: vi.fn(),
+  findOwnedOrSystemTask: vi.fn(),
+  createTask: vi.fn(),
+  createUserTaskAssignment: vi.fn(),
+  updateTask: vi.fn(),
+  upsertUserTaskStatus: vi.fn(),
+  deleteTask: vi.fn(),
+  findOnboardingPreviewTasks: vi.fn(),
 }));
 
 const app = createApp();
@@ -34,8 +35,8 @@ describe("Task status updates", () => {
   });
 
   it("updates task status for the authenticated user", async () => {
-    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-1" } as unknown as Task);
-    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+    vi.mocked(taskRepo.findOwnedOrSystemTask).mockResolvedValue({ id: "task-1" });
+    vi.mocked(taskRepo.upsertUserTaskStatus).mockResolvedValue({
       id: "user-task-1",
       userId: "test-user-id",
       taskId: "task-1",
@@ -50,18 +51,17 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("DONE");
-    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
-
-    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
-    expect(upsertArg).toBeDefined();
-    // Ensure the status is updated to DONE and completedAt is set
-    expect(upsertArg.update.status).toBe("DONE");
-    expect(upsertArg.update.completedAt).toBeInstanceOf(Date);
+    expect(taskRepo.upsertUserTaskStatus).toHaveBeenCalledTimes(1);
+    expect(taskRepo.upsertUserTaskStatus).toHaveBeenCalledWith(
+      "test-user-id",
+      "task-1",
+      expect.objectContaining({ status: "DONE", completedAt: expect.any(Date) }),
+    );
   });
 
   it("clears completedAt when status is not DONE", async () => {
-    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-2" } as unknown as Task);
-    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+    vi.mocked(taskRepo.findOwnedOrSystemTask).mockResolvedValue({ id: "task-2" });
+    vi.mocked(taskRepo.upsertUserTaskStatus).mockResolvedValue({
       id: "user-task-2",
       userId: "test-user-id",
       taskId: "task-2",
@@ -76,19 +76,15 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe("SAVED");
-    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
-
-    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
-    expect(upsertArg).toBeDefined();
-    // Ensure the status is updated to a non-DONE value and completedAt is cleared
-    expect(upsertArg.update.status).toBe("SAVED");
-    expect(upsertArg.update.completedAt == null).toBe(true);
+    expect(taskRepo.upsertUserTaskStatus).toHaveBeenCalledTimes(1);
+    const [, , data] = vi.mocked(taskRepo.upsertUserTaskStatus).mock.calls[0];
+    expect(data.completedAt).toBeNull();
   });
 
   it("sets dueDate when a valid dueDate is provided", async () => {
-    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-3" } as unknown as Task);
+    vi.mocked(taskRepo.findOwnedOrSystemTask).mockResolvedValue({ id: "task-3" });
     const expectedDueDate = new Date("2026-03-15");
-    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+    vi.mocked(taskRepo.upsertUserTaskStatus).mockResolvedValue({
       id: "user-task-3",
       userId: "test-user-id",
       taskId: "task-3",
@@ -103,19 +99,15 @@ describe("Task status updates", () => {
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
-    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
-
-    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
-    expect(upsertArg).toBeDefined();
-    expect(upsertArg.update.dueDate).toBeInstanceOf(Date);
-    expect((upsertArg.update.dueDate as Date).toISOString().split("T")[0]).toBe("2026-03-15");
-    expect(upsertArg.create.dueDate).toBeInstanceOf(Date);
-    expect((upsertArg.create.dueDate as Date).toISOString().split("T")[0]).toBe("2026-03-15");
+    expect(taskRepo.upsertUserTaskStatus).toHaveBeenCalledTimes(1);
+    const [, , data] = vi.mocked(taskRepo.upsertUserTaskStatus).mock.calls[0];
+    expect(data.dueDate).toBeInstanceOf(Date);
+    expect((data.dueDate as Date).toISOString().split("T")[0]).toBe("2026-03-15");
   });
 
   it("clears dueDate when null is provided", async () => {
-    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-4" } as unknown as Task);
-    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+    vi.mocked(taskRepo.findOwnedOrSystemTask).mockResolvedValue({ id: "task-4" });
+    vi.mocked(taskRepo.upsertUserTaskStatus).mockResolvedValue({
       id: "user-task-4",
       userId: "test-user-id",
       taskId: "task-4",
@@ -130,12 +122,9 @@ describe("Task status updates", () => {
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
-    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
-
-    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
-    expect(upsertArg).toBeDefined();
-    expect(upsertArg.update.dueDate).toBeNull();
-    expect(upsertArg.create.dueDate).toBeNull();
+    expect(taskRepo.upsertUserTaskStatus).toHaveBeenCalledTimes(1);
+    const [, , data] = vi.mocked(taskRepo.upsertUserTaskStatus).mock.calls[0];
+    expect(data.dueDate).toBeNull();
   });
 
   it("returns 400 for invalid dueDate values", async () => {
@@ -146,7 +135,7 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain("Invalid dueDate");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid-but-parsable dueDate values", async () => {
@@ -157,7 +146,7 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain("Invalid dueDate");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
   it("returns 400 for non-string dueDate types", async () => {
@@ -168,7 +157,7 @@ describe("Task status updates", () => {
 
     expect(numericResponse.status).toBe(400);
     expect(numericResponse.body.error).toContain("Invalid dueDate");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
 
     const objectResponse = await request(app)
       .patch("/api/tasks/task-1/status")
@@ -177,7 +166,7 @@ describe("Task status updates", () => {
 
     expect(objectResponse.status).toBe(400);
     expect(objectResponse.body.error).toContain("Invalid dueDate");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid task status", async () => {
@@ -188,12 +177,12 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain("Invalid status");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
   it("updates task status with private notes", async () => {
-    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-3" } as unknown as Task);
-    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+    vi.mocked(taskRepo.findOwnedOrSystemTask).mockResolvedValue({ id: "task-3" });
+    vi.mocked(taskRepo.upsertUserTaskStatus).mockResolvedValue({
       id: "user-task-3",
       userId: "test-user-id",
       taskId: "task-3",
@@ -209,11 +198,9 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.personalNotes).toBe("Bring all paperwork copies");
-    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
-
-    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
-    expect(upsertArg.update.personalNotes).toBe("Bring all paperwork copies");
-    expect(upsertArg.create.personalNotes).toBe("Bring all paperwork copies");
+    expect(taskRepo.upsertUserTaskStatus).toHaveBeenCalledTimes(1);
+    const [, , data] = vi.mocked(taskRepo.upsertUserTaskStatus).mock.calls[0];
+    expect(data.personalNotes).toBe("Bring all paperwork copies");
   });
 
   it("returns 400 for invalid personalNotes type", async () => {
@@ -224,11 +211,11 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain("Invalid personalNotes");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
   it("returns 404 when task does not exist", async () => {
-    vi.mocked(prisma.task.findFirst).mockResolvedValue(null);
+    vi.mocked(taskRepo.findOwnedOrSystemTask).mockResolvedValue(null);
 
     const response = await request(app)
       .patch("/api/tasks/missing-task/status")
@@ -237,7 +224,7 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(404);
     expect(response.body.error).toBe("Task not found");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
   it("returns 400 when status is sent to task metadata endpoint", async () => {
@@ -248,13 +235,13 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toContain("/api/tasks/:id/status");
-    expect(prisma.userTask.upsert).not.toHaveBeenCalled();
-    expect(prisma.task.update).not.toHaveBeenCalled();
+    expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
+    expect(taskRepo.updateTask).not.toHaveBeenCalled();
   });
 
   it("accepts product status aliases and maps them to persisted enum values", async () => {
-    vi.mocked(prisma.task.findFirst).mockResolvedValue({ id: "task-5" } as unknown as Task);
-    vi.mocked(prisma.userTask.upsert).mockResolvedValue({
+    vi.mocked(taskRepo.findOwnedOrSystemTask).mockResolvedValue({ id: "task-5" });
+    vi.mocked(taskRepo.upsertUserTaskStatus).mockResolvedValue({
       id: "user-task-5",
       userId: "test-user-id",
       taskId: "task-5",
@@ -268,10 +255,8 @@ describe("Task status updates", () => {
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
-    expect(prisma.userTask.upsert).toHaveBeenCalledTimes(1);
-
-    const upsertArg = vi.mocked(prisma.userTask.upsert).mock.calls[0][0];
-    expect(upsertArg.update.status).toBe("SAVED");
-    expect(upsertArg.create.status).toBe("SAVED");
+    expect(taskRepo.upsertUserTaskStatus).toHaveBeenCalledTimes(1);
+    const [, , data] = vi.mocked(taskRepo.upsertUserTaskStatus).mock.calls[0];
+    expect(data.status).toBe("SAVED");
   });
 });
