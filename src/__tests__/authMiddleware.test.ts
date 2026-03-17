@@ -3,16 +3,15 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import request from "supertest";
 import { authenticateSession } from "../middleware/authMiddleware";
-import { prisma } from "../lib/prisma";
+import * as sessionRepo from "../repo/sessionRepo";
 import { requestLogger } from "../middleware/requestLogger";
 
-vi.mock("../lib/prisma", () => ({
-  prisma: {
-    session: {
-      findUnique: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+vi.mock("../repo/sessionRepo", () => ({
+  findSessionWithUser: vi.fn(),
+  deleteSessionById: vi.fn(),
+  deleteSessionByToken: vi.fn(),
+  deleteUserSessions: vi.fn(),
+  createSession: vi.fn(),
 }));
 
 const createTestApp = () => {
@@ -39,21 +38,15 @@ describe("authenticateSession middleware", () => {
   });
 
   it("returns 401 and removes expired sessions", async () => {
-    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+    vi.mocked(sessionRepo.findSessionWithUser).mockResolvedValue({
       id: "session-1",
       sessionToken: "token",
       userId: "user-1",
       expiresAt: new Date("2024-01-01T00:00:00.000Z"),
       createdAt: new Date("2024-01-01T00:00:00.000Z"),
       user: { id: "user-1", email: "test@example.com", name: "Test User" },
-    });
-    vi.mocked(prisma.session.delete).mockResolvedValue({
-      id: "session-1",
-      sessionToken: "token",
-      userId: "user-1",
-      expiresAt: new Date("2024-01-01T00:00:00.000Z"),
-      createdAt: new Date("2024-01-01T00:00:00.000Z"),
-    });
+    } as never);
+    vi.mocked(sessionRepo.deleteSessionById).mockResolvedValue({} as never);
 
     const app = createTestApp();
     const response = await request(app)
@@ -61,18 +54,18 @@ describe("authenticateSession middleware", () => {
       .set("Cookie", ["session_token=token"]);
 
     expect(response.status).toBe(401);
-    expect(prisma.session.delete).toHaveBeenCalledWith({ where: { id: "session-1" } });
+    expect(sessionRepo.deleteSessionById).toHaveBeenCalledWith("session-1");
   });
 
   it("attaches user to request when session is valid", async () => {
-    vi.mocked(prisma.session.findUnique).mockResolvedValue({
+    vi.mocked(sessionRepo.findSessionWithUser).mockResolvedValue({
       id: "session-1",
       sessionToken: "token",
       userId: "user-1",
       expiresAt: new Date(Date.now() + 60_000),
       createdAt: new Date("2024-01-01T00:00:00.000Z"),
       user: { id: "user-1", email: "test@example.com", name: "Test User" },
-    });
+    } as never);
 
     const app = createTestApp();
     const response = await request(app)

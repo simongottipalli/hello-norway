@@ -4,6 +4,9 @@ import express from "express";
 import type { NextFunction, Request, Response } from "express";
 import authRoutes from "../routes/authRoutes";
 import { prisma } from "../lib/prisma";
+import * as userRepo from "../repo/userRepo";
+import * as sessionRepo from "../repo/sessionRepo";
+import * as taskRepo from "../repo/taskRepo";
 import { getRelevantTaskWhere, syncUserTaskAssignments } from "../services/taskAssignmentService";
 
 vi.mock("../middleware/authMiddleware", () => ({
@@ -13,23 +16,38 @@ vi.mock("../middleware/authMiddleware", () => ({
   },
 }));
 
+vi.mock("../repo/userRepo", () => ({
+  findUserById: vi.fn(),
+  updateUserProfile: vi.fn(),
+  deleteUserTasks: vi.fn(),
+  deleteUser: vi.fn(),
+}));
+
+vi.mock("../repo/sessionRepo", () => ({
+  findSessionWithUser: vi.fn(),
+  deleteSessionById: vi.fn(),
+  deleteSessionByToken: vi.fn(),
+  deleteUserSessions: vi.fn(),
+  createSession: vi.fn(),
+}));
+
+vi.mock("../repo/taskRepo", () => ({
+  findOnboardingPreviewTasks: vi.fn(),
+  findAllSystemTasks: vi.fn(),
+  findUserTasksWithTask: vi.fn(),
+  findTaskById: vi.fn(),
+  findTaskOwnership: vi.fn(),
+  findOwnedOrSystemTask: vi.fn(),
+  createTask: vi.fn(),
+  createUserTaskAssignment: vi.fn(),
+  updateTask: vi.fn(),
+  upsertUserTaskStatus: vi.fn(),
+  deleteTask: vi.fn(),
+}));
+
 vi.mock("../lib/prisma", () => ({
   prisma: {
     $transaction: vi.fn(),
-    user: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    task: {
-      findMany: vi.fn(),
-    },
-    session: {
-      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-    },
-    userTask: {
-      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
-    },
   },
 }));
 
@@ -46,9 +64,9 @@ describe("/api/auth/profile", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(prisma.$transaction).mockImplementation(async (callback: (tx: typeof prisma) => Promise<unknown>) => {
-      return callback(prisma as unknown as typeof prisma);
+      return callback({} as typeof prisma);
     });
-    vi.mocked(prisma.user.update).mockResolvedValue({
+    vi.mocked(userRepo.updateUserProfile).mockResolvedValue({
       id: "user-1",
       email: "user@example.com",
       name: "User",
@@ -58,12 +76,12 @@ describe("/api/auth/profile", () => {
       arrivalDate: new Date("2026-03-01T00:00:00.000Z"),
       plannedArrivalDate: null,
     });
-    vi.mocked(getRelevantTaskWhere).mockReturnValue({ mockedWhere: true });
+    vi.mocked(getRelevantTaskWhere).mockReturnValue({ mockedWhere: true } as never);
   });
 
   describe("GET /api/auth/profile", () => {
     it("returns the current user profile", async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      vi.mocked(userRepo.findUserById).mockResolvedValue({
         id: "user-1",
         email: "user@example.com",
         name: "User",
@@ -84,19 +102,7 @@ describe("/api/auth/profile", () => {
         hasChildren: false,
         employmentStatus: "EMPLOYED",
       });
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { id: "user-1" },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          isEU: true,
-          hasChildren: true,
-          employmentStatus: true,
-          arrivalDate: true,
-          plannedArrivalDate: true,
-        },
-      });
+      expect(userRepo.findUserById).toHaveBeenCalledWith("user-1");
     });
   });
 
@@ -116,26 +122,17 @@ describe("/api/auth/profile", () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: "user-1" },
-        data: {
+      expect(userRepo.updateUserProfile).toHaveBeenCalledWith(
+        "user-1",
+        expect.objectContaining({
           name: "Updated User",
           isEU: true,
           hasChildren: false,
           employmentStatus: "EMPLOYED",
           arrivalDate: new Date("2026-03-01T00:00:00.000Z"),
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          isEU: true,
-          hasChildren: true,
-          employmentStatus: true,
-          arrivalDate: true,
-          plannedArrivalDate: true,
-        },
-      });
+        }),
+        expect.anything(),
+      );
       expect(syncUserTaskAssignments).toHaveBeenCalledWith(
         expect.objectContaining({ id: "user-1", employmentStatus: "EMPLOYED" }),
         expect.objectContaining({ removeOutdatedTodoAssignments: true, db: expect.any(Object) })
@@ -151,7 +148,7 @@ describe("/api/auth/profile", () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("Invalid name");
       expect(prisma.$transaction).not.toHaveBeenCalled();
-      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(userRepo.updateUserProfile).not.toHaveBeenCalled();
     });
 
     it("returns 400 for invalid arrival date", async () => {
@@ -163,7 +160,7 @@ describe("/api/auth/profile", () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("Invalid arrivalDate");
       expect(prisma.$transaction).not.toHaveBeenCalled();
-      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(userRepo.updateUserProfile).not.toHaveBeenCalled();
       expect(syncUserTaskAssignments).not.toHaveBeenCalled();
     });
 
@@ -178,27 +175,15 @@ describe("/api/auth/profile", () => {
       expect(response.status).toBe(500);
       expect(response.body.error).toBe("Failed to update profile");
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(prisma.user.update).toHaveBeenCalledTimes(1);
+      expect(userRepo.updateUserProfile).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("DELETE /api/auth/profile", () => {
     beforeEach(() => {
-      vi.mocked(prisma.session.deleteMany).mockResolvedValue({ count: 1 });
-      vi.mocked(prisma.userTask.deleteMany).mockResolvedValue({ count: 5 });
-      vi.mocked(prisma.user.delete).mockResolvedValue({
-        id: "user-1",
-        email: "user@example.com",
-        name: "User",
-        isEU: true,
-        hasChildren: false,
-        employmentStatus: "EMPLOYED",
-        housingType: null,
-        plannedArrivalDate: null,
-        arrivalDate: new Date("2026-03-01T00:00:00.000Z"),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      vi.mocked(sessionRepo.deleteUserSessions).mockResolvedValue({ count: 1 });
+      vi.mocked(userRepo.deleteUserTasks).mockResolvedValue({ count: 5 });
+      vi.mocked(userRepo.deleteUser).mockResolvedValue({} as never);
     });
 
     it("successfully deletes user profile and all associated data", async () => {
@@ -207,19 +192,13 @@ describe("/api/auth/profile", () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
-        where: { userId: "user-1" },
-      });
-      expect(prisma.userTask.deleteMany).toHaveBeenCalledWith({
-        where: { userId: "user-1" },
-      });
-      expect(prisma.user.delete).toHaveBeenCalledWith({
-        where: { id: "user-1" },
-      });
+      expect(sessionRepo.deleteUserSessions).toHaveBeenCalledWith("user-1", expect.anything());
+      expect(userRepo.deleteUserTasks).toHaveBeenCalledWith("user-1", expect.anything());
+      expect(userRepo.deleteUser).toHaveBeenCalledWith("user-1", expect.anything());
     });
 
     it("returns 500 when deletion fails", async () => {
-      vi.mocked(prisma.user.delete).mockRejectedValueOnce(new Error("Database error"));
+      vi.mocked(userRepo.deleteUser).mockRejectedValueOnce(new Error("Database error"));
 
       const response = await request(app).delete("/api/auth/profile");
 
@@ -233,8 +212,8 @@ describe("/api/auth/profile", () => {
 describe("POST /api/onboarding/tasks", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getRelevantTaskWhere).mockReturnValue({ mockedWhere: true });
-    vi.mocked(prisma.task.findMany).mockResolvedValue([]);
+    vi.mocked(getRelevantTaskWhere).mockReturnValue({ mockedWhere: true } as never);
+    vi.mocked(taskRepo.findOnboardingPreviewTasks).mockResolvedValue([]);
   });
 
   it("returns 400 for invalid boolean and enum fields", async () => {
@@ -259,7 +238,7 @@ describe("POST /api/onboarding/tasks", () => {
     expect(invalidEmployment.status).toBe(400);
     expect(invalidEmployment.body.error).toContain("Invalid employmentStatus");
 
-    expect(prisma.task.findMany).not.toHaveBeenCalled();
+    expect(taskRepo.findOnboardingPreviewTasks).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid date payloads", async () => {
@@ -277,11 +256,11 @@ describe("POST /api/onboarding/tasks", () => {
     expect(invalidPlannedDate.status).toBe(400);
     expect(invalidPlannedDate.body.error).toContain("Invalid plannedArrivalDate");
 
-    expect(prisma.task.findMany).not.toHaveBeenCalled();
+    expect(taskRepo.findOnboardingPreviewTasks).not.toHaveBeenCalled();
   });
 
-  it("queries prisma with expected shape and returns minimal task data", async () => {
-    vi.mocked(prisma.task.findMany).mockResolvedValueOnce([
+  it("delegates to findOnboardingPreviewTasks and returns minimal task data", async () => {
+    vi.mocked(taskRepo.findOnboardingPreviewTasks).mockResolvedValueOnce([
       {
         id: "task-1",
         title: "Register with police",
@@ -289,7 +268,7 @@ describe("POST /api/onboarding/tasks", () => {
         category: "ARRIVAL",
         sortOrder: 20,
       },
-    ]);
+    ] as never);
 
     const response = await request(app)
       .post("/api/onboarding/tasks")
@@ -325,16 +304,6 @@ describe("POST /api/onboarding/tasks", () => {
       expect.any(Date),
     );
 
-    expect(prisma.task.findMany).toHaveBeenCalledWith({
-      where: { mockedWhere: true },
-      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-      select: {
-        id: true,
-        title: true,
-        shortDescription: true,
-        category: true,
-        sortOrder: true,
-      },
-    });
+    expect(taskRepo.findOnboardingPreviewTasks).toHaveBeenCalledWith({ mockedWhere: true });
   });
 });
