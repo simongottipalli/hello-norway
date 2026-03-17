@@ -5,6 +5,24 @@
 
 import type { Task, TaskTrackingState, ApiErrorResponse } from "@/types/task";
 
+/** Task statuses that are grouped under the "Pending" filter option */
+export const PENDING_STATUSES = ["TODO", "SAVED"] as const satisfies ReadonlyArray<
+  NonNullable<Task["status"]>
+>;
+
+/** Valid values for the status filter dropdown in the All Tasks view */
+export type StatusFilter = "ALL" | "PENDING" | NonNullable<Task["status"]>;
+
+/**
+ * Filters a list of tasks by the given status filter value.
+ * "ALL" returns all tasks; "PENDING" matches TODO and SAVED; otherwise matches exactly.
+ */
+export const filterTasksByStatus = (tasks: Task[], status: StatusFilter): Task[] => {
+  if (status === "ALL") return tasks;
+  if (status === "PENDING") return tasks.filter((t) => PENDING_STATUSES.includes(t.status as (typeof PENDING_STATUSES)[number]));
+  return tasks.filter((t) => t.status === status);
+};
+
 export type OfficialLink = {
   label: string;
   url: string;

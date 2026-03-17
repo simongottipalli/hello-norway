@@ -72,8 +72,8 @@ test.describe('Dashboard Left Panel', () => {
 
     // Apply a status filter first
     const statusFilter = page.getByLabel('Filter by Status');
-    await statusFilter.selectOption('TODO');
-    await expect(statusFilter).toHaveValue('TODO');
+    await statusFilter.selectOption('PENDING');
+    await expect(statusFilter).toHaveValue('PENDING');
 
     // Click "All Tasks" in the sidebar
     const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
