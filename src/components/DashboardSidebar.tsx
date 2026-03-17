@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ interface DashboardSidebarProps {
   upcomingCount: number;
   onTaskCreated?: () => void;
   onShowAllTasks?: () => void;
+  onShowProfile?: () => void;
 }
 
 export function DashboardSidebar({
@@ -29,6 +29,7 @@ export function DashboardSidebar({
   upcomingCount,
   onTaskCreated,
   onShowAllTasks,
+  onShowProfile,
 }: DashboardSidebarProps) {
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -116,12 +117,10 @@ export function DashboardSidebar({
             <Button
               variant="outline"
               className="w-full justify-start"
-              asChild
+              onClick={onShowProfile}
             >
-              <Link href="/profile">
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </Link>
+              <User className="mr-2 h-4 w-4" />
+              Profile
             </Button>
             <Button
               variant="default"
