@@ -309,7 +309,7 @@ export default function DashboardPage() {
                     <Select
                       id="status-filter"
                       value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      onChange={(e) => setSelectedStatus(e.target.value as StatusFilter)}
                       className="mt-2"
                     >
                       <option value="ALL">All Statuses</option>
