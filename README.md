@@ -329,7 +329,7 @@ All logs from the same request share the same `requestId`, making it easy to tra
 
 - `GET /api/tasks` - Fetch all tasks (ordered by category and sortOrder)
 - `POST /api/tasks` - Create a new task
-- `PATCH /api/tasks/:id` - Update an existing task
+- `PATCH /api/tasks/:id/status` - Update an existing task
 
 ### OTP
 

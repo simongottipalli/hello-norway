@@ -90,7 +90,7 @@ prisma/
 
 - `GET /api/tasks` — All tasks (ordered by category + sortOrder)
 - `POST /api/tasks` — Create task
-- `PATCH /api/tasks/:id` — Update task
+- `PATCH /api/tasks/:id/status` — Update task
 - `POST /api/otp/generate` — Generate and send OTP
 - `POST /api/otp/verify` — Verify OTP
 - `GET /health` — Health check
