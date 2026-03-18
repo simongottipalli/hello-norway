@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { AddTaskDialog } from "@/components/AddTaskDialog";
 import { LayoutDashboard, ListTodo, Plus, User } from "lucide-react";
 
+export type ActiveView = "dashboard" | "allTasks" | "profile";
+
 interface DashboardSidebarProps {
   stats: {
     total: number;
@@ -18,6 +20,7 @@ interface DashboardSidebarProps {
   };
   overdueCount: number;
   upcomingCount: number;
+  activeView?: ActiveView;
   onTaskCreated?: () => void;
   onShowDashboard?: () => void;
   onShowAllTasks?: () => void;
@@ -28,6 +31,7 @@ export function DashboardSidebar({
   stats,
   overdueCount,
   upcomingCount,
+  activeView = "dashboard",
   onTaskCreated,
   onShowDashboard,
   onShowAllTasks,
@@ -35,6 +39,7 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const noop = () => {};
 
   const handleTaskCreated = async () => {
     // Call the parent's fetch function to reload tasks
@@ -51,23 +56,23 @@ export function DashboardSidebar({
       <div className="lg:hidden space-y-3">
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="outline"
+            variant={activeView === "dashboard" ? "secondary" : "outline"}
             size="sm"
-            onClick={onShowDashboard ?? (() => {})}
+            onClick={onShowDashboard ?? noop}
           >
             <LayoutDashboard className="mr-2 h-4 w-4" />
             Dashboard
           </Button>
           <Button
-            variant="outline"
+            variant={activeView === "allTasks" ? "secondary" : "outline"}
             size="sm"
-            onClick={onShowAllTasks ?? (() => {})}
+            onClick={onShowAllTasks ?? noop}
           >
             <ListTodo className="mr-2 h-4 w-4" />
             All Tasks
           </Button>
           <Button
-            variant="outline"
+            variant={activeView === "profile" ? "secondary" : "outline"}
             size="sm"
             onClick={onShowProfile}
           >
@@ -168,23 +173,23 @@ export function DashboardSidebar({
           </CardHeader>
           <CardContent className="space-y-2">
             <Button
-              variant="outline"
+              variant={activeView === "dashboard" ? "secondary" : "outline"}
               className="w-full justify-start"
-              onClick={onShowDashboard ?? (() => {})}
+              onClick={onShowDashboard ?? noop}
             >
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Dashboard
             </Button>
             <Button
-              variant="outline"
+              variant={activeView === "allTasks" ? "secondary" : "outline"}
               className="w-full justify-start"
-              onClick={onShowAllTasks ?? (() => {})}
+              onClick={onShowAllTasks ?? noop}
             >
               <ListTodo className="mr-2 h-4 w-4" />
               All Tasks
             </Button>
             <Button
-              variant="outline"
+              variant={activeView === "profile" ? "secondary" : "outline"}
               className="w-full justify-start"
               onClick={onShowProfile}
             >

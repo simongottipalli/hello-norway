@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { TaskCategory } from "@/generated/prisma/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { DashboardSidebar, type ActiveView } from "@/components/DashboardSidebar";
 import TaskDetailsModal from "@/components/TaskDetailsModal";
 import { ProfileView } from "@/components/ProfileView";
 import {
@@ -48,6 +48,8 @@ export default function DashboardPage() {
     setSelectedStatus("PENDING");
     setShowAllTasks(true);
   }, []);
+
+  const activeView: ActiveView = showProfile ? "profile" : showAllTasks ? "allTasks" : "dashboard";
 
   // Scroll to All Tasks section after it becomes visible in the DOM
   useEffect(() => {
@@ -171,6 +173,7 @@ export default function DashboardPage() {
             stats={stats}
             overdueCount={overdueTasks.length}
             upcomingCount={upcomingTasks.length}
+            activeView={activeView}
             onTaskCreated={fetchTasks}
             onShowDashboard={handleShowDashboard}
             onShowAllTasks={handleShowAllTasks}
