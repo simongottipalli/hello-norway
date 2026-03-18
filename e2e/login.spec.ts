@@ -5,7 +5,7 @@ const unauthenticatedTest = test.extend({
   storageState: { cookies: [], origins: [] },
 });
 
-const TEST_LOGIN_EMAIL = 'e2e-login-test@example.com';
+const TEST_LOGIN_EMAIL = 'e2e-test@example.com';
 const EXPRESS_API_BASE = 'http://localhost:3001/api';
 
 /**
