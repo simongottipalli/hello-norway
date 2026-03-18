@@ -10,6 +10,7 @@ vi.mock("../../lib/prisma", () => ({
       findUnique: vi.fn(),
       findFirst: vi.fn(),
       create: vi.fn(),
+      delete: vi.fn(),
     },
     userTask: {
       findMany: vi.fn(),
@@ -167,6 +168,41 @@ describe("taskRepo", () => {
           sortOrder: true,
         },
       });
+    });
+  });
+
+  describe("findTaskOwnership", () => {
+    it("queries a task by id selecting only id and createdByUserId", async () => {
+      const mockTask = { id: "task-1", createdByUserId: "user-1" };
+      vi.mocked(prisma.task.findUnique).mockResolvedValue(mockTask as never);
+
+      const result = await taskRepo.findTaskOwnership("task-1");
+
+      expect(prisma.task.findUnique).toHaveBeenCalledWith({
+        where: { id: "task-1" },
+        select: { id: true, createdByUserId: true },
+      });
+      expect(result).toEqual(mockTask);
+    });
+
+    it("returns null when the task does not exist", async () => {
+      vi.mocked(prisma.task.findUnique).mockResolvedValue(null);
+
+      const result = await taskRepo.findTaskOwnership("nonexistent");
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("deleteTask", () => {
+    it("deletes a task by id", async () => {
+      const mockTask = { id: "task-1" };
+      vi.mocked(prisma.task.delete).mockResolvedValue(mockTask as never);
+
+      const result = await taskRepo.deleteTask("task-1");
+
+      expect(prisma.task.delete).toHaveBeenCalledWith({ where: { id: "task-1" } });
+      expect(result).toEqual(mockTask);
     });
   });
 });

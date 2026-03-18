@@ -133,6 +133,37 @@ export const createTask = async (
 };
 
 /**
+ * Deletes a user-created task.
+ *
+ * Only the task's creator may delete it; system tasks (createdByUserId === null)
+ * cannot be deleted via the API.
+ * Returns 404 when the task does not exist, and 403 when the requester is not
+ * the owner.
+ */
+export const deleteTask = async (
+  taskId: string,
+  userId: string,
+): Promise<TaskServiceResult> => {
+  const task = await taskRepo.findTaskOwnership(taskId);
+
+  if (!task) {
+    return { success: false, statusCode: 404, error: "Task not found" };
+  }
+
+  if (task.createdByUserId === null) {
+    return { success: false, statusCode: 403, error: "System tasks cannot be deleted" };
+  }
+
+  if (task.createdByUserId !== userId) {
+    return { success: false, statusCode: 403, error: "Not authorized to delete this task" };
+  }
+
+  await taskRepo.deleteTask(taskId);
+
+  return { success: true };
+};
+
+/**
  * Updates or creates a user's task-status record.
  *
  * Accepts a raw status string and resolves it via STATUS_ALIAS_MAP.

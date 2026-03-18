@@ -7,10 +7,12 @@ import { prisma } from "../../lib/prisma";
 vi.mock("../../repo/taskRepo", () => ({
   findUserTasksWithTask: vi.fn(),
   findTaskById: vi.fn(),
+  findTaskOwnership: vi.fn(),
   findOwnedOrSystemTask: vi.fn(),
   createTask: vi.fn(),
   createUserTaskAssignment: vi.fn(),
   upsertUserTaskStatus: vi.fn(),
+  deleteTask: vi.fn(),
 }));
 
 vi.mock("../../lib/prisma", () => ({
@@ -237,6 +239,58 @@ describe("taskService", () => {
 
       expect(result).toEqual({ success: false, statusCode: 404, error: "Task not found" });
       expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // deleteTask
+  // ──────────────────────────────────────────────
+
+  describe("deleteTask", () => {
+    it("deletes the task when the user is the owner", async () => {
+      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue({
+        id: "task-1",
+        createdByUserId: "user-1",
+      } as never);
+      vi.mocked(taskRepo.deleteTask).mockResolvedValue({} as never);
+
+      const result = await taskService.deleteTask("task-1", "user-1");
+
+      expect(taskRepo.deleteTask).toHaveBeenCalledWith("task-1");
+      expect(result).toEqual({ success: true });
+    });
+
+    it("returns 404 when the task does not exist", async () => {
+      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue(null);
+
+      const result = await taskService.deleteTask("nonexistent", "user-1");
+
+      expect(result).toEqual({ success: false, statusCode: 404, error: "Task not found" });
+      expect(taskRepo.deleteTask).not.toHaveBeenCalled();
+    });
+
+    it("returns 403 when the task is a system task (createdByUserId is null)", async () => {
+      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue({
+        id: "task-1",
+        createdByUserId: null,
+      } as never);
+
+      const result = await taskService.deleteTask("task-1", "user-1");
+
+      expect(result).toEqual({ success: false, statusCode: 403, error: "System tasks cannot be deleted" });
+      expect(taskRepo.deleteTask).not.toHaveBeenCalled();
+    });
+
+    it("returns 403 when the task is owned by a different user", async () => {
+      vi.mocked(taskRepo.findTaskOwnership).mockResolvedValue({
+        id: "task-1",
+        createdByUserId: "other-user",
+      } as never);
+
+      const result = await taskService.deleteTask("task-1", "user-1");
+
+      expect(result).toEqual({ success: false, statusCode: 403, error: "Not authorized to delete this task" });
+      expect(taskRepo.deleteTask).not.toHaveBeenCalled();
     });
   });
 
