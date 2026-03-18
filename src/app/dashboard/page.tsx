@@ -25,6 +25,116 @@ import { filterTasksByStatus, sortTasksByDueDate, type StatusFilter } from "@/li
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
 
+function OverdueTasksCard({
+  tasks,
+  onViewTask,
+}: {
+  tasks: Task[];
+  onViewTask: (id: string) => void;
+}) {
+  if (tasks.length === 0) return null;
+  return (
+    <Card className="border-destructive/50">
+      <CardHeader>
+        <CardTitle className="text-destructive">
+          Overdue Tasks ({tasks.length})
+        </CardTitle>
+        <CardDescription>These tasks are past their due date</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-medium">{task.title}</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatEnumKey(task.category)}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {task.shortDescription}
+                </p>
+                <p className="text-xs font-medium text-destructive">
+                  Due:{" "}
+                  {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewTask(task.id)}
+              >
+                View
+              </Button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UpcomingTasksCard({
+  tasks,
+  onViewTask,
+}: {
+  tasks: Task[];
+  onViewTask: (id: string) => void;
+}) {
+  if (tasks.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Upcoming Tasks ({tasks.length})</CardTitle>
+        <CardDescription>Tasks due in the next 14 days</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {tasks.map((task) => (
+            <div
+              key={task.id}
+              className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-medium">{task.title}</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {formatEnumKey(task.category)}
+                  </Badge>
+                  <Badge
+                    variant={task.status === "SAVED" ? "default" : "outline"}
+                    className="text-xs"
+                  >
+                    {task.status === "SAVED" ? "In Progress" : "To Do"}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {task.shortDescription}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Due:{" "}
+                  {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewTask(task.id)}
+              >
+                View
+              </Button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -195,100 +305,10 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Overdue Tasks */}
-                {overdueTasks.length > 0 && (
-                  <Card className="border-destructive/50">
-                    <CardHeader>
-                      <CardTitle className="text-destructive">
-                        Overdue Tasks ({overdueTasks.length})
-                      </CardTitle>
-                      <CardDescription>
-                        These tasks are past their due date
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {overdueTasks.map((task) => (
-                          <div
-                            key={task.id}
-                            className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between"
-                          >
-                            <div className="flex-1 space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-sm font-medium">{task.title}</h3>
-                                <Badge variant="secondary" className="text-xs">
-                                  {formatEnumKey(task.category)}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {task.shortDescription}
-                              </p>
-                              <p className="text-xs font-medium text-destructive">
-                                Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                              </p>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedTaskId(task.id)}
-                            >
-                              View
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <OverdueTasksCard tasks={overdueTasks} onViewTask={setSelectedTaskId} />
 
                 {/* Upcoming Tasks */}
-                {upcomingTasks.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Upcoming Tasks ({upcomingTasks.length})</CardTitle>
-                      <CardDescription>
-                        Tasks due in the next 14 days
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {upcomingTasks.map((task) => (
-                          <div
-                            key={task.id}
-                            className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
-                          >
-                            <div className="flex-1 space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-sm font-medium">{task.title}</h3>
-                                <Badge variant="secondary" className="text-xs">
-                                  {formatEnumKey(task.category)}
-                                </Badge>
-                                <Badge
-                                  variant={task.status === "SAVED" ? "default" : "outline"}
-                                  className="text-xs"
-                                >
-                                  {task.status === "SAVED" ? "In Progress" : "To Do"}
-                                </Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {task.shortDescription}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                              </p>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedTaskId(task.id)}
-                            >
-                              View
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+                <UpcomingTasksCard tasks={upcomingTasks} onViewTask={setSelectedTaskId} />
 
                 {/* More Tasks */}
                 <Card>
@@ -421,100 +441,10 @@ export default function DashboardPage() {
             </div>
 
             {/* Overdue Tasks */}
-        {overdueTasks.length > 0 && (
-              <Card className="border-destructive/50">
-                <CardHeader>
-                  <CardTitle className="text-destructive">
-                    Overdue Tasks ({overdueTasks.length})
-                  </CardTitle>
-                  <CardDescription>
-                    These tasks are past their due date
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {overdueTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex-1 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-medium">{task.title}</h3>
-                            <Badge variant="secondary" className="text-xs">
-                              {formatEnumKey(task.category)}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {task.shortDescription}
-                          </p>
-                          <p className="text-xs font-medium text-destructive">
-                            Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedTaskId(task.id)}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <OverdueTasksCard tasks={overdueTasks} onViewTask={setSelectedTaskId} />
 
             {/* Upcoming Tasks */}
-            {upcomingTasks.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Upcoming Tasks ({upcomingTasks.length})</CardTitle>
-                  <CardDescription>
-                    Tasks due in the next 14 days
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {upcomingTasks.map((task) => (
-                      <div
-                        key={task.id}
-                        className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex-1 space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-medium">{task.title}</h3>
-                            <Badge variant="secondary" className="text-xs">
-                              {formatEnumKey(task.category)}
-                            </Badge>
-                            <Badge
-                              variant={task.status === "SAVED" ? "default" : "outline"}
-                              className="text-xs"
-                            >
-                              {task.status === "SAVED" ? "In Progress" : "To Do"}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {task.shortDescription}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Due: {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedTaskId(task.id)}
-                        >
-                          View
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <UpcomingTasksCard tasks={upcomingTasks} onViewTask={setSelectedTaskId} />
 
             {/* Empty state when no overdue or upcoming tasks */}
             {overdueTasks.length === 0 && upcomingTasks.length === 0 && (
