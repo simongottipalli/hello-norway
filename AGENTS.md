@@ -72,6 +72,12 @@ Only skip testing when:
 
 ---
 
+## Documentation Maintenance
+
+Before opening a PR, follow the workflow in [docs/DOCUMENTATION_MAINTENANCE.md](docs/DOCUMENTATION_MAINTENANCE.md) to update any relevant documentation affected by your changes.
+
+---
+
 ## UI Development Guidelines
 
 This project uses **shadcn/ui** with a **zinc** design system on top of Tailwind CSS v4.
