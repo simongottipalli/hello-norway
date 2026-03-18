@@ -37,6 +37,11 @@ export default function DashboardPage() {
   const [showProfile, setShowProfile] = useState(false);
   const allTasksRef = useRef<HTMLDivElement>(null);
 
+  const handleShowDashboard = useCallback(() => {
+    setShowProfile(false);
+    setShowAllTasks(false);
+  }, []);
+
   const handleShowAllTasks = useCallback(() => {
     setShowProfile(false);
     setSelectedCategory("ALL");
@@ -167,6 +172,7 @@ export default function DashboardPage() {
             overdueCount={overdueTasks.length}
             upcomingCount={upcomingTasks.length}
             onTaskCreated={fetchTasks}
+            onShowDashboard={handleShowDashboard}
             onShowAllTasks={handleShowAllTasks}
             onShowProfile={() => setShowProfile(true)}
           />

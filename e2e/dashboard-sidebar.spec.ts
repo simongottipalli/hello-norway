@@ -95,6 +95,72 @@ test.describe('Dashboard Left Panel', () => {
     await expect(categoryFilter).toHaveValue('ALL');
   });
 
+  test('should show dashboard button in quick actions', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+
+    // Verify the "Dashboard" button is visible in the sidebar
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    const dashboardButton = sidebar.getByRole('button', { name: 'Dashboard' });
+    await expect(dashboardButton).toBeVisible();
+  });
+
+  test('should return to dashboard view when clicking Dashboard from quick actions', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+
+    // First navigate to All Tasks view
+    await sidebar.getByRole('button', { name: 'All Tasks' }).click();
+
+    // All Tasks section should be visible
+    await expect(page.getByRole('heading', { name: 'All Tasks' })).toBeVisible();
+
+    // Now click Dashboard button to return to the default dashboard view
+    await sidebar.getByRole('button', { name: 'Dashboard' }).click();
+
+    // Should still be on the dashboard page
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    // The main Dashboard heading should be visible
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+
+    // All Tasks section should no longer be visible
+    await expect(page.getByRole('heading', { name: 'All Tasks' })).not.toBeVisible();
+  });
+
+  test('should return to dashboard view from profile via Dashboard quick action', async ({ page }) => {
+    // Set viewport to desktop size
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.goto('/dashboard');
+
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+
+    // First navigate to Profile view
+    await sidebar.getByRole('button', { name: 'Profile' }).click();
+
+    // Profile view should be visible
+    await expect(page.getByRole('button', { name: 'Back to Dashboard' })).toBeVisible();
+
+    // Now click Dashboard button to return to the dashboard view
+    await sidebar.getByRole('button', { name: 'Dashboard' }).click();
+
+    // Should stay on the dashboard page (no navigation)
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    // The Dashboard heading should be visible again
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+
+    // Profile view should no longer be visible
+    await expect(page.getByRole('button', { name: 'Back to Dashboard' })).not.toBeVisible();
+  });
+
   test('should show profile in main view from quick actions', async ({ page }) => {
     // Set viewport to desktop size
     await page.setViewportSize({ width: 1280, height: 800 });
