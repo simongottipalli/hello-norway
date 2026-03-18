@@ -345,7 +345,7 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-3">
+                        <div id="more-tasks-list" className="space-y-3">
                           {(moreExpanded ? moreTasks : moreTasks.slice(0, 3)).map((task) => (
                             <div
                               key={task.id}
@@ -398,6 +398,8 @@ export default function DashboardPage() {
                             variant="ghost"
                             className="w-full"
                             onClick={() => setMoreExpanded((prev) => !prev)}
+                            aria-expanded={moreExpanded}
+                            aria-controls="more-tasks-list"
                           >
                             {moreExpanded
                               ? "Show less ↑"
