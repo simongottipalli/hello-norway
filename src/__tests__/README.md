@@ -48,7 +48,7 @@ src/__tests__/
 ├── authSession.test.ts               # GET /api/auth/session success-path
 ├── health.test.ts                    # GET /health endpoint
 ├── otp.test.ts                       # OTP request/verify endpoints
-├── tasks.test.ts                     # Task API (CRUD including DELETE)
+├── tasks.test.ts                     # Task API (CRUD)
 ├── taskStatusUpdate.test.ts          # PATCH task status
 ├── taskValidation.test.ts            # CreateTask payload validation
 ├── taskAssignmentIntegration.test.ts # Profile-based task assignment
@@ -72,7 +72,7 @@ src/__tests__/
 │   └── otpRepo.test.ts               # OTP repository
 └── services/
     ├── authService.test.ts           # Auth service logic
-    ├── taskService.test.ts           # Task service logic (incl. deleteTask)
+    ├── taskService.test.ts           # Task service logic
     └── email/
         ├── brevoProvider.test.ts     # Brevo email provider
         ├── emailService.test.ts      # Email service abstraction

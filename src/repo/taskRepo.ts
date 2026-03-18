@@ -82,17 +82,3 @@ export const findOnboardingPreviewTasks = (
       sortOrder: true,
     },
   });
-
-/**
- * Returns the ownership metadata of a task so the caller can decide whether
- * the requesting user is allowed to delete it.
- */
-export const findTaskOwnership = (id: string, db: TaskDb = prisma) =>
-  db.task.findUnique({ where: { id }, select: { id: true, createdByUserId: true } });
-
-/**
- * Deletes a task and all associated UserTask rows (cascade handled by DB
- * foreign-key constraint, or explicitly by the caller before invoking this).
- */
-export const deleteTask = (id: string, db: TaskDb = prisma) =>
-  db.task.delete({ where: { id } });

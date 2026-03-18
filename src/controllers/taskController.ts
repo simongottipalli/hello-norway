@@ -66,29 +66,6 @@ export const createTask = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteTaskById = async (req: Request, res: Response) => {
-  try {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-
-    const result = await taskService.deleteTask(id, req.user!.id);
-
-    if (!result.success) {
-      req.logger.info({ msg: 'Task deletion failed', taskId: id, error: result.error });
-      return res.status(result.statusCode ?? 500).json({ error: result.error });
-    }
-
-    req.logger.info({ msg: 'Task deleted', taskId: id, userId: req.user!.id });
-    return res.status(200).json({ success: true });
-  } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error, req.logger);
-    if (errorResponse) {
-      return res.status(errorResponse.status).json({ error: errorResponse.message });
-    }
-    req.logger.error({ msg: 'Failed to delete task', error });
-    res.status(500).json({ error: "Failed to delete task" });
-  }
-};
-
 export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
