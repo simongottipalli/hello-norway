@@ -70,7 +70,12 @@ function TaskListItem({
           </p>
         )}
       </div>
-      <Button variant="outline" size="sm" onClick={() => onViewTask(task.id)}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onViewTask(task.id)}
+        aria-label={`View ${task.title}`}
+      >
         View
       </Button>
     </div>
