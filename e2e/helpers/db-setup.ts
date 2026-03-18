@@ -45,12 +45,15 @@ async function main() {
 
     // Seed a handful of UserTask records so the dashboard always shows task
     // cards with "View" buttons for the modal tests to interact with.
+    // Set dueDate within the next 7 days so these tasks appear as "upcoming"
+    // in the default dashboard view (which only shows overdue/upcoming tasks).
     const tasks = await prisma.task.findMany({ take: 3, orderBy: { sortOrder: "asc" } });
+    const upcomingDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     for (const task of tasks) {
       await prisma.userTask.upsert({
         where: { userId_taskId: { userId: user.id, taskId: task.id } },
-        update: {},
-        create: { userId: user.id, taskId: task.id, status: "TODO" },
+        update: { dueDate: upcomingDueDate, status: "TODO" },
+        create: { userId: user.id, taskId: task.id, status: "TODO", dueDate: upcomingDueDate },
       });
     }
 

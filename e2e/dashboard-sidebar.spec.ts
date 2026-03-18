@@ -70,18 +70,26 @@ test.describe('Dashboard Left Panel', () => {
 
     await page.goto('/dashboard');
 
-    // Apply a status filter first
+    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+
+    // Click "All Tasks" first to reveal the All Tasks section and its filters
+    await sidebar.getByRole('button', { name: 'All Tasks' }).click();
+
+    // Filters should now be visible with default "ALL" values
     const statusFilter = page.getByLabel('Filter by Status');
+    const categoryFilter = page.getByLabel('Filter by Category');
+    await expect(statusFilter).toBeVisible();
+    await expect(categoryFilter).toBeVisible();
+
+    // Apply a status filter
     await statusFilter.selectOption('PENDING');
     await expect(statusFilter).toHaveValue('PENDING');
 
-    // Click "All Tasks" in the sidebar
-    const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
+    // Click "All Tasks" again — filters should be reset to "ALL"
     await sidebar.getByRole('button', { name: 'All Tasks' }).click();
 
     // Filters should be reset to "ALL"
     await expect(statusFilter).toHaveValue('ALL');
-    const categoryFilter = page.getByLabel('Filter by Category');
     await expect(categoryFilter).toHaveValue('ALL');
   });
 
