@@ -30,7 +30,7 @@ import {
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
 
-function TaskListItem({
+export function TaskListItem({
   task,
   variant = "default",
   onViewTask,
