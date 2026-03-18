@@ -20,8 +20,8 @@ Before opening a PR, follow this workflow to keep project documentation accurate
 | Unit/integration test strategy, patterns, or setup   | `[TESTING.md](../TESTING.md)`, `[src/__tests__/README.md](../src/__tests__/README.md)`                       |
 | E2E / Playwright tests or configuration              | `[TESTING.md](../TESTING.md)`, `[e2e/README.md](../e2e/README.md)`                                           |
 | UI components added or theming/design token changes  | `[README.md](../README.md)` — UI Components section; `[AGENTS.md](../AGENTS.md)` — UI Development Guidelines |
-| Agent workflow, coding conventions, or project rules | `[AGENTS.md](../AGENTS.md)`                                                                                  |
-| Dependency upgrade or migration                      | `docs/<topic>-UPGRADE.md` (create if it doesn't exist)                                                       |
+| Agent workflow, coding conventions, or project rules | `[AGENTS.md](../AGENTS.md)`, `[CLAUDE.md](../CLAUDE.md)`, `[.github/copilot-instructions.md](../.github/copilot-instructions.md)` |
+| Dependency upgrade or migration                      | `docs/<TOPIC>_V<MAJOR>_UPGRADE.md` (create if it doesn't exist)                                              |
 
 
 ## Per-Doc Notes
@@ -37,7 +37,7 @@ Before opening a PR, follow this workflow to keep project documentation accurate
 - Update the testing levels overview when a new test framework or layer is introduced.
 - Add or update example commands if test scripts change in `package.json`.
 
-### src/**tests**/README.md
+### `src/__tests__/README.md`
 
 - Note new test files and what they cover.
 - Update the running-tests commands if they change.
@@ -53,7 +53,19 @@ Before opening a PR, follow this workflow to keep project documentation accurate
 - Update design token docs if new semantic tokens are added to `globals.css`.
 - Update agent workflow instructions when the development process changes.
 
-### docs/-UPGRADE.md
+### CLAUDE.md
+
+- Mirrors key information from `AGENTS.md` for Claude Code / Claude CLI agents.
+- Update when stack, project structure, commands, API endpoints, database models, or agent workflow rules change.
+- Keep concise — this file is injected into the agent context and counts against the token budget.
+
+### .github/copilot-instructions.md
+
+- Mirrors key information from `AGENTS.md` for GitHub Copilot agents.
+- Update when stack, project structure, commands, API endpoints, database models, or agent workflow rules change.
+- Keep concise — this file is auto-injected into every Copilot agent session.
+
+### docs/*_UPGRADE.md
 
 - Create when performing a significant library or tooling upgrade.
 - Include: motivation, breaking changes, migration steps, and any commands run.
@@ -65,4 +77,3 @@ Skip documentation updates only when:
 
 - Making trivial changes (typos, comments, minor style fixes)
 - The change is fully internal with no impact on setup, usage, structure, or testing
-
