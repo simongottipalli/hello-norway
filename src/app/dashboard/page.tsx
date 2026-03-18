@@ -13,17 +13,74 @@ import { DashboardSidebar, type ActiveView } from "@/components/DashboardSidebar
 import TaskDetailsModal from "@/components/TaskDetailsModal";
 import { ProfileView } from "@/components/ProfileView";
 import {
-  parseUtcDate,
   isTaskOverdue,
   isTaskUpcoming,
   formatDueDateWithTimezone,
 } from "@/lib/dateUtils";
 import type { Task } from "@/types/task";
-import { formatEnumKey } from "@/lib/utils";
-import { filterTasksByStatus, sortTasksByDueDate, type StatusFilter } from "@/lib/taskHelpers";
+import { cn, formatEnumKey } from "@/lib/utils";
+import {
+  filterTasksByStatus,
+  sortTasksByDueDate,
+  getStatusBadgeVariant,
+  getStatusLabel,
+  type StatusFilter,
+} from "@/lib/taskHelpers";
 
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
+
+export function TaskListItem({
+  task,
+  variant = "default",
+  onViewTask,
+}: {
+  task: Task;
+  variant?: "default" | "overdue";
+  onViewTask: (id: string) => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between",
+        variant === "overdue" ? "border-destructive/30 bg-destructive/5" : "bg-card",
+      )}
+    >
+      <div className="flex-1 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-medium">{task.title}</h3>
+          <Badge variant="secondary" className="text-xs">
+            {formatEnumKey(task.category)}
+          </Badge>
+          {variant !== "overdue" && task.status && (
+            <Badge variant={getStatusBadgeVariant(task.status)} className="text-xs">
+              {getStatusLabel(task.status)}
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">{task.shortDescription}</p>
+        {task.dueDate && (
+          <p
+            className={cn(
+              "text-xs",
+              variant === "overdue" ? "font-medium text-destructive" : "text-muted-foreground",
+            )}
+          >
+            Due: {formatDueDateWithTimezone(task.dueDate)}
+          </p>
+        )}
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onViewTask(task.id)}
+        aria-label={`View ${task.title}`}
+      >
+        View
+      </Button>
+    </div>
+  );
+}
 
 function OverdueTasksCard({
   tasks,
@@ -36,41 +93,13 @@ function OverdueTasksCard({
   return (
     <Card className="border-destructive/50">
       <CardHeader>
-        <CardTitle className="text-destructive">
-          Overdue Tasks ({tasks.length})
-        </CardTitle>
+        <CardTitle className="text-destructive">Overdue Tasks ({tasks.length})</CardTitle>
         <CardDescription>These tasks are past their due date</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-col gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-medium">{task.title}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {formatEnumKey(task.category)}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {task.shortDescription}
-                </p>
-                <p className="text-xs font-medium text-destructive">
-                  Due:{" "}
-                  {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewTask(task.id)}
-              >
-                View
-              </Button>
-            </div>
+            <TaskListItem key={task.id} task={task} variant="overdue" onViewTask={onViewTask} />
           ))}
         </div>
       </CardContent>
@@ -95,39 +124,7 @@ function UpcomingTasksCard({
       <CardContent>
         <div className="space-y-3">
           {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-medium">{task.title}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {formatEnumKey(task.category)}
-                  </Badge>
-                  <Badge
-                    variant={task.status === "SAVED" ? "default" : "outline"}
-                    className="text-xs"
-                  >
-                    {task.status === "SAVED" ? "In Progress" : "To Do"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {task.shortDescription}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Due:{" "}
-                  {task.dueDate ? formatDueDateWithTimezone(task.dueDate) : "N/A"}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewTask(task.id)}
-              >
-                View
-              </Button>
-            </div>
+            <TaskListItem key={task.id} task={task} onViewTask={onViewTask} />
           ))}
         </div>
       </CardContent>
@@ -204,21 +201,9 @@ export default function DashboardPage() {
     };
   }, [tasks]);
 
-  const overdueTasks = useMemo(() => {
-    return tasks.filter(isTaskOverdue).sort((a, b) => {
-      const dateA = a.dueDate ? parseUtcDate(a.dueDate).getTime() : 0;
-      const dateB = b.dueDate ? parseUtcDate(b.dueDate).getTime() : 0;
-      return dateA - dateB;
-    });
-  }, [tasks]);
+  const overdueTasks = useMemo(() => sortTasksByDueDate(tasks.filter(isTaskOverdue)), [tasks]);
 
-  const upcomingTasks = useMemo(() => {
-    return tasks.filter(isTaskUpcoming).sort((a, b) => {
-      const dateA = a.dueDate ? parseUtcDate(a.dueDate).getTime() : 0;
-      const dateB = b.dueDate ? parseUtcDate(b.dueDate).getTime() : 0;
-      return dateA - dateB;
-    });
-  }, [tasks]);
+  const upcomingTasks = useMemo(() => sortTasksByDueDate(tasks.filter(isTaskUpcoming)), [tasks]);
 
   const filteredTasks = useMemo(() => {
     let filtered = tasks;
@@ -367,50 +352,11 @@ export default function DashboardPage() {
                       <>
                         <div id="more-tasks-list" className="space-y-3">
                           {(moreExpanded ? moreTasks : moreTasks.slice(0, 3)).map((task) => (
-                            <div
+                            <TaskListItem
                               key={task.id}
-                              className="flex flex-col gap-2 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                              <div className="flex-1 space-y-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <h3 className="text-sm font-medium">{task.title}</h3>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {formatEnumKey(task.category)}
-                                  </Badge>
-                                  <Badge
-                                    variant={
-                                      task.status === "DONE"
-                                        ? "default"
-                                        : task.status === "SAVED"
-                                          ? "secondary"
-                                          : "outline"
-                                    }
-                                    className="text-xs"
-                                  >
-                                    {task.status === "DONE"
-                                      ? "Completed"
-                                      : task.status === "SAVED"
-                                        ? "In Progress"
-                                        : "To Do"}
-                                  </Badge>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                  {task.shortDescription}
-                                </p>
-                                {task.dueDate && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Due: {formatDueDateWithTimezone(task.dueDate)}
-                                  </p>
-                                )}
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSelectedTaskId(task.id)}
-                              >
-                                View
-                              </Button>
-                            </div>
+                              task={task}
+                              onViewTask={setSelectedTaskId}
+                            />
                           ))}
                         </div>
                         {moreTasks.length > 3 && (

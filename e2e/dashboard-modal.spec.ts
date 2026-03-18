@@ -13,7 +13,7 @@ test.describe('Dashboard Task Details Modal', () => {
     const initialUrl = page.url();
 
     // Click the first available view button (tasks are pre-seeded by global setup)
-    const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
+    const viewButton = page.getByRole('button', { name: /^view\b/i }).first();
     await viewButton.click();
 
     // Verify modal/dialog is shown
@@ -32,7 +32,7 @@ test.describe('Dashboard Task Details Modal', () => {
 
   test('should display task details correctly in modal', async ({ page }) => {
     // Tasks are pre-seeded by global setup
-    const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
+    const viewButton = page.getByRole('button', { name: /^view\b/i }).first();
     await viewButton.click();
 
     const dialog = page.getByRole('dialog');
@@ -54,7 +54,7 @@ test.describe('Dashboard Task Details Modal', () => {
 
   test.describe('modal dismissal', () => {
     test.beforeEach(async ({ page }) => {
-      const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
+      const viewButton = page.getByRole('button', { name: /^view\b/i }).first();
       const hasButton = await viewButton.isVisible().catch(() => false);
       if (!hasButton) {
         test.skip();
@@ -82,7 +82,7 @@ test.describe('Dashboard Task Details Modal', () => {
   });
 
   test('should trap focus within modal', async ({ page }) => {
-    const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
+    const viewButton = page.getByRole('button', { name: /^view\b/i }).first();
     const hasButton = await viewButton.isVisible().catch(() => false);
 
     if (!hasButton) {
@@ -104,7 +104,7 @@ test.describe('Dashboard Task Details Modal', () => {
   });
 
   test('should maintain modal state when updating task status', async ({ page }) => {
-    const viewButton = page.getByRole('button', { name: /view( details)?$/i }).first();
+    const viewButton = page.getByRole('button', { name: /^view\b/i }).first();
     const hasButton = await viewButton.isVisible().catch(() => false);
 
     if (!hasButton) {

@@ -146,3 +146,19 @@ export const sortTasksByDueDate = (tasks: Task[]): Task[] =>
     const dateB = b.dueDate ? parseUtcDate(b.dueDate).getTime() : Infinity;
     return dateA - dateB;
   });
+
+/** Maps a task status to the Badge variant used in the task list UI. */
+export const getStatusBadgeVariant = (
+  status: NonNullable<Task["status"]>,
+): "default" | "secondary" | "outline" => {
+  if (status === "DONE") return "default";
+  if (status === "SAVED") return "secondary";
+  return "outline";
+};
+
+/** Maps a task status to the human-readable label used in the task list UI. */
+export const getStatusLabel = (status: NonNullable<Task["status"]>): string => {
+  if (status === "DONE") return "Completed";
+  if (status === "SAVED") return "In Progress";
+  return "To Do";
+};

@@ -4,6 +4,8 @@ import {
   filterTasksByStatus,
   formatRecurrenceInfo,
   getOfficialLinks,
+  getStatusBadgeVariant,
+  getStatusLabel,
   getTaskDescription,
   sortTasksByDueDate,
 } from "../lib/taskHelpers";
@@ -115,5 +117,33 @@ describe("sortTasksByDueDate", () => {
     sortTasksByDueDate(tasks);
     expect(tasks[0].id).toBe(original[0].id);
     expect(tasks[1].id).toBe(original[1].id);
+  });
+});
+
+describe("getStatusBadgeVariant", () => {
+  it("returns 'default' for DONE", () => {
+    expect(getStatusBadgeVariant("DONE")).toBe("default");
+  });
+
+  it("returns 'secondary' for SAVED", () => {
+    expect(getStatusBadgeVariant("SAVED")).toBe("secondary");
+  });
+
+  it("returns 'outline' for TODO", () => {
+    expect(getStatusBadgeVariant("TODO")).toBe("outline");
+  });
+});
+
+describe("getStatusLabel", () => {
+  it("returns 'Completed' for DONE", () => {
+    expect(getStatusLabel("DONE")).toBe("Completed");
+  });
+
+  it("returns 'In Progress' for SAVED", () => {
+    expect(getStatusLabel("SAVED")).toBe("In Progress");
+  });
+
+  it("returns 'To Do' for TODO", () => {
+    expect(getStatusLabel("TODO")).toBe("To Do");
   });
 });
