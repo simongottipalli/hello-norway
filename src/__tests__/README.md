@@ -40,15 +40,43 @@ npx vitest run -t "should create"           # Run matching pattern
 
 ```
 src/__tests__/
-├── setup.ts                      # Test configuration
-├── otp.test.ts                   # OTP API tests (consolidated)
-├── tasks.test.ts                 # Task API tests
-├── user.test.ts                  # User model tests
+├── setup.ts                          # Test configuration (dotenv)
+├── README.md                         # This file
+├── app-routing.test.ts               # Route auth policy (public vs protected)
+├── authMiddleware.test.ts            # Session authentication middleware
+├── authProfile.test.ts               # Auth profile endpoints (GET/PATCH/DELETE)
+├── authSession.test.ts               # GET /api/auth/session success-path
+├── health.test.ts                    # GET /health endpoint
+├── otp.test.ts                       # OTP request/verify endpoints
+├── tasks.test.ts                     # Task API (CRUD)
+├── taskStatusUpdate.test.ts          # PATCH task status
+├── taskValidation.test.ts            # CreateTask payload validation
+├── taskAssignmentIntegration.test.ts # Profile-based task assignment
+├── onboardingProfile.test.ts         # Onboarding profile validation
+├── seedTasks.test.ts                 # Seed data integrity
+├── dateUtils.test.ts                 # Date utility functions
+├── task-detail-helpers.test.ts       # Task detail UI helpers
+├── dashboard-page.test.tsx           # Dashboard React component
+├── onboarding-page.test.tsx          # Onboarding React component
+├── landing-page.test.tsx             # Landing page React component
+├── footer.test.tsx                   # Footer React component
+├── lib/
+│   ├── logger.test.ts                # Logger & sanitization
+│   └── sessionCookieSig.test.ts      # Session cookie signing
+├── middleware/
+│   └── requestLogger.test.ts         # Request logging middleware
+├── repo/
+│   ├── taskRepo.test.ts              # Task repository
+│   ├── userRepo.test.ts              # User repository
+│   ├── sessionRepo.test.ts           # Session repository
+│   └── otpRepo.test.ts               # OTP repository
 └── services/
+    ├── authService.test.ts           # Auth service logic
+    ├── taskService.test.ts           # Task service logic
     └── email/
-        ├── emailService.test.ts      # Email service unit tests
-        ├── brevoProvider.test.ts     # Brevo provider unit tests
-        └── integration.test.ts       # Email integration tests
+        ├── brevoProvider.test.ts     # Brevo email provider
+        ├── emailService.test.ts      # Email service abstraction
+        └── integration.test.ts       # Email integration
 ```
 
 ## Writing Tests
