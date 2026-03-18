@@ -39,7 +39,7 @@ Task categories: ARRIVAL, IDENTITY_BANKING, HEALTH, TAX_WORK, FAMILY, HOUSING, D
 
 ## API Endpoints (Express, base path /api)
 
-- `GET|POST /api/tasks`, `PATCH|DELETE /api/tasks/:id`
+- `GET|POST /api/tasks`, `PATCH /api/tasks/:id`
 - `POST /api/otp/generate`, `POST /api/otp/verify`
 - `GET /health`
 
