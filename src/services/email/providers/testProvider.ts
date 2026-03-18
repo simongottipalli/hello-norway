@@ -3,8 +3,8 @@ import type { Logger } from '../../../lib/logger';
 
 /**
  * No-op email provider for test environments.
- * Logs the email to the console instead of sending it so E2E tests
- * can run without real email credentials.
+ * Suppresses all outbound email. If a logger is provided, the suppressed
+ * email details are logged at info level for debugging purposes.
  */
 export class TestProvider implements EmailProvider {
   async sendEmail(options: EmailOptions, logger?: Logger): Promise<EmailResult> {

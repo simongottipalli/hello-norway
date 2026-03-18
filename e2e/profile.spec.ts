@@ -1,4 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+/**
+ * Selector that targets the application error message while excluding the
+ * Next.js route announcer (which also carries role="alert" but is always
+ * empty and should not be matched in assertions).
+ */
+const errorLocator = (page: Page) =>
+  page.locator('[role="alert"].text-destructive');
 
 // All profile tests run with the shared authenticated session.
 test.describe('Profile editing', () => {
@@ -83,14 +91,14 @@ test.describe('Profile editing', () => {
       await page.getByLabel('Name').fill('');
       await page.getByRole('button', { name: 'Save profile' }).click();
 
-      await expect(page.getByRole('alert')).toContainText(/name is required/i);
+      await expect(errorLocator(page)).toContainText(/name is required/i);
     });
 
     test('should show an error for an out-of-range arrival year', async ({ page }) => {
       await page.getByLabel('Arrival year').fill('1800');
       await page.getByRole('button', { name: 'Save profile' }).click();
 
-      await expect(page.getByRole('alert')).toContainText(/arrival year must be between/i);
+      await expect(errorLocator(page)).toContainText(/arrival year must be between/i);
     });
 
     test('should keep form data intact after a validation error', async ({ page }) => {
@@ -100,7 +108,7 @@ test.describe('Profile editing', () => {
       await page.getByRole('button', { name: 'Save profile' }).click();
 
       // Error shown, arrival year should still be filled
-      await expect(page.getByRole('alert')).toContainText(/name is required/i);
+      await expect(errorLocator(page)).toContainText(/name is required/i);
       await expect(page.getByLabel('Arrival year')).toHaveValue('2025');
     });
   });
