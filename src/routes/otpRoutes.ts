@@ -14,11 +14,12 @@ router.post("/otp/verify", verifyOtp);
 if (process.env.NODE_ENV === "test") {
   router.get("/otp/test-peek", async (req, res) => {
     const email = typeof req.query.email === "string" ? req.query.email : "";
-    if (!email) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
       return res.status(400).json({ error: "email query param required" });
     }
     const otp = await prisma.oTPCode.findFirst({
-      where: { email, expiresAt: { gt: new Date() } },
+      where: { email: normalizedEmail, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: "desc" },
     });
     if (!otp) {
