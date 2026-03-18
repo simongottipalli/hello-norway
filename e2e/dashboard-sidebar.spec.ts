@@ -93,21 +93,31 @@ test.describe('Dashboard Left Panel', () => {
     await expect(categoryFilter).toHaveValue('ALL');
   });
 
-  test('should navigate to profile from quick actions', async ({ page }) => {
+  test('should show profile in main view from quick actions', async ({ page }) => {
     // Set viewport to desktop size
     await page.setViewportSize({ width: 1280, height: 800 });
 
     await page.goto('/dashboard');
     
-    // Click on "Profile" link in the sidebar
+    // Click on "Profile" button in the sidebar
     const sidebar = page.getByRole('complementary', { name: 'Dashboard sidebar' });
-    const profileLink = sidebar.getByRole('link', { name: 'Profile' });
-    await expect(profileLink).toBeVisible();
-    await profileLink.click();
+    const profileButton = sidebar.getByRole('button', { name: 'Profile' });
+    await expect(profileButton).toBeVisible();
+    await profileButton.click();
 
-    // Should navigate to profile page
-    await page.waitForURL(/\/profile/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/profile/);
+    // Should stay on the dashboard page (no navigation)
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    // "Back to Dashboard" button should appear, indicating profile is shown inline
+    await expect(page.getByRole('button', { name: 'Back to Dashboard' })).toBeVisible();
+
+    // Profile form fields should be visible in the main content area
+    await expect(page.getByLabel('Name')).toBeVisible();
+    await expect(page.getByLabel('Arrival year')).toBeVisible();
+
+    // Click back to return to dashboard view
+    await page.getByRole('button', { name: 'Back to Dashboard' }).click();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
   });
 
   test('should open add task dialog from quick actions', async ({ page }) => {

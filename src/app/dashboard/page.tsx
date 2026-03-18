@@ -11,6 +11,7 @@ import { TaskCategory } from "@/generated/prisma/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import TaskDetailsModal from "@/components/TaskDetailsModal";
+import { ProfileView } from "@/components/ProfileView";
 import {
   parseUtcDate,
   isTaskOverdue,
@@ -29,13 +30,15 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("ALL");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showAllTasks, setShowAllTasks] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const allTasksRef = useRef<HTMLDivElement>(null);
 
   const handleShowAllTasks = useCallback(() => {
+    setShowProfile(false);
     setSelectedCategory("ALL");
     setSelectedStatus("ALL");
     setShowAllTasks(true);
@@ -170,11 +173,15 @@ export default function DashboardPage() {
             upcomingCount={upcomingTasks.length}
             onTaskCreated={fetchTasks}
             onShowAllTasks={handleShowAllTasks}
+            onShowProfile={() => setShowProfile(true)}
           />
 
           {/* Main Content */}
           <div className="flex-1 space-y-8 min-w-0">
-            {/* Header */}
+            {showProfile ? (
+              <ProfileView onBack={() => setShowProfile(false)} />
+            ) : (
+              <>
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Dashboard</h1>
               <p className="text-muted-foreground">
@@ -410,6 +417,8 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               </div>
+            )}
+            </>
             )}
           </div>
         </div>
