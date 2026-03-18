@@ -20,7 +20,7 @@ import {
 } from "@/lib/dateUtils";
 import type { Task } from "@/types/task";
 import { formatEnumKey } from "@/lib/utils";
-import { filterTasksByStatus, type StatusFilter } from "@/lib/taskHelpers";
+import { filterTasksByStatus, sortTasksByDueDate, type StatusFilter } from "@/lib/taskHelpers";
 
 // Use the TaskCategory enum from Prisma instead of duplicating the list
 const TASK_CATEGORIES = Object.values(TaskCategory);
@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const handleShowAllTasks = useCallback(() => {
     setShowProfile(false);
     setSelectedCategory("ALL");
-    setSelectedStatus("ALL");
+    setSelectedStatus("PENDING");
     setShowAllTasks(true);
   }, []);
 
@@ -118,13 +118,8 @@ export default function DashboardPage() {
 
     filtered = filterTasksByStatus(filtered, selectedStatus);
 
-    // Create a copy before sorting to avoid mutating state
-    return [...filtered].sort((a, b) => {
-      if (a.category !== b.category) {
-        return a.category.localeCompare(b.category);
-      }
-      return a.sortOrder - b.sortOrder;
-    });
+    // Sort by ascending due date; tasks without a due date go last
+    return sortTasksByDueDate(filtered);
   }, [tasks, selectedCategory, selectedStatus]);
 
   const selectedTask = useMemo(
