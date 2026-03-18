@@ -4,6 +4,7 @@
  */
 
 import type { Task, TaskTrackingState, ApiErrorResponse } from "@/types/task";
+import { parseUtcDate } from "@/lib/dateUtils";
 
 /** Task statuses that are grouped under the "Pending" filter option */
 export const PENDING_STATUSES = ["TODO", "SAVED"] as const satisfies ReadonlyArray<
@@ -134,3 +135,14 @@ export const formatRecurrenceInfo = (
 
   return `Recommended timing: Up to ${maxDaysFromArrival} days from arrival.`;
 };
+
+/**
+ * Sorts tasks by ascending due date.
+ * Tasks without a due date are placed after all tasks that have one.
+ */
+export const sortTasksByDueDate = (tasks: Task[]): Task[] =>
+  [...tasks].sort((a, b) => {
+    const dateA = a.dueDate ? parseUtcDate(a.dueDate).getTime() : Infinity;
+    const dateB = b.dueDate ? parseUtcDate(b.dueDate).getTime() : Infinity;
+    return dateA - dateB;
+  });
