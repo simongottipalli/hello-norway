@@ -188,7 +188,7 @@ export function ProfileView({ onBack }: ProfileViewProps) {
       {onBack && (
         <Button
           variant="ghost"
-          className="mb-4 -ml-2"
+          className="mb-4 -ml-2 lg:hidden"
           onClick={onBack}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
