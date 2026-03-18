@@ -114,6 +114,16 @@ describe('createEmailServiceFromEnv', () => {
     expect(service).toBeInstanceOf(EmailService);
   });
 
+  it('should create a no-op test service when EMAIL_PROVIDER is "test"', () => {
+    process.env.EMAIL_PROVIDER = 'test';
+    delete process.env.EMAIL_FROM;
+    delete process.env.BREVO_API_KEY;
+
+    const service = createEmailServiceFromEnv();
+
+    expect(service).toBeInstanceOf(EmailService);
+  });
+
   it('should throw error if EMAIL_PROVIDER is missing', () => {
     delete process.env.EMAIL_PROVIDER;
     process.env.EMAIL_FROM = 'test@example.com';

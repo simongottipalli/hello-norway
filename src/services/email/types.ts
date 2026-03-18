@@ -22,9 +22,9 @@ export interface EmailProvider {
 }
 
 export interface EmailServiceConfig {
-  provider: 'brevo';
+  provider: 'brevo' | 'test';
   from: string;
-  brevo: {
+  brevo?: {
     apiKey: string;
   };
 }
