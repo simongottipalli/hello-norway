@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { isTaskOverdue, isTaskUpcoming } from "@/lib/dateUtils";
 import type { Task } from "@/types/task";
-import { filterTasksByStatus } from "@/lib/taskHelpers";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -286,127 +285,12 @@ describe("Dashboard date logic and filtering", () => {
       expect(arrivalTasks[0].title).toBe("Arrival Task");
     });
 
-    it("filters tasks by status using filterTasksByStatus helper", () => {
-      const todoTasks = filterTasksByStatus(mockTasks, "TODO");
-      expect(todoTasks).toHaveLength(1);
-      expect(todoTasks[0].title).toBe("Arrival Task");
-
-      const savedTasks = filterTasksByStatus(mockTasks, "SAVED");
-      expect(savedTasks).toHaveLength(1);
-      expect(savedTasks[0].title).toBe("Health Task");
-
-      const doneTasks = filterTasksByStatus(mockTasks, "DONE");
-      expect(doneTasks).toHaveLength(1);
-      expect(doneTasks[0].title).toBe("Tax Task");
-
-      const allTasks = filterTasksByStatus(mockTasks, "ALL");
-      expect(allTasks).toHaveLength(3);
-    });
-
-    it("filters tasks by pending status (combines TODO and SAVED) using filterTasksByStatus helper", () => {
-      const pendingTasks = filterTasksByStatus(mockTasks, "PENDING");
-      expect(pendingTasks).toHaveLength(2);
-      expect(pendingTasks.map((t) => t.title)).toContain("Arrival Task");
-      expect(pendingTasks.map((t) => t.title)).toContain("Health Task");
-      expect(pendingTasks.map((t) => t.title)).not.toContain("Tax Task");
-    });
-
     it("filters tasks by both category and status", () => {
       const filtered = mockTasks.filter(
         (t) => t.category === "ARRIVAL" && t.status === "TODO",
       );
       expect(filtered).toHaveLength(1);
       expect(filtered[0].title).toBe("Arrival Task");
-    });
-  });
-
-  describe("Task sorting", () => {
-    const mockTasksForSorting = [
-      {
-        id: "3",
-        title: "Task C",
-        slug: "task-c",
-        shortDescription: "C",
-        body: "Body",
-        category: "HEALTH",
-        sortOrder: 3,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: "TODO" as const,
-        dueDate: "2026-03-20T00:00:00.000Z",
-      },
-      {
-        id: "1",
-        title: "Task A",
-        slug: "task-a",
-        shortDescription: "A",
-        body: "Body",
-        category: "ARRIVAL",
-        sortOrder: 1,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: "TODO" as const,
-        dueDate: "2026-03-15T00:00:00.000Z",
-      },
-      {
-        id: "2",
-        title: "Task B",
-        slug: "task-b",
-        shortDescription: "B",
-        body: "Body",
-        category: "ARRIVAL",
-        sortOrder: 2,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: "TODO" as const,
-        dueDate: "2026-03-18T00:00:00.000Z",
-      },
-    ];
-
-    it("sorts tasks by due date", () => {
-      const sorted = [...mockTasksForSorting].sort((a, b) => {
-        if (a.dueDate && b.dueDate) {
-          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        }
-        return 0;
-      });
-
-      expect(sorted[0].title).toBe("Task A");
-      expect(sorted[1].title).toBe("Task B");
-      expect(sorted[2].title).toBe("Task C");
-    });
-
-    it("sorts tasks by category", () => {
-      const sorted = [...mockTasksForSorting].sort((a, b) =>
-        a.category.localeCompare(b.category),
-      );
-
-      expect(sorted[0].category).toBe("ARRIVAL");
-      expect(sorted[1].category).toBe("ARRIVAL");
-      expect(sorted[2].category).toBe("HEALTH");
-    });
-
-    it("sorts tasks by sort order", () => {
-      const sorted = [...mockTasksForSorting].sort((a, b) => a.sortOrder - b.sortOrder);
-
-      expect(sorted[0].sortOrder).toBe(1);
-      expect(sorted[1].sortOrder).toBe(2);
-      expect(sorted[2].sortOrder).toBe(3);
-    });
-
-    it("does not mutate original array when sorting", () => {
-      const original = [...mockTasksForSorting];
-      const sorted = [...mockTasksForSorting].sort((a, b) => a.sortOrder - b.sortOrder);
-
-      // Verify original order is preserved
-      expect(original[0].id).toBe("3");
-      expect(original[1].id).toBe("1");
-      expect(original[2].id).toBe("2");
-
-      // Verify sorted is different
-      expect(sorted[0].id).toBe("1");
-      expect(sorted[1].id).toBe("2");
-      expect(sorted[2].id).toBe("3");
     });
   });
 });

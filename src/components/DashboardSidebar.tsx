@@ -22,8 +22,8 @@ interface DashboardSidebarProps {
   upcomingCount: number;
   activeView?: ActiveView;
   onTaskCreated?: () => void;
-  onShowDashboard?: () => void;
-  onShowAllTasks?: () => void;
+  onShowDashboard: () => void;
+  onShowAllTasks: () => void;
   onShowProfile?: () => void;
 }
 
@@ -39,7 +39,6 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const router = useRouter();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const noop = () => {};
 
   const handleTaskCreated = async () => {
     // Call the parent's fetch function to reload tasks
@@ -58,7 +57,7 @@ export function DashboardSidebar({
           <Button
             variant={activeView === "dashboard" ? "secondary" : "outline"}
             size="sm"
-            onClick={onShowDashboard ?? noop}
+            onClick={onShowDashboard}
           >
             <LayoutDashboard className="mr-2 h-4 w-4" />
             Dashboard
@@ -66,7 +65,7 @@ export function DashboardSidebar({
           <Button
             variant={activeView === "allTasks" ? "secondary" : "outline"}
             size="sm"
-            onClick={onShowAllTasks ?? noop}
+            onClick={onShowAllTasks}
           >
             <ListTodo className="mr-2 h-4 w-4" />
             All Tasks
@@ -175,7 +174,7 @@ export function DashboardSidebar({
             <Button
               variant={activeView === "dashboard" ? "secondary" : "outline"}
               className="w-full justify-start"
-              onClick={onShowDashboard ?? noop}
+              onClick={onShowDashboard}
             >
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Dashboard
@@ -183,7 +182,7 @@ export function DashboardSidebar({
             <Button
               variant={activeView === "allTasks" ? "secondary" : "outline"}
               className="w-full justify-start"
-              onClick={onShowAllTasks ?? noop}
+              onClick={onShowAllTasks}
             >
               <ListTodo className="mr-2 h-4 w-4" />
               All Tasks
