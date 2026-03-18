@@ -145,8 +145,8 @@ test.describe('Dashboard Left Panel', () => {
     // First navigate to Profile view
     await sidebar.getByRole('button', { name: 'Profile' }).click();
 
-    // Profile view should be visible
-    await expect(page.getByRole('button', { name: 'Back to Dashboard' })).toBeVisible();
+    // Profile view should be visible (check for profile form fields)
+    await expect(page.getByLabel('Name')).toBeVisible();
 
     // Now click Dashboard button to return to the dashboard view
     await sidebar.getByRole('button', { name: 'Dashboard' }).click();
@@ -158,7 +158,7 @@ test.describe('Dashboard Left Panel', () => {
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
 
     // Profile view should no longer be visible
-    await expect(page.getByRole('button', { name: 'Back to Dashboard' })).not.toBeVisible();
+    await expect(page.getByLabel('Name')).not.toBeVisible();
   });
 
   test('should show profile in main view from quick actions', async ({ page }) => {
@@ -176,16 +176,14 @@ test.describe('Dashboard Left Panel', () => {
     // Should stay on the dashboard page (no navigation)
     await expect(page).toHaveURL(/\/dashboard/);
 
-    // "Back to Dashboard" button should appear, indicating profile is shown inline
-    await expect(page.getByRole('button', { name: 'Back to Dashboard' })).toBeVisible();
-
     // Profile form fields should be visible in the main content area
     await expect(page.getByLabel('Name')).toBeVisible();
     await expect(page.getByLabel('Arrival year')).toBeVisible();
 
-    // Click back to return to dashboard view
-    await page.getByRole('button', { name: 'Back to Dashboard' }).click();
+    // On desktop, navigate back to dashboard via the sidebar (no back button on desktop)
+    await sidebar.getByRole('button', { name: 'Dashboard' }).click();
     await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    await expect(page.getByLabel('Name')).not.toBeVisible();
   });
 
   test('should open add task dialog from quick actions', async ({ page }) => {
