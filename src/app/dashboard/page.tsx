@@ -187,6 +187,13 @@ export default function DashboardPage() {
               <ProfileView onBack={() => setShowProfile(false)} />
             ) : showAllTasks ? (
               <>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">All Tasks</h1>
+                  <p className="text-muted-foreground">
+                    Browse, filter, and manage all your tasks
+                  </p>
+                </div>
+
                 {/* Overdue Tasks */}
                 {overdueTasks.length > 0 && (
                   <Card className="border-destructive/50">
