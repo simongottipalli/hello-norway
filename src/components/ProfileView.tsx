@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EMPLOYMENT_STATUS_OPTIONS, type EmploymentStatusValue } from "@/lib/employmentStatus";
 import { ArrowLeft } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 type ProfileUser = {
   name: string;
@@ -38,7 +40,6 @@ export function ProfileView({ onBack }: ProfileViewProps) {
   const [employmentStatus, setEmploymentStatus] = useState("");
   const [hasChildren, setHasChildren] = useState("");
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     if (isAuthLoading) {
@@ -88,7 +89,6 @@ export function ProfileView({ onBack }: ProfileViewProps) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
-    setSuccessMessage("");
 
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -127,7 +127,7 @@ export function ProfileView({ onBack }: ProfileViewProps) {
         return;
       }
 
-      setSuccessMessage("Profile updated successfully");
+      toast.success("Profile updated successfully");
       await refreshSession();
     } catch {
       setError("Network error. Please try again.");
@@ -138,7 +138,6 @@ export function ProfileView({ onBack }: ProfileViewProps) {
 
   const handleDeleteProfile = async () => {
     setError("");
-    setSuccessMessage("");
     setIsDeleting(true);
 
     try {
@@ -203,7 +202,10 @@ export function ProfileView({ onBack }: ProfileViewProps) {
         </CardHeader>
         <CardContent>
           {isAuthLoading || isLoading ? (
-            <p className="text-muted-foreground">Loading profile...</p>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Spinner size="sm" />
+              <span>Loading profile...</span>
+            </div>
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit} noValidate>
               <div className="space-y-2">
@@ -263,11 +265,6 @@ export function ProfileView({ onBack }: ProfileViewProps) {
               {error && (
                 <p className="text-sm text-destructive" role="alert">
                   {error}
-                </p>
-              )}
-              {successMessage && (
-                <p className="text-sm text-primary" role="status">
-                  {successMessage}
                 </p>
               )}
 

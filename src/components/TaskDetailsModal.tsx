@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -67,6 +68,7 @@ export default function TaskDetailsModal({ task, onClose, onTaskUpdated }: TaskD
         );
       }
 
+      toast.success("Task progress saved");
       onTaskUpdated();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update task tracking");

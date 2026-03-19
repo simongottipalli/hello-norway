@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { countries } from "@/data/countries";
 import {
   buildFallbackTaskPreview,
@@ -356,7 +357,10 @@ export function OnboardingSurvey() {
             </CardHeader>
             <CardContent className="space-y-4">
               {isPreviewLoading ? (
-                <p className="text-sm text-muted-foreground">Loading your task list...</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Spinner size="sm" />
+                  <span>Loading your task list...</span>
+                </div>
               ) : previewTasks.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No matching tasks right now.</p>
               ) : (

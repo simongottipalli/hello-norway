@@ -119,7 +119,7 @@ export function Header() {
 
       {/* Mobile Navigation Menu */}
       {!isLoading && isMobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background" data-testid="mobile-nav" id="mobile-nav">
+        <div className="animate-slide-down md:hidden border-t border-border bg-background" data-testid="mobile-nav" id="mobile-nav">
           <nav className="mx-auto max-w-7xl px-4 py-4 space-y-2">{isAuthenticated && user ? (
               <>
                 <div className="pb-2 mb-2 border-b border-border">
