@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { TaskCategory } from "@/generated/prisma/enums";
+import { TaskCategory } from "@/types/enums";
 import { DashboardSkeleton } from "@/components/DashboardSkeleton";
 import { DashboardSidebar, type ActiveView } from "@/components/DashboardSidebar";
 import TaskDetailsModal from "@/components/TaskDetailsModal";
