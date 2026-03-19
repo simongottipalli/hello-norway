@@ -57,10 +57,15 @@ export default defineConfig({
       env: {
         DATABASE_URL: process.env.DATABASE_URL ?? '',
         SESSION_COOKIE_SECRET: process.env.SESSION_COOKIE_SECRET || 'test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890',
-        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'test',
+        // Always use the no-op test provider for E2E so OTP codes are stored in
+        // the DB without any real email being sent. This must be hardcoded because
+        // CI sets EMAIL_PROVIDER=brevo for the unit-test step and that value would
+        // otherwise bleed through the || 'test' fallback.
+        EMAIL_PROVIDER: 'test',
         EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@example.com',
-        BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
-        NODE_ENV: process.env.NODE_ENV ?? 'test',
+        BREVO_API_KEY: '',
+        // Must be 'test' so the /otp/test-peek endpoint is registered by Express.
+        NODE_ENV: 'test',
       },
     },
     {
@@ -77,10 +82,10 @@ export default defineConfig({
       env: {
         DATABASE_URL: process.env.DATABASE_URL ?? '',
         SESSION_COOKIE_SECRET: process.env.SESSION_COOKIE_SECRET || 'test-secret-for-e2e-tests-must-be-at-least-32-chars-long-1234567890',
-        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'test',
+        EMAIL_PROVIDER: 'test',
         EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@example.com',
-        BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
-        NODE_ENV: process.env.NODE_ENV ?? 'test',
+        BREVO_API_KEY: '',
+        NODE_ENV: 'test',
         PORT: '3999',
       },
     },
