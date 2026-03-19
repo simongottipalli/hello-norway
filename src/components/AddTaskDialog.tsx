@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { TaskCategory } from "@/generated/prisma/enums";
+import { TaskCategory } from "@/types/enums";
 import { formatEnumKey } from "@/lib/utils";
 
 interface AddTaskDialogProps {
@@ -50,7 +50,7 @@ export function AddTaskDialog({
   const generateSlug = (text: string): string => {
     // Generate a short random suffix (6 characters)
     const suffix = Math.random().toString(36).substring(2, 8);
-    
+
     // Slugify the title and truncate to leave room for suffix
     const slugified = text
       .toLowerCase()
@@ -58,11 +58,11 @@ export function AddTaskDialog({
       .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
-    
+
     // Ensure total length stays within 80 chars (leaving room for -suffix)
     const maxBaseLength = 80 - suffix.length - 1; // -1 for the hyphen
     const truncated = slugified.substring(0, maxBaseLength);
-    
+
     return `${truncated}-${suffix}`;
   };
 

@@ -2,7 +2,7 @@ import { withTransaction } from "../repo/db";
 import type { UserUpdateData } from "../types/models";
 import * as userRepo from "../repo/userRepo";
 import * as sessionRepo from "../repo/sessionRepo";
-import { syncUserTaskAssignments } from "./taskAssignmentService";
+import { syncUserTaskAssignments, type AssignmentProfile } from "./taskAssignmentService";
 
 // ──────────────────────────────────────────────
 // Types
@@ -46,7 +46,7 @@ export const updateProfile = async (
   const user = await withTransaction(async (tx) => {
     const updatedUser = await userRepo.updateUserProfile(userId, data, tx);
 
-    await syncUserTaskAssignments(updatedUser, {
+    await syncUserTaskAssignments(updatedUser as AssignmentProfile, {
       removeOutdatedTodoAssignments: true,
       db: tx,
     });
