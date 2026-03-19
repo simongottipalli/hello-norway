@@ -205,7 +205,7 @@ export function ProfileView({ onBack }: ProfileViewProps) {
           {isAuthLoading || isLoading ? (
             <p className="text-muted-foreground">Loading profile...</p>
           ) : (
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
               <div className="space-y-2">
                 <Label htmlFor="profile-name">Name</Label>
                 <Input

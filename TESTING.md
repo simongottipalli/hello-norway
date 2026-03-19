@@ -42,10 +42,12 @@ npm run test:e2e:debug    # Debug mode
 **Coverage**:
 
 - ✅ UI interactions (forms, buttons, navigation)
-- ✅ Task CRUD operations through UI
+- ✅ Authentication (OTP login flow, session creation, logout)
+- ✅ Profile viewing and editing
+- ✅ Task interactions through UI (modal, status updates)
+- ✅ Onboarding survey flow
 - ✅ Form validation and error states
-- ✅ API endpoint testing
-- ✅ Data persistence and reloads
+- ✅ Protected and public routing
 
 See [E2E Test Documentation](e2e/README.md)
 
@@ -109,9 +111,13 @@ hello-norway/
 │   └── README.md            # Documentation
 │
 ├── e2e/                     # End-to-End tests
-│   ├── tasks.spec.ts        # UI workflow tests
-│   ├── api.spec.ts          # API integration tests
-│   └── README.md            # Documentation
+│   ├── navigation.spec.ts        # Navigation, routing, logout, mobile menu
+│   ├── dashboard-sidebar.spec.ts # Sidebar, add task, profile view
+│   ├── dashboard-modal.spec.ts   # Task detail modal, status updates
+│   ├── onboarding.spec.ts        # Onboarding survey, task preview
+│   ├── login.spec.ts             # OTP login flow, email/OTP validation
+│   ├── profile.spec.ts           # Profile viewing and editing
+│   └── README.md                 # Documentation
 │
 ├── vitest.config.ts         # Unit test config
 └── playwright.config.ts     # E2E test config

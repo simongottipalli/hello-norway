@@ -4,83 +4,148 @@ This directory contains end-to-end tests for the Hello Norway application using 
 
 ## Overview
 
-E2E tests verify the complete user flow from the browser perspective, focusing on **frontend UI interactions**. These tests run against the actual application with both the backend and frontend servers running.
+E2E tests verify complete user workflows from the browser perspective, covering UI interactions, navigation, authentication, and data persistence. Tests run against a full production build of the application with both the backend (Express) and frontend (Next.js) servers running.
 
 > **Note**: For API endpoint testing, see the [unit and integration tests](../src/__tests__/README.md) which use Vitest and Supertest.
 
 ## Test Files
 
-### `tasks.spec.ts`
+### `navigation.spec.ts`
 
-Tests for the Tasks page UI functionality:
+Navigation, routing, and authentication redirects:
 
-- Page rendering and layout
-- Task form validation
-- Creating new tasks
-- Displaying task lists
-- Deleting tasks
-- Form state management
-- Multiple task operations
-- Data persistence
-- Browser interactions (clicks, form fills, dialog handling)
+- Protected route redirects (unauthenticated → `/login`)
+- Public route access (`/`, `/login`, `/onboarding`)
+- Authenticated redirect (`/login` → `/dashboard`)
+- Nav links and active state
+- Logout flow
+- Mobile hamburger menu (toggle, close via link / Escape / outside click)
+
+### `dashboard-sidebar.spec.ts`
+
+Dashboard sidebar and quick-action flows:
+
+- Sidebar visibility at desktop / tablet / mobile viewports
+- "All Tasks" button and filter reset
+- "Dashboard" navigation button
+- Profile view in the main content area
+- Add Task dialog (open, fill form, create task)
+
+### `dashboard-modal.spec.ts`
+
+Task detail modal interactions:
+
+- Open modal via "View Details" button
+- Modal content (description, category, status, notes, due date)
+- Close via button / Escape / outside click
+- Focus trap within modal
+- Update status + notes and save
+
+### `onboarding.spec.ts`
+
+Onboarding survey flow:
+
+- Next button disabled until the current question is answered
+- Back button disabled on the first question
+- Forward/back navigation with answer preservation
+- Progress bar
+- Conditional questions (job offer for Student vs Skilled worker)
+- Task preview after completion
+- "Save and continue" button
+
+### `login.spec.ts`
+
+OTP login flow:
+
+- Login page renders the email step
+- Validation errors for empty / invalid email
+- Transition to OTP step after valid email submission
+- Validation errors for empty OTP and wrong OTP code
+- "Change Email" navigation back to the email step
+- Successful login with correct OTP → redirect to `/dashboard`
+- Authenticated users are redirected away from `/login`
+
+### `profile.spec.ts`
+
+Profile viewing and editing:
+
+- Profile page renders all form fields
+- Name field is pre-populated from the existing profile
+- Save name / arrival year / employment status / has-children
+- Validation errors (empty name, out-of-range year)
+- Form state preserved after a validation error
+- Delete Profile confirmation dialog (open and cancel)
+- Profile form accessible from the dashboard sidebar
+
+## Infrastructure
+
+| File | Purpose |
+|---|---|
+| `global-setup.ts` | Creates the E2E test user, two sessions (main + logout), and seeds UserTask records |
+| `global-teardown.ts` | Deletes the test user (cascades to sessions and tasks) |
+| `helpers/db-setup.ts` | Prisma helper invoked by global-setup via `tsx` |
+| `helpers/db-teardown.ts` | Prisma helper invoked by global-teardown via `tsx` |
+| `.auth/user.json` | Persisted auth state shared by all authenticated tests |
+| `.auth/user-logout.json` | Isolated auth state used only by the logout test |
+
+### Email mocking for login tests
+
+The Express server is started with `EMAIL_PROVIDER=test` in E2E mode. This activates a no-op email provider that suppresses all outbound email. A test-only endpoint (`GET /api/otp/test-peek?email=…`) is exposed by the server when `NODE_ENV=test`, allowing login E2E tests to retrieve the OTP that was stored in the database without reading a real inbox.
 
 ## Running Tests
 
 ### Prerequisites
 
-Make sure you have installed dependencies:
-
 ```bash
 npm install
-npx playwright install  # Install browser binaries
+npx playwright install chromium   # Install browser binaries
+npm run build                      # E2E tests require a production build
 ```
 
 ### Unified Test Runner (Recommended)
 
 ```bash
-npm test                    # Run ALL tests (unit + E2E)
-npm test -- --e2e           # Run only E2E tests
-npm test -- --e2e --headed  # E2E with visible browser
-npm test -- --e2e --ui      # Interactive UI mode
-npm test -- --parallel      # Run unit + E2E in parallel
-npm test -- --help          # Show all available options
-```
-
-### Direct npm Scripts
-
-```bash
-npm run test:e2e              # Run E2E tests
-npm run test:e2e:ui           # Interactive UI mode
+npm run test:e2e              # Build + run all E2E tests
+npm run test:e2e:ui           # Interactive Playwright UI mode
 npm run test:e2e:headed       # Show browser during tests
 npm run test:e2e:debug        # Debug with Playwright Inspector
-npm run test:all              # Run unit + E2E tests (sequential)
-npm run test:all:parallel     # Run unit + E2E tests (parallel)
-npm run test:ci               # CI mode with coverage
 ```
 
 ### Advanced Playwright Commands
 
 ```bash
-npx playwright test e2e/tasks.spec.ts           # Run specific file
-npx playwright test -g "should create a new task"  # Run matching pattern
-npx playwright test --trace on                  # Generate trace files
-npx playwright show-report                      # View HTML report
+npx playwright test e2e/login.spec.ts          # Run a single spec file
+npx playwright test -g "should log in"         # Run tests matching a pattern
+npx playwright test --trace on                 # Generate trace files
+npx playwright show-report                     # View HTML report
 ```
 
 ## Test Configuration
 
 Configuration is defined in `playwright.config.ts`:
 
-- **Base URL**: <http://localhost:3000> (Next.js frontend)
-- **Test Directory**: `./e2e`
-- **Browser**: Chromium (can be extended to Firefox, WebKit)
-- **Auto-start servers**: Both backend (port 3001) and frontend (port 3000) are automatically started before tests run
-- **Retries**: 2 retries in CI, 0 locally
-- **Reporter**: HTML report (view with `npx playwright show-report`)
+- **Base URL**: `http://localhost:3999` (production build, dedicated port)
+- **Auth state**: all tests start with a pre-authenticated context via `storageState`
+- **Browser**: Chromium (extendable to Firefox/WebKit)
+- **Retries**: 2 in CI, 0 locally
+- **Reporter**: HTML (run `npx playwright show-report` to view)
 
 ## Writing Tests
 
-### Basic Test Structure
+### Unauthenticated tests
+
+```typescript
+const unauthenticatedTest = test.extend({
+  storageState: { cookies: [], origins: [] },
+});
+
+unauthenticatedTest('unauthenticated scenario', async ({ page }) => {
+  await page.goto('/login');
+  // …
+});
+```
+
+### Basic test structure
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -91,135 +156,33 @@ test.describe('Feature Name', () => {
   });
 
   test('should do something', async ({ page }) => {
-    // Arrange
     await page.getByLabel('Input').fill('value');
-
-    // Act
     await page.getByRole('button', { name: 'Submit' }).click();
-
-    // Assert
     await expect(page.getByText('Success')).toBeVisible();
   });
 });
 ```
 
-### UI Interaction Testing
-
-```typescript
-test('should interact with form elements', async ({ page }) => {
-  // Fill form
-  await page.getByLabel('Task Title').fill('New Task');
-
-  // Click button
-  await page.getByRole('button', { name: 'Add Task' }).click();
-
-  // Verify UI update
-  await expect(page.getByText('New Task')).toBeVisible();
-});
-```
-
 ## Best Practices
 
-1. **Use Semantic Selectors**: Prefer `getByRole`, `getByLabel`, `getByText` over CSS selectors
-2. **Wait for Elements**: Use `expect().toBeVisible()` instead of manual waits when possible
-3. **Unique Test Data**: Use timestamps or random values to avoid conflicts
-4. **Clean Up**: Tests should be independent and not rely on other tests
-5. **Descriptive Names**: Test names should clearly describe what is being tested
-6. **Arrange-Act-Assert**: Structure tests with clear setup, action, and verification steps
+1. **Semantic selectors** — prefer `getByRole`, `getByLabel`, `getByText` over CSS selectors
+2. **Prefer `expect().toBeVisible()`** over manual waits
+3. **Unique test data** — use dedicated test-user email addresses to avoid conflicts
+4. **Restore mutated state** — when a test changes profile or task data, restore it in the same test
+5. **Descriptive names** — test names should clearly describe the scenario being validated
 
 ## Debugging Tips
 
-### View Test Reports
-
-After running tests, view the HTML report:
-
 ```bash
+# View the HTML test report
 npx playwright show-report
-```
 
-### Generate Trace
-
-Run with trace on:
-
-```bash
+# Run with trace collection for post-mortem analysis
 npx playwright test --trace on
-```
 
-### Take Screenshots
-
-Add to your test:
-
-```typescript
-await page.screenshot({ path: 'screenshot.png' });
-```
-
-### Pause Execution
-
-Add to your test for debugging:
-
-```typescript
+# Pause execution inside a test
 await page.pause();
 ```
-
-## CI/CD Integration
-
-The tests are configured to run in CI environments:
-
-- Servers start automatically
-- Retries are enabled (2 attempts)
-- Single worker to avoid port conflicts
-- HTML report is generated
-
-Example GitHub Actions workflow:
-
-```yaml
-- name: Install dependencies
-  run: npm ci
-
-- name: Install Playwright Browsers
-  run: npx playwright install --with-deps
-
-- name: Run E2E tests
-  run: npm run test:e2e
-
-- name: Upload test report
-  if: always()
-  uses: actions/upload-artifact@v3
-  with:
-    name: playwright-report
-    path: playwright-report/
-```
-
-## Troubleshooting
-
-### Port Already in Use
-
-If tests fail because ports 3000 or 3001 are in use:
-
-```bash
-# Kill processes on those ports
-lsof -ti:3000 | xargs kill -9
-lsof -ti:3001 | xargs kill -9
-```
-
-### Tests Timing Out
-
-Increase timeout in test:
-
-```typescript
-test('slow test', async ({ page }) => {
-  test.setTimeout(60000); // 60 seconds
-  // ... test code
-});
-```
-
-### Database State
-
-Tests use the same database as development. Consider:
-
-- Using a separate test database
-- Cleaning up test data after runs
-- Using transactions that rollback
 
 ## Resources
 
