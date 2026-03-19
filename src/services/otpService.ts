@@ -2,7 +2,7 @@ import { randomBytes, randomInt } from 'crypto';
 import { withTransaction } from '../repo/db';
 import type { EmailService } from './email/emailService';
 import type { Logger } from '../lib/logger';
-import { syncUserTaskAssignments } from './taskAssignmentService';
+import { syncUserTaskAssignments, type AssignmentProfile } from './taskAssignmentService';
 import * as otpRepo from '../repo/otpRepo';
 import * as userRepo from '../repo/userRepo';
 import * as sessionRepo from '../repo/sessionRepo';
@@ -157,7 +157,7 @@ export class OtpService {
         const user = await userRepo.upsertUserByEmail(email, tx);
 
         // Sync task assignments within the transaction
-        await syncUserTaskAssignments(user, { db: tx });
+        await syncUserTaskAssignments(user as AssignmentProfile, { db: tx });
 
         // Clean up old sessions for this user
         await sessionRepo.deleteUserSessions(user.id, tx);
