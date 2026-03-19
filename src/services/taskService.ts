@@ -1,5 +1,5 @@
-import { UserTaskStatus } from "../generated/prisma/client.js";
-import { prisma } from "../lib/prisma";
+import { UserTaskStatus } from "../types/enums";
+import { withTransaction } from "../repo/db";
 import * as taskRepo from "../repo/taskRepo";
 import { type CreateTaskPayload } from "../controllers/taskValidation";
 
@@ -104,7 +104,7 @@ export const createTask = async (
     maxDaysFromArrival,
   } = payload;
 
-  const task = await prisma.$transaction(async (tx) => {
+  const task = await withTransaction(async (tx) => {
     const createdTask = await taskRepo.createTask(
       {
         slug,

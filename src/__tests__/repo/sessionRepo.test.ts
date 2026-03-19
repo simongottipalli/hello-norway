@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as sessionRepo from "../../repo/sessionRepo";
-import { prisma } from "../../lib/prisma";
+import { prisma } from "../../repo/db";
 
-vi.mock("../../lib/prisma", () => ({
+vi.mock("../../repo/db", () => ({
   prisma: {
     session: {
       findUnique: vi.fn(),

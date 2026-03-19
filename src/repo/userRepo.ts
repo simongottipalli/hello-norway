@@ -1,7 +1,8 @@
 import type { Prisma } from "../generated/prisma/client.js";
-import { prisma } from "../lib/prisma";
+import { prisma, type DbClient } from "./db";
+import type { UserUpdateData } from "../types/models";
 
-type UserDb = Pick<typeof prisma, "user" | "userTask">;
+type UserDb = Pick<DbClient, "user" | "userTask">;
 
 export const PROFILE_SELECT = {
   id: true,
@@ -29,9 +30,9 @@ export const upsertUserByEmail = (email: string, db: UserDb = prisma) =>
 
 export const updateUserProfile = (
   id: string,
-  data: Prisma.UserUpdateInput,
+  data: UserUpdateData,
   db: UserDb = prisma,
-) => db.user.update({ where: { id }, data, select: PROFILE_SELECT });
+) => db.user.update({ where: { id }, data: data as Prisma.UserUpdateInput, select: PROFILE_SELECT });
 
 export const deleteUserTasks = (userId: string, db: UserDb = prisma) =>
   db.userTask.deleteMany({ where: { userId } });

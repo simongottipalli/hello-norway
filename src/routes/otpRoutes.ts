@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requestOtp as generateOtp, verifyOtp } from "../controllers/otpController";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../repo/db";
 
 const router = Router();
 

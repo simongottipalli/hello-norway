@@ -1,6 +1,6 @@
-import { prisma } from "../lib/prisma";
+import { prisma, type DbClient } from "./db";
 
-type SessionDb = Pick<typeof prisma, "session">;
+type SessionDb = Pick<DbClient, "session">;
 
 export const findSessionWithUser = (sessionToken: string, db: SessionDb = prisma) =>
   db.session.findUnique({

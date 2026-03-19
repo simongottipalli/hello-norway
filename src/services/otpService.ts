@@ -1,5 +1,5 @@
 import { randomBytes, randomInt } from 'crypto';
-import { prisma } from '../lib/prisma';
+import { withTransaction } from '../repo/db';
 import type { EmailService } from './email/emailService';
 import type { Logger } from '../lib/logger';
 import { syncUserTaskAssignments } from './taskAssignmentService';
@@ -150,7 +150,7 @@ export class OtpService {
 
       // Wrap all operations in a transaction to ensure atomicity
       // If any step fails, the OTP is not consumed and the user can retry
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await withTransaction(async (tx) => {
         // Delete all OTP records for this email after successful verification
         await otpRepo.deleteAllOtpsByEmail(email, tx);
 
