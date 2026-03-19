@@ -90,7 +90,9 @@ test.describe('OTP Login flow', () => {
       await page.getByRole('button', { name: 'Send OTP' }).click();
       await expect(page.getByLabel('Verification Code')).toBeVisible({ timeout: 10_000 });
 
-      await page.getByLabel('Verification Code').fill('000000');
+      // Use a valid 6-digit code (100001) that won't match the real OTP.
+      // '000000' would fail server-side range validation (must be 100000–999999).
+      await page.getByLabel('Verification Code').fill('100001');
       await page.getByRole('button', { name: 'Verify & Login' }).click();
       await expect(errorLocator(page)).toContainText(/invalid or expired otp/i);
     });

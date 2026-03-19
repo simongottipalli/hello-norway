@@ -229,7 +229,6 @@ function LoginForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => handleKeyPress(e, handleSendOtp)}
                   disabled={isLoading}
-                  aria-label="Email address"
                   aria-required="true"
                   aria-invalid={!!error}
                   aria-describedby={error ? "email-error" : undefined}
@@ -239,7 +238,6 @@ function LoginForm() {
                 onClick={handleSendOtp}
                 disabled={isLoading}
                 className="w-full"
-                aria-label="Send OTP to email"
               >
                 {isLoading ? "Sending..." : "Send OTP"}
               </Button>
@@ -259,7 +257,6 @@ function LoginForm() {
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                   onKeyDown={(e) => handleKeyPress(e, handleVerifyOtp)}
                   disabled={isLoading}
-                  aria-label="One-time password"
                   aria-required="true"
                   aria-invalid={!!error}
                   aria-describedby={error ? "otp-error" : undefined}
@@ -270,7 +267,6 @@ function LoginForm() {
                 onClick={handleVerifyOtp}
                 disabled={isLoading}
                 className="w-full"
-                aria-label="Verify OTP code"
               >
                 {isLoading ? "Verifying..." : "Verify & Login"}
               </Button>

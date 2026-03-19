@@ -19,6 +19,13 @@ async function main() {
 
   try {
     await prisma.user.deleteMany({ where: { email } });
+
+    // Clean up OTP records created by login E2E tests. These are not tied to
+    // the test user (OTPCode has no userId FK), so they must be deleted
+    // separately. Leaving them would cause rate-limit failures on the next run.
+    await prisma.oTPCode.deleteMany({
+      where: { email: { startsWith: "e2e-otp-" } },
+    });
   } finally {
     await prisma.$disconnect();
   }
