@@ -42,7 +42,7 @@ export function TaskListItem({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-2 rounded-lg border p-3 transition-shadow hover:shadow-sm sm:flex-row sm:items-center sm:justify-between",
         variant === "overdue" ? "border-destructive/30 bg-destructive/5" : "bg-card",
       )}
     >
@@ -261,7 +261,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+    <main className="animate-fade-in min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Left Sidebar */}

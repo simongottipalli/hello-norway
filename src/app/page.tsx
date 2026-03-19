@@ -13,6 +13,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 
 const features = [
   {
@@ -42,15 +43,15 @@ export default function Home() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-center">
-          <p className="text-muted-foreground">Loading...</p>
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-center py-24">
+          <Spinner size="lg" className="text-muted-foreground" />
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
+    <main className="animate-fade-in min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <section className="space-y-4">
           <Badge variant="secondary">For new immigrants in Norway</Badge>

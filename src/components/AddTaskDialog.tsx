@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -132,6 +133,7 @@ export function AddTaskDialog({
 
       // Close dialog and notify parent
       onOpenChange(false);
+      toast.success("Task added successfully");
       if (onTaskCreated) {
         onTaskCreated();
       }
