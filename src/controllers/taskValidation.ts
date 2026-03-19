@@ -1,5 +1,4 @@
-import { TaskCategory, EmploymentStatus } from "../generated/prisma/client.js";
-import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
+import { TaskCategory, EmploymentStatus, EMPLOYMENT_STATUS_VALUES } from "../types/enums";
 
 // ──────────────────────────────────────────────
 // Constants (aligned with prisma/schema.prisma)

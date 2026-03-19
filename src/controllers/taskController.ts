@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { handlePrismaError } from "../utils/errorHandler";
+import { handleDatabaseError } from "../repo/errors";
 import { validateCreateTaskBody } from "./taskValidation";
 import * as taskService from "../services/taskService";
 import { parseDateOnly } from "../lib/dateUtils";
@@ -30,7 +30,7 @@ export const getTaskById = async (req: Request, res: Response) => {
     req.logger.info({ msg: 'Fetched task by id', taskId: id });
     res.json(result.data);
   } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error, req.logger);
+    const errorResponse = handleDatabaseError(error, req.logger);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
     }
@@ -57,7 +57,7 @@ export const createTask = async (req: Request, res: Response) => {
     req.logger.info({ msg: 'Task created', taskId: result.data!.id, slug: validation.data.slug });
     res.status(201).json(result.data);
   } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error, req.logger);
+    const errorResponse = handleDatabaseError(error, req.logger);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
     }
@@ -107,7 +107,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
     req.logger.info({ msg: 'User task status updated', taskId: id, userId: req.user!.id });
     return res.json(result.data);
   } catch (error: unknown) {
-    const errorResponse = handlePrismaError(error, req.logger);
+    const errorResponse = handleDatabaseError(error, req.logger);
     if (errorResponse) {
       return res.status(errorResponse.status).json({ error: errorResponse.message });
     }

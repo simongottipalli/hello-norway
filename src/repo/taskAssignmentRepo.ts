@@ -1,6 +1,7 @@
-import { UserTaskStatus } from "../generated/prisma/client.js";
-import type { EmploymentStatus, Prisma } from "../generated/prisma/client.js";
-import { prisma } from "../lib/prisma";
+import { UserTaskStatus } from "../types/enums";
+import type { EmploymentStatus } from "../types/enums";
+import type { Prisma } from "../generated/prisma/client.js";
+import { prisma } from "./db";
 import { MS_PER_DAY } from "../lib/dateUtils";
 
 type TaskAssignmentDb = Pick<typeof prisma, "task" | "userTask">;

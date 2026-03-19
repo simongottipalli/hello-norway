@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EMPLOYMENT_STATUS_OPTIONS, type EmploymentStatusValue } from "@/lib/employmentStatus";
+import { EMPLOYMENT_STATUS_OPTIONS, type EmploymentStatusValue } from "@/types/enums";
 import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 

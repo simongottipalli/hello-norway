@@ -1,4 +1,4 @@
-import { EMPLOYMENT_STATUS_VALUES } from "./employmentStatus";
+import { EMPLOYMENT_STATUS_VALUES } from "../types/enums";
 
 type OnboardingAnswers = Record<string, string>;
 
