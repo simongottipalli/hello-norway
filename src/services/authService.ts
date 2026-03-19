@@ -1,5 +1,5 @@
-import type { Prisma } from "../generated/prisma/client.js";
-import { prisma } from "../lib/prisma";
+import { withTransaction } from "../repo/db";
+import type { UserUpdateData } from "../types/models";
 import * as userRepo from "../repo/userRepo";
 import * as sessionRepo from "../repo/sessionRepo";
 import { syncUserTaskAssignments } from "./taskAssignmentService";
@@ -41,9 +41,9 @@ export const getProfile = async (userId: string): Promise<AuthServiceResult<User
  */
 export const updateProfile = async (
   userId: string,
-  data: Prisma.UserUpdateInput,
+  data: UserUpdateData,
 ): Promise<AuthServiceResult<UserProfile>> => {
-  const user = await prisma.$transaction(async (tx) => {
+  const user = await withTransaction(async (tx) => {
     const updatedUser = await userRepo.updateUserProfile(userId, data, tx);
 
     await syncUserTaskAssignments(updatedUser, {
@@ -62,7 +62,7 @@ export const updateProfile = async (
  * All three deletions are wrapped in a transaction for atomicity.
  */
 export const deleteProfile = async (userId: string): Promise<AuthServiceResult<void>> => {
-  await prisma.$transaction(async (tx) => {
+  await withTransaction(async (tx) => {
     await sessionRepo.deleteUserSessions(userId, tx);
     await userRepo.deleteUserTasks(userId, tx);
     await userRepo.deleteUser(userId, tx);

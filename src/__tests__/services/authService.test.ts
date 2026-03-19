@@ -3,7 +3,6 @@ import * as authService from "../../services/authService";
 import * as userRepo from "../../repo/userRepo";
 import * as sessionRepo from "../../repo/sessionRepo";
 import { syncUserTaskAssignments } from "../../services/taskAssignmentService";
-import { prisma } from "../../lib/prisma";
 
 vi.mock("../../repo/userRepo", () => ({
   findUserById: vi.fn(),
@@ -21,16 +20,16 @@ vi.mock("../../services/taskAssignmentService", () => ({
   syncUserTaskAssignments: vi.fn(),
 }));
 
-vi.mock("../../lib/prisma", () => ({
-  prisma: {
-    $transaction: vi.fn(),
-  },
+vi.mock("../../repo/db", () => ({
+  withTransaction: vi.fn(),
 }));
+
+import { withTransaction } from "../../repo/db";
 
 describe("authService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(prisma.$transaction).mockImplementation(async (fn) => fn({} as never));
+    vi.mocked(withTransaction).mockImplementation(async (fn) => fn({} as never));
   });
 
   // ──────────────────────────────────────────────
@@ -87,7 +86,7 @@ describe("authService", () => {
 
       const result = await authService.updateProfile("user-1", { name: "Updated User" });
 
-      expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(withTransaction).toHaveBeenCalledOnce();
       expect(userRepo.updateUserProfile).toHaveBeenCalledWith("user-1", { name: "Updated User" }, expect.anything());
       expect(syncUserTaskAssignments).toHaveBeenCalledWith(
         updatedUser,
@@ -116,7 +115,7 @@ describe("authService", () => {
 
       const result = await authService.deleteProfile("user-1");
 
-      expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(withTransaction).toHaveBeenCalledOnce();
       expect(sessionRepo.deleteUserSessions).toHaveBeenCalledWith("user-1", expect.anything());
       expect(userRepo.deleteUserTasks).toHaveBeenCalledWith("user-1", expect.anything());
       expect(userRepo.deleteUser).toHaveBeenCalledWith("user-1", expect.anything());

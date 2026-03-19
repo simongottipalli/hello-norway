@@ -1,8 +1,7 @@
 import { Router } from "express";
-import type { EmploymentStatus } from "../generated/prisma/client.js";
+import { EmploymentStatus, EMPLOYMENT_STATUS_VALUES } from "../types/enums";
 import { authenticateSession } from "../middleware/authMiddleware";
 import { logger } from "../lib/logger";
-import { EMPLOYMENT_STATUS_VALUES } from "../lib/employmentStatus";
 import { parseDateOnly } from "../lib/dateUtils";
 import * as authService from "../services/authService";
 import * as onboardingService from "../services/onboardingService";

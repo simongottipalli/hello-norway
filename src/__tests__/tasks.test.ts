@@ -3,7 +3,7 @@ import request from "supertest";
 import type { Request, Response, NextFunction } from "express";
 import { randomUUID } from "node:crypto";
 import { createApp } from "../app";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../repo/db";
 
 let authUserId: string;
 let authUserEmail: string;

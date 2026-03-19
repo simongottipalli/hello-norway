@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as otpRepo from "../../repo/otpRepo";
-import { prisma } from "../../lib/prisma";
+import { prisma } from "../../repo/db";
 
-vi.mock("../../lib/prisma", () => ({
+vi.mock("../../repo/db", () => ({
   prisma: {
     oTPCode: {
       count: vi.fn(),

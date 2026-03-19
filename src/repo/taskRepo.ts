@@ -1,8 +1,8 @@
-import { UserTaskStatus } from "../generated/prisma/client.js";
+import { UserTaskStatus } from "../types/enums";
 import type { Prisma } from "../generated/prisma/client.js";
-import { prisma } from "../lib/prisma";
+import { prisma, type DbClient } from "./db";
 
-type TaskDb = Pick<typeof prisma, "task" | "userTask">;
+type TaskDb = Pick<DbClient, "task" | "userTask">;
 
 export const findUserTasksWithTask = (userId: string, db: TaskDb = prisma) =>
   db.userTask.findMany({

@@ -4,7 +4,7 @@ import express from "express";
 import otpRoutes from "../routes/otpRoutes";
 import * as otpServiceModule from "../services/otpService";
 import { OtpService } from "../services/otpService";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../repo/db";
 import * as otpRepo from "../repo/otpRepo";
 import * as userRepo from "../repo/userRepo";
 import * as sessionRepo from "../repo/sessionRepo";
@@ -34,9 +34,9 @@ vi.mock("../repo/sessionRepo", () => ({
   deleteSessionByToken: vi.fn(),
 }));
 
-// Mock prisma — only $transaction and the models used by syncUserTaskAssignments
+// Mock repo/db — only withTransaction and the models used by syncUserTaskAssignments
 // (which receives the transaction client directly and does not go through repos)
-vi.mock("../lib/prisma", () => {
+vi.mock("../repo/db", () => {
   const mockDb = {
     task: {
       findMany: vi.fn(),
@@ -49,12 +49,10 @@ vi.mock("../lib/prisma", () => {
   };
 
   return {
-    prisma: {
-      ...mockDb,
-      $transaction: vi.fn(async (callback) => {
-        return callback(mockDb);
-      }),
-    },
+    prisma: mockDb,
+    withTransaction: vi.fn(async (callback) => {
+      return callback(mockDb);
+    }),
   };
 });
 

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as userRepo from "../../repo/userRepo";
 import { PROFILE_SELECT } from "../../repo/userRepo";
-import { prisma } from "../../lib/prisma";
+import { prisma } from "../../repo/db";
 
-vi.mock("../../lib/prisma", () => ({
+vi.mock("../../repo/db", () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),

@@ -32,6 +32,10 @@ vi.mock("../repo/taskRepo", () => ({
   upsertUserTaskStatus: vi.fn(),
 }));
 
+vi.mock("../repo/taskAssignmentRepo", () => ({
+  getRelevantTaskWhere: vi.fn().mockReturnValue({}),
+}));
+
 // Stub otpService so public-route tests don't trigger real email/DB calls.
 // Both methods return success so the response status comes from business logic,
 // not from the auth middleware (which would return { error: "Unauthorized" }).

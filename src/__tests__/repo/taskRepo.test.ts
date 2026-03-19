@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { UserTaskStatus } from "../../generated/prisma/client.js";
+import { UserTaskStatus } from "../../types/enums";
 import * as taskRepo from "../../repo/taskRepo";
-import { prisma } from "../../lib/prisma";
+import { prisma } from "../../repo/db";
 
-vi.mock("../../lib/prisma", () => ({
+vi.mock("../../repo/db", () => ({
   prisma: {
     task: {
       findMany: vi.fn(),

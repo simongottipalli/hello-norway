@@ -1,6 +1,6 @@
-import type { EmploymentStatus } from "../generated/prisma/client.js";
+import { EmploymentStatus } from "../types/enums";
 import * as taskRepo from "../repo/taskRepo";
-import { getRelevantTaskWhere } from "./taskAssignmentService";
+import { getRelevantTaskWhere } from "../repo/taskAssignmentRepo";
 
 // ──────────────────────────────────────────────
 // Types

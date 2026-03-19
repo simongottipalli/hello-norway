@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { UserTaskStatus } from "../../generated/prisma/client.js";
+import { UserTaskStatus } from "../../types/enums";
 import * as taskService from "../../services/taskService";
 import * as taskRepo from "../../repo/taskRepo";
-import { prisma } from "../../lib/prisma";
+import { withTransaction } from "../../repo/db";
 
 vi.mock("../../repo/taskRepo", () => ({
   findUserTasksWithTask: vi.fn(),
@@ -13,10 +13,8 @@ vi.mock("../../repo/taskRepo", () => ({
   upsertUserTaskStatus: vi.fn(),
 }));
 
-vi.mock("../../lib/prisma", () => ({
-  prisma: {
-    $transaction: vi.fn(),
-  },
+vi.mock("../../repo/db", () => ({
+  withTransaction: vi.fn(),
 }));
 
 describe("taskService", () => {
@@ -126,11 +124,11 @@ describe("taskService", () => {
       const createdTask = { id: "task-1", ...payload };
       vi.mocked(taskRepo.createTask).mockResolvedValue(createdTask as never);
       vi.mocked(taskRepo.createUserTaskAssignment).mockResolvedValue({} as never);
-      vi.mocked(prisma.$transaction).mockImplementation(async (fn) => fn({} as never));
+      vi.mocked(withTransaction).mockImplementation(async (fn) => fn({} as never));
 
       const result = await taskService.createTask(payload, "user-1");
 
-      expect(prisma.$transaction).toHaveBeenCalledOnce();
+      expect(withTransaction).toHaveBeenCalledOnce();
       expect(result).toEqual({ success: true, data: createdTask });
     });
 
@@ -140,7 +138,7 @@ describe("taskService", () => {
       vi.mocked(taskRepo.createUserTaskAssignment).mockResolvedValue({} as never);
 
       let capturedTaskData: unknown;
-      vi.mocked(prisma.$transaction).mockImplementation(async (fn) => {
+      vi.mocked(withTransaction).mockImplementation(async (fn) => {
         return fn({} as never);
       });
       vi.mocked(taskRepo.createTask).mockImplementation(async (data) => {

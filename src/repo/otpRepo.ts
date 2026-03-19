@@ -1,6 +1,6 @@
-import { prisma } from "../lib/prisma";
+import { prisma, type DbClient } from "./db";
 
-type OtpDb = Pick<typeof prisma, "oTPCode">;
+type OtpDb = Pick<DbClient, "oTPCode">;
 
 export const countRecentOtps = (email: string, windowStartTime: Date, db: OtpDb = prisma) =>
   db.oTPCode.count({

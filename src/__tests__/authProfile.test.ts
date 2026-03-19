@@ -3,11 +3,12 @@ import request from "supertest";
 import express from "express";
 import type { NextFunction, Request, Response } from "express";
 import authRoutes from "../routes/authRoutes";
-import { prisma } from "../lib/prisma";
+import { withTransaction } from "../repo/db";
 import * as userRepo from "../repo/userRepo";
 import * as sessionRepo from "../repo/sessionRepo";
 import * as taskRepo from "../repo/taskRepo";
-import { getRelevantTaskWhere, syncUserTaskAssignments } from "../services/taskAssignmentService";
+import { getRelevantTaskWhere } from "../repo/taskAssignmentRepo";
+import { syncUserTaskAssignments } from "../services/taskAssignmentService";
 
 vi.mock("../middleware/authMiddleware", () => ({
   authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
@@ -45,14 +46,15 @@ vi.mock("../repo/taskRepo", () => ({
   deleteTask: vi.fn(),
 }));
 
-vi.mock("../lib/prisma", () => ({
-  prisma: {
-    $transaction: vi.fn(),
-  },
+vi.mock("../repo/db", () => ({
+  withTransaction: vi.fn(),
+}));
+
+vi.mock("../repo/taskAssignmentRepo", () => ({
+  getRelevantTaskWhere: vi.fn(),
 }));
 
 vi.mock("../services/taskAssignmentService", () => ({
-  getRelevantTaskWhere: vi.fn(),
   syncUserTaskAssignments: vi.fn(),
 }));
 
@@ -63,8 +65,8 @@ app.use("/api", authRoutes);
 describe("/api/auth/profile", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(prisma.$transaction).mockImplementation(async (callback: (tx: typeof prisma) => Promise<unknown>) => {
-      return callback({} as typeof prisma);
+    vi.mocked(withTransaction).mockImplementation(async (callback) => {
+      return callback({} as never);
     });
     vi.mocked(userRepo.updateUserProfile).mockResolvedValue({
       id: "user-1",
@@ -121,7 +123,7 @@ describe("/api/auth/profile", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(withTransaction).toHaveBeenCalledTimes(1);
       expect(userRepo.updateUserProfile).toHaveBeenCalledWith(
         "user-1",
         expect.objectContaining({
@@ -147,7 +149,7 @@ describe("/api/auth/profile", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("Invalid name");
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(withTransaction).not.toHaveBeenCalled();
       expect(userRepo.updateUserProfile).not.toHaveBeenCalled();
     });
 
@@ -159,7 +161,7 @@ describe("/api/auth/profile", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("Invalid arrivalDate");
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(withTransaction).not.toHaveBeenCalled();
       expect(userRepo.updateUserProfile).not.toHaveBeenCalled();
       expect(syncUserTaskAssignments).not.toHaveBeenCalled();
     });
@@ -174,7 +176,7 @@ describe("/api/auth/profile", () => {
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe("Failed to update profile");
-      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(withTransaction).toHaveBeenCalledTimes(1);
       expect(userRepo.updateUserProfile).toHaveBeenCalledTimes(1);
     });
   });
@@ -191,7 +193,7 @@ describe("/api/auth/profile", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(withTransaction).toHaveBeenCalledTimes(1);
       expect(sessionRepo.deleteUserSessions).toHaveBeenCalledWith("user-1", expect.anything());
       expect(userRepo.deleteUserTasks).toHaveBeenCalledWith("user-1", expect.anything());
       expect(userRepo.deleteUser).toHaveBeenCalledWith("user-1", expect.anything());
@@ -204,7 +206,7 @@ describe("/api/auth/profile", () => {
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe("Failed to delete profile");
-      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(withTransaction).toHaveBeenCalledTimes(1);
     });
   });
 });

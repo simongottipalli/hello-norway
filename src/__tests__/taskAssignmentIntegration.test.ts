@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../repo/db";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
 import type { User, Task } from "../generated/prisma/client.js";
 
