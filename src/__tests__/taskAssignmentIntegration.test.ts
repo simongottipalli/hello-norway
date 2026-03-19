@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { prisma } from "../repo/db";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
-import type { User, Task } from "../generated/prisma/client.js";
+import type { User, Task } from "@prisma/client";
 
 describe("Task Assignment Integration Tests", () => {
   let testUser: User;
