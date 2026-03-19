@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import type { NextFunction, Request, Response } from "express";
-import type { UserTask } from "@prisma/client";
 import { createApp } from "../app";
 import * as taskRepo from "../repo/taskRepo";
+
+type UserTask = Awaited<ReturnType<typeof taskRepo.upsertUserTaskStatus>>;
 
 vi.mock("../middleware/authMiddleware", () => ({
   authenticateSession: (req: Request, _res: Response, next: NextFunction) => {

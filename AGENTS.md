@@ -31,7 +31,7 @@ When implementing or modifying backend functionality, **ALWAYS**:
    - ✅ Edge cases (duplicates, not found, etc.)
 
 4. **Run Tests After Implementation**
-   - Execute `npm test` to verify all tests pass
+   - Execute `npm run test:unit` to verify all tests pass
    - Fix any failing tests before marking task complete
    - Ensure no regression in existing tests
    - Update test documentation if needed

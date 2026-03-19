@@ -24,10 +24,12 @@ A web app helping newcomers navigate essential tasks when moving to Norway.
 src/
   app/                        # Next.js App Router
     layout.tsx                 # Root layout
-    page.tsx                   # Home page
+    page.tsx                   # Home / landing page
     dashboard/page.tsx         # Dashboard
+    login/page.tsx             # OTP login flow
+    onboarding/page.tsx        # Onboarding survey
     globals.css                # Design tokens (CSS variables, zinc theme)
-    api/                       # Next.js API routes (proxy to Express)
+    api/                       # Next.js API routes (thin proxies to Express)
       auth/session/route.ts
       auth/profile/route.ts
       auth/logout/route.ts
@@ -46,15 +48,27 @@ src/
   app.ts                       # Express app configuration
   routes/                      # Express route definitions
     taskRoutes.ts, otpRoutes.ts, authRoutes.ts
-  controllers/                 # Business logic handlers
-  services/                    # Service layer (authService, etc.)
-  utils/                       # Shared utilities (errorHandler, etc.)
+  controllers/                 # Request handlers and validation
+    taskController.ts, otpController.ts, taskValidation.ts
+  services/                    # Business logic
+    authService.ts, taskService.ts, taskAssignmentService.ts
+    onboardingService.ts, otpService.ts
+    email/                     # Email provider abstraction (Brevo)
+  repo/                        # Data access layer (ONLY layer that imports Prisma)
+    db.ts                      # PrismaClient singleton + withTransaction
+    errors.ts                  # DB error-code → HTTP status mapping
+    taskRepo.ts, userRepo.ts, sessionRepo.ts, otpRepo.ts
+    taskAssignmentRepo.ts      # Eligibility filtering + assignment sync
+  types/                       # Application-owned types (no Prisma imports)
+    enums.ts                   # TaskCategory, EmploymentStatus, UserTaskStatus, HousingType
+    models.ts                  # UserUpdateData interface
+    task.ts                    # Task type for frontend
   lib/
-    prisma.ts                  # Prisma client instance
+    dateUtils.ts, logger.ts, taskHelpers.ts
     utils.ts                   # cn() helper for className merging
   generated/prisma/            # Generated Prisma client (do not edit)
-  __tests__/                   # Unit/integration tests
-    setup.ts, tasks.test.ts, otp.test.ts, user.test.ts
+  __tests__/                   # Unit/integration tests (Vitest + Supertest)
+    setup.ts                   # Test configuration
     services/email/            # Email service tests
 
 e2e/                           # Playwright E2E tests
@@ -62,6 +76,9 @@ prisma/
   schema.prisma                # Database schema
   migrations/                  # Migration history
   seed.ts                      # Seed data
+docs/
+  ARCHITECTURE.md              # Prisma isolation pattern and layer diagram
+  DOCUMENTATION_MAINTENANCE.md
 ```
 
 ## Database Models
@@ -88,11 +105,19 @@ prisma/
 
 ## API Endpoints (Express, base: /api)
 
-- `GET /api/tasks` — All tasks (ordered by category + sortOrder)
-- `POST /api/tasks` — Create task
-- `PATCH /api/tasks/:id/status` — Update task
-- `POST /api/otp/generate` — Generate and send OTP
-- `POST /api/otp/verify` — Verify OTP
+- `GET /api/tasks` — Assigned tasks for the authenticated user
+- `POST /api/tasks` — Create a user-defined task
+- `GET /api/tasks/:id` — Single task by ID
+- `PATCH /api/tasks/:id/status` — Update status, due date, or personal notes
+- `GET /api/tasks/personalized` — Re-sync and return profile-matched tasks
+- `GET /api/auth/session` — Verify session and return current user
+- `GET /api/auth/profile` — Fetch full user profile
+- `PATCH /api/auth/profile` — Update profile fields (re-syncs task assignments)
+- `DELETE /api/auth/profile` — Delete account and all associated data
+- `POST /api/auth/logout` — Invalidate the current session
+- `POST /api/otp/generate` — Generate a 6-digit OTP and send it by email
+- `POST /api/otp/verify` — Verify OTP and create an authenticated session
+- `POST /api/onboarding/tasks` — Task preview for pre-auth onboarding
 - `GET /health` — Health check
 
 ## Environment Variables
@@ -108,8 +133,14 @@ Defined in `.env` (copy from `.env.example`):
 ### Testing (REQUIRED for backend changes)
 - Write tests in `src/__tests__/` using Vitest + Supertest.
 - Cover: happy path, error handling (400/404/500), validation, edge cases.
-- Run `npm test` after changes; fix failures before marking complete.
+- Run `npm run test:unit` after changes; fix failures before marking complete.
 - Skip tests only for trivial changes (typos, comments, config, docs).
+
+### Architecture: Prisma Isolation
+- Only `src/repo/` (and `prisma/`) may import from Prisma or `src/generated/prisma/`.
+- Services, controllers, routes, and frontend must use enums from `src/types/enums.ts` and models from `src/types/models.ts`.
+- Use `withTransaction` from `src/repo/db.ts` — never call `prisma.$transaction()` directly outside repo.
+- See `docs/ARCHITECTURE.md` for the full layer diagram and conventions.
 
 ### UI Development
 - **Always** use shadcn/ui components from `src/components/ui/` — never write raw HTML with manual Tailwind.

@@ -10,19 +10,22 @@ We implement testing at multiple levels to ensure comprehensive coverage:
 
 **Framework**: Vitest + Supertest
 **Location**: `src/__tests__/`
-**Purpose**: Test backend API endpoints, business logic, and data validation
+**Purpose**: Test backend API endpoints, business logic, repository layer, and data validation
 
 ```bash
-npm test              # Run once
-npm run test:watch    # Watch mode
+npm run test:unit           # Run once
+npm run test:unit:watch     # Watch mode
+npm run test:unit:coverage  # With coverage report
 ```
 
 **Coverage**:
 
 - ✅ All CRUD operations (Create, Read, Update, Delete)
 - ✅ Error handling and validation
-- ✅ Database interactions via Prisma
+- ✅ Repository layer (taskRepo, userRepo, sessionRepo, otpRepo)
+- ✅ Service layer (authService, taskService, otpService, etc.)
 - ✅ HTTP status codes and response formats
+- ✅ Profile-based task assignment integration
 
 See [Unit Test Documentation](src/__tests__/README.md)
 
@@ -77,16 +80,16 @@ See [E2E Test Documentation](e2e/README.md)
 
 ### Running Tests
 
-**Run all tests**:
+**Run all tests** (build → unit → E2E):
 
 ```bash
-npm run test:all
+npm test
 ```
 
 **Run unit tests only**:
 
 ```bash
-npm test
+npm run test:unit
 ```
 
 **Run E2E tests only**:
@@ -105,12 +108,33 @@ npm run test:e2e:ui
 
 ```code
 hello-norway/
-├── src/__tests__/           # Unit & Integration tests
-│   ├── tasks.test.ts        # API endpoint tests
-│   ├── setup.ts             # Test configuration
-│   └── README.md            # Documentation
+├── src/__tests__/                          # Unit & Integration tests
+│   ├── setup.ts                            # Test configuration
+│   ├── README.md                           # Documentation
+│   ├── app-routing.test.ts                 # Route auth policy (public vs protected)
+│   ├── authMiddleware.test.ts              # Session authentication middleware
+│   ├── authProfile.test.ts                 # Auth profile endpoints (GET/PATCH/DELETE)
+│   ├── authSession.test.ts                 # GET /api/auth/session
+│   ├── errorHandler.test.ts               # handleDatabaseError utility
+│   ├── health.test.ts                      # GET /health
+│   ├── otp.test.ts                         # OTP request/verify endpoints
+│   ├── otpTestPeek.test.ts                 # GET /otp/test-peek (test-only endpoint)
+│   ├── tasks.test.ts                       # Task CRUD API
+│   ├── taskStatusUpdate.test.ts            # PATCH /tasks/:id/status
+│   ├── taskValidation.test.ts              # CreateTask payload validation
+│   ├── taskAssignmentIntegration.test.ts   # Profile-based task assignment (DB)
+│   ├── onboardingProfile.test.ts           # Onboarding profile validation
+│   ├── seedTasks.test.ts                   # Seed data integrity
+│   ├── dateUtils.test.ts                   # Date utility functions
+│   ├── dashboard-page.test.tsx             # Dashboard React component
+│   ├── onboarding-page.test.tsx            # Onboarding React component
+│   ├── landing-page.test.tsx               # Landing page React component
+│   ├── lib/                                # lib/ utility tests
+│   ├── middleware/                         # Middleware tests
+│   ├── repo/                               # Repository layer tests
+│   └── services/                          # Service layer tests
 │
-├── e2e/                     # End-to-End tests
+├── e2e/                     # End-to-End tests (Playwright)
 │   ├── navigation.spec.ts        # Navigation, routing, logout, mobile menu
 │   ├── dashboard-sidebar.spec.ts # Sidebar, add task, profile view
 │   ├── dashboard-modal.spec.ts   # Task detail modal, status updates
@@ -128,14 +152,29 @@ hello-norway/
 ### Unit Test Example (Vitest + Supertest)
 
 ```typescript
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
-import app from '../app';
+import { createApp } from '../app';
+import * as taskRepo from '../repo/taskRepo';
 
-describe('POST /tasks', () => {
+vi.mock('../repo/taskRepo');
+vi.mock('../middleware/authMiddleware', () => ({
+  authenticateSession: (_req, _res, next) => next(),
+}));
+
+const app = createApp();
+
+describe('POST /api/tasks', () => {
   it('should create a new task', async () => {
+    vi.mocked(taskRepo.createTask).mockResolvedValue({
+      id: 'task-1',
+      slug: 'test-task',
+      title: 'Test Task',
+      // …other fields
+    });
+
     const response = await request(app)
-      .post('/tasks')
+      .post('/api/tasks')
       .send({
         slug: 'test-task',
         title: 'Test Task',
@@ -237,13 +276,13 @@ jobs:
 **Run specific test file**:
 
 ```bash
-npx vitest run src/__tests__/tasks.test.ts
+npx vitest run src/__tests__/taskStatusUpdate.test.ts
 ```
 
-**Run specific test**:
+**Run tests matching a pattern**:
 
 ```bash
-npx vitest run -t "should create a new task"
+npx vitest run -t "should create"
 ```
 
 **Debug in VS Code**:

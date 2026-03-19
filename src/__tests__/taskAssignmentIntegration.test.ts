@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { prisma } from "../repo/db";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
-import type { User, Task } from "../generated/prisma/client.js";
+import { EmploymentStatus } from "../types/enums";
+
+type User = Awaited<ReturnType<typeof prisma.user.create>>;
+type Task = Awaited<ReturnType<typeof prisma.task.create>>;
 
 describe("Task Assignment Integration Tests", () => {
   let testUser: User;
@@ -247,7 +250,7 @@ describe("Task Assignment Integration Tests", () => {
         id: testUser.id,
         isEU: null,
         hasChildren: null,
-        employmentStatus: "EMPLOYED",
+        employmentStatus: EmploymentStatus.EMPLOYED,
         arrivalDate: null,
         plannedArrivalDate: null,
       });
@@ -352,7 +355,7 @@ describe("Task Assignment Integration Tests", () => {
           id: testUser.id,
           isEU: true,
           hasChildren: true,
-          employmentStatus: "EMPLOYED",
+          employmentStatus: EmploymentStatus.EMPLOYED,
           arrivalDate,
           plannedArrivalDate: null,
         },
@@ -382,7 +385,7 @@ describe("Task Assignment Integration Tests", () => {
           id: testUser.id,
           isEU: true,
           hasChildren: false, // Missing children requirement
-          employmentStatus: "EMPLOYED",
+          employmentStatus: EmploymentStatus.EMPLOYED,
           arrivalDate,
           plannedArrivalDate: null,
         },
