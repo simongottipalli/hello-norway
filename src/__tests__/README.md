@@ -46,8 +46,10 @@ src/__tests__/
 ├── authMiddleware.test.ts            # Session authentication middleware
 ├── authProfile.test.ts               # Auth profile endpoints (GET/PATCH/DELETE)
 ├── authSession.test.ts               # GET /api/auth/session success-path
+├── errorHandler.test.ts              # handlePrismaError utility
 ├── health.test.ts                    # GET /health endpoint
 ├── otp.test.ts                       # OTP request/verify endpoints
+├── otpTestPeek.test.ts               # GET /otp/test-peek test-only endpoint
 ├── tasks.test.ts                     # Task API (CRUD)
 ├── taskStatusUpdate.test.ts          # PATCH task status
 ├── taskValidation.test.ts            # CreateTask payload validation
@@ -64,6 +66,7 @@ src/__tests__/
 │   ├── logger.test.ts                # Logger & sanitization
 │   └── sessionCookieSig.test.ts      # Session cookie signing
 ├── middleware/
+│   ├── errorLogger.test.ts           # Error logger middleware
 │   └── requestLogger.test.ts         # Request logging middleware
 ├── repo/
 │   ├── taskRepo.test.ts              # Task repository

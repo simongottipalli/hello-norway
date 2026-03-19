@@ -22,7 +22,20 @@ export default defineConfig({
         "**/*.config.*",
         "**/dist/**",
         "**/.next/**",
+        // Frontend-only code: Next.js pages, layouts, and React components
+        "src/app/**",
+        "src/components/**",
+        // Database seed and migration scripts
+        "prisma/**",
+        // Test-only email provider
+        "src/services/email/providers/testProvider.ts",
       ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
     },
   },
 });
