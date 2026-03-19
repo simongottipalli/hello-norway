@@ -1,4 +1,5 @@
-import { UserTaskStatus, EmploymentStatus } from "../types/enums";
+import { UserTaskStatus } from "../types/enums";
+import type { EmploymentStatus } from "../types/enums";
 import { prisma, type TransactionClient, type DbClient } from "../repo/db";
 import * as taskAssignmentRepo from "../repo/taskAssignmentRepo";
 
