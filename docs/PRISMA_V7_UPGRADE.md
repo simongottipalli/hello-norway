@@ -66,7 +66,7 @@ The classic (Rust-based) query engine is gone in v7. The `engine` field must be 
  });
 ```
 
-### 3. Wire up the PostgreSQL driver adapter — `src/lib/prisma.ts`
+### 3. Wire up the PostgreSQL driver adapter — `src/repo/db.ts`
 
 v7 requires a driver adapter for all databases. For PostgreSQL, use `@prisma/adapter-pg`.
 
@@ -157,4 +157,4 @@ const adapter = new PrismaPg({
 |---|---|
 | `package.json` | Bump `prisma`, `@prisma/client`; add `@prisma/adapter-pg`, `pg`, `@types/pg` |
 | `prisma.config.ts` | Remove `engine: "classic"` |
-| `src/lib/prisma.ts` | Add `PrismaPg` adapter |
+| `src/repo/db.ts` | Add `PrismaPg` adapter |

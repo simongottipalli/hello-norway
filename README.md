@@ -83,36 +83,64 @@ Colors are defined as CSS variables in `src/app/globals.css`. Dark mode switches
 
 ```code
 src/
-  app/                      # Next.js frontend
+  app/                      # Next.js App Router pages and API proxies
     layout.tsx              # Root layout with metadata and fonts
-    page.tsx                # Home page
-    globals.css             # Global styles (Tailwind directives)
+    page.tsx                # Home / landing page
+    dashboard/page.tsx      # Main dashboard (tasks, profile)
+    login/page.tsx          # OTP login flow
+    onboarding/page.tsx     # Onboarding survey
+    globals.css             # Design tokens (Tailwind directives, CSS variables)
+    api/                    # Next.js API routes (thin proxies to Express)
+      auth/                 # session, profile, logout
+      otp/                  # generate, verify
+      tasks/                # list, create, get-by-id, status, personalized
+      onboarding/tasks/     # task preview (pre-auth)
 
   # Express API Backend
-  server.ts                 # API server entry point
-  app.ts                    # Express app configuration
-  routes/                   # API route definitions
-    taskRoutes.ts           # Task CRUD routes
-  controllers/              # Business logic
-    taskController.ts       # Task operations
-  utils/                    # Shared utilities
-    errorHandler.ts         # Centralized error handling
-  lib/                      # Libraries and clients
-    prisma.ts               # Prisma client instance
-  __tests__/                # Unit test files
-    tasks.test.ts           # Task API tests
-    setup.ts                # Test configuration
-    README.md               # Testing documentation
+  server.ts                 # API server entry point (port 3001)
+  app.ts                    # Express app configuration and middleware
+  routes/                   # Express route registrations
+    taskRoutes.ts, otpRoutes.ts, authRoutes.ts
+  controllers/              # Request handlers
+    taskController.ts, otpController.ts, taskValidation.ts
+  services/                 # Business logic
+    authService.ts, taskService.ts, taskAssignmentService.ts
+    onboardingService.ts, otpService.ts
+    email/                  # Email provider abstraction (Brevo)
 
-e2e/                        # End-to-end tests
-  tasks.spec.ts             # UI tests for tasks page
-  api.spec.ts               # API integration tests
-  README.md                 # E2E testing documentation
+  repo/                     # Data access layer (only layer that imports Prisma)
+    db.ts                   # PrismaClient singleton + withTransaction helper
+    errors.ts               # DB error-code → HTTP status mapping
+    taskRepo.ts, userRepo.ts, sessionRepo.ts, otpRepo.ts
+    taskAssignmentRepo.ts   # Eligibility filtering + assignment sync
+
+  types/                    # Application-owned types (Prisma-free)
+    enums.ts                # TaskCategory, EmploymentStatus, UserTaskStatus, HousingType
+    models.ts               # UserUpdateData interface
+    task.ts                 # Task type used by the frontend
+
+  components/               # React feature components
+    ui/                     # shadcn/ui primitives (button, card, input, label, badge)
+  lib/                      # Shared utilities
+    dateUtils.ts, logger.ts, taskHelpers.ts, utils.ts (cn helper)
+
+  __tests__/                # Vitest + Supertest unit/integration tests
+    README.md               # Test documentation
+    setup.ts                # Test configuration
+
+  generated/prisma/         # Generated Prisma client (do not edit)
+
+e2e/                        # Playwright end-to-end tests
+  README.md                 # E2E test documentation
 
 prisma/
   schema.prisma             # Database schema
   migrations/               # Migration history
   seed.ts                   # Database seed data
+
+docs/                       # Architecture and upgrade documentation
+  ARCHITECTURE.md           # Prisma isolation pattern and layer diagram
+  DOCUMENTATION_MAINTENANCE.md
 
 public/                     # Static assets
 vitest.config.ts            # Unit test configuration
@@ -307,41 +335,70 @@ All logs from the same request share the same `requestId`, making it easy to tra
 
 ## Scripts
 
-| Command                   | Description                                         |
-| ------------------------- | --------------------------------------------------- |
-| `npm run dev`             | Start both frontend and backend in development mode |
-| `npm run dev:server`      | Start only the Express API server                   |
-| `npm run dev:client`      | Start only the Next.js frontend                     |
-| `npm run build`           | Production build                                    |
-| `npm run start`           | Start production server locally                     |
-| `npm run lint`            | Run ESLint                                          |
-| `npm test`                | Run unit tests once                                 |
-| `npm run test:watch`      | Run unit tests in watch mode                        |
-| `npm run test:e2e`        | Run end-to-end tests                                |
-| `npm run test:e2e:ui`     | Run E2E tests with interactive UI                   |
-| `npm run test:e2e:headed` | Run E2E tests with visible browser                  |
-| `npm run test:e2e:debug`  | Debug E2E tests step-by-step                        |
-| `npm run test:all`        | Run all tests (unit + E2E)                          |
+| Command                        | Description                                              |
+| ------------------------------ | -------------------------------------------------------- |
+| `npm run dev`                  | Start both frontend and backend in development mode      |
+| `npm run dev:server`           | Start only the Express API server                        |
+| `npm run dev:client`           | Start only the Next.js frontend                          |
+| `npm run build`                | Production build (runs `prisma generate` + `next build`) |
+| `npm run start`                | Start production server locally                          |
+| `npm run lint`                 | Run ESLint                                               |
+| `npm test`                     | Unified test runner: build → unit tests → E2E tests      |
+| `npm run test:unit`            | Run Vitest unit/integration tests once                   |
+| `npm run test:unit:watch`      | Run Vitest in watch mode                                 |
+| `npm run test:unit:coverage`   | Run unit tests with coverage report                      |
+| `npm run test:unit:ui`         | Vitest interactive UI mode                               |
+| `npm run test:e2e`             | Build then run all Playwright E2E tests                  |
+| `npm run test:e2e:ui`          | Run E2E tests with Playwright interactive UI             |
+| `npm run test:e2e:headed`      | Run E2E tests with visible browser                       |
+| `npm run test:e2e:debug`       | Debug E2E tests step-by-step                             |
+| `npm run test:all`             | Run unit tests then E2E tests sequentially               |
+| `npm run test:all:parallel`    | Run unit and E2E tests in parallel                       |
+| `npm run test:ci`              | CI mode: unit coverage + E2E                             |
 
 ## API Endpoints
 
+All endpoints are served by the Express backend at port 3001. Next.js API routes in `src/app/api/` proxy to them transparently.
+
 ### Tasks
 
-- `GET /api/tasks` - Fetch all tasks (ordered by category and sortOrder)
-- `POST /api/tasks` - Create a new task
-- `PATCH /api/tasks/:id/status` - Update an existing task
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/tasks` | Fetch all tasks assigned to the authenticated user |
+| `POST` | `/api/tasks` | Create a new user-defined task |
+| `GET` | `/api/tasks/:id` | Fetch a single task by ID |
+| `PATCH` | `/api/tasks/:id/status` | Update task status, due date, or personal notes |
+| `GET` | `/api/tasks/personalized` | Re-sync and return tasks matched to the user's profile |
 
-### OTP
+### Auth & Profile
 
-- `POST /api/otp/generate` - Generate and send an OTP
-- `POST /api/otp/verify` - Verify a submitted OTP
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/auth/session` | Verify session and return current user |
+| `GET` | `/api/auth/profile` | Fetch the authenticated user's full profile |
+| `PATCH` | `/api/auth/profile` | Update name and profile fields (re-syncs task assignments) |
+| `DELETE` | `/api/auth/profile` | Delete account and all associated data |
+| `POST` | `/api/auth/logout` | Invalidate the current session |
+
+### OTP (Authentication)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/otp/generate` | Generate a 6-digit OTP and send it to the provided email |
+| `POST` | `/api/otp/verify` | Verify OTP and create an authenticated session |
+
+### Onboarding
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/onboarding/tasks` | Preview tasks relevant to a given profile (pre-auth) |
 
 ### Health
 
-- `GET /health` - API health check
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | API health check — returns `{"ok":true}` |
 
-See [API Tests](src/__tests__/README.md) for detailed endpoint documentation and examples.
+See [Unit Test Documentation](src/__tests__/README.md) for detailed endpoint documentation.
 
-See [Unit Test Documentation](src/__tests__/README.md) for more details.
-
-See [E2E Test Documentation](e2e/README.md) for more details.
+See [E2E Test Documentation](e2e/README.md) for browser-level workflow tests.

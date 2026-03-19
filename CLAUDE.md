@@ -9,18 +9,26 @@ Next.js 16 (App Router, React 19, TypeScript 5), Tailwind CSS v4 with shadcn/ui 
 
 ## Structure
 
-- `src/app/` — Next.js pages and API route handlers (proxy to Express)
+- `src/app/` — Next.js pages and API route handlers (thin proxies to Express)
 - `src/components/ui/` — shadcn/ui primitives (button, card, input, label, badge)
 - `src/components/` — feature components composing ui/ primitives
 - `src/server.ts` + `src/app.ts` — Express server entry and config
 - `src/routes/` — Express routes (taskRoutes, otpRoutes, authRoutes)
-- `src/controllers/` — request handlers
-- `src/services/` — business logic (authService, etc.)
-- `src/lib/prisma.ts` — Prisma client; `src/lib/utils.ts` — cn() helper
+- `src/controllers/` — request handlers and validation
+- `src/services/` — business logic (authService, taskService, otpService, etc.)
+- `src/repo/` — data access layer (**only** layer that imports Prisma)
+  - `db.ts` — PrismaClient singleton + `withTransaction` helper
+  - `errors.ts` — DB error-code → HTTP status mapping
+  - `taskRepo.ts`, `userRepo.ts`, `sessionRepo.ts`, `otpRepo.ts`, `taskAssignmentRepo.ts`
+- `src/types/` — application-owned types (no Prisma imports)
+  - `enums.ts` — TaskCategory, EmploymentStatus, UserTaskStatus, HousingType
+  - `models.ts` — UserUpdateData interface
+- `src/lib/` — shared utilities (dateUtils, logger, taskHelpers, utils/cn)
 - `src/generated/prisma/` — generated Prisma client (do not edit)
 - `src/__tests__/` — Vitest + Supertest unit/integration tests
 - `e2e/` — Playwright E2E tests
 - `prisma/schema.prisma` — database schema; `prisma/seed.ts` — seed data
+- `docs/ARCHITECTURE.md` — Prisma isolation pattern and layer diagram
 
 ## Database Models
 
@@ -39,9 +47,20 @@ Task categories: ARRIVAL, IDENTITY_BANKING, HEALTH, TAX_WORK, FAMILY, HOUSING, D
 
 ## API Endpoints (Express, base path /api)
 
-- `GET|POST /api/tasks`, `PATCH /api/tasks/:id/status`
-- `POST /api/otp/generate`, `POST /api/otp/verify`
-- `GET /health`
+- `GET /api/tasks` — assigned tasks for current user
+- `POST /api/tasks` — create user-defined task
+- `GET /api/tasks/:id` — single task by ID
+- `PATCH /api/tasks/:id/status` — update status, due date, personal notes
+- `GET /api/tasks/personalized` — re-sync and return profile-matched tasks
+- `GET /api/auth/session` — verify session + return current user
+- `GET /api/auth/profile` — fetch full user profile
+- `PATCH /api/auth/profile` — update profile fields (re-syncs task assignments)
+- `DELETE /api/auth/profile` — delete account and all data
+- `POST /api/auth/logout` — invalidate current session
+- `POST /api/otp/generate` — generate OTP and send email
+- `POST /api/otp/verify` — verify OTP and create session
+- `POST /api/onboarding/tasks` — task preview for pre-auth onboarding
+- `GET /health` — health check
 
 ## Environment
 
@@ -53,7 +72,10 @@ Copy `.env.example` to `.env`. Key vars: DATABASE_URL, SESSION_COOKIE_SECRET, AP
 Execute one task at a time. Wait for confirmation before proceeding.
 
 ### Testing
-Always write tests for backend changes. Use Vitest + Supertest in `src/__tests__/`. Cover happy path, error handling (400/404/500), validation, and edge cases. Run `npm test` after changes. Skip only for trivial changes (typos, docs, config).
+Always write tests for backend changes. Use Vitest + Supertest in `src/__tests__/`. Cover happy path, error handling (400/404/500), validation, and edge cases. Run `npm run test:unit` after changes. Skip only for trivial changes (typos, docs, config).
+
+### Architecture: Prisma Isolation
+Only files in `src/repo/` (and `prisma/`) may import from Prisma or `src/generated/prisma/`. Services, controllers, routes, frontend components, and tests must import enums from `src/types/enums.ts` and models from `src/types/models.ts`. Use `withTransaction` from `src/repo/db.ts` instead of calling `prisma.$transaction()` directly. See `docs/ARCHITECTURE.md` for details.
 
 ### UI
 Always use shadcn/ui components from `src/components/ui/`. Never write raw HTML with manual Tailwind classes. Use semantic color tokens (bg-background, text-foreground, bg-primary, bg-muted, text-destructive, border-border). Dark mode is automatic via CSS variables — do not use dark: prefixes. Add new components with `npx shadcn@latest add <name>`. Use cn() from @/lib/utils for className merging.

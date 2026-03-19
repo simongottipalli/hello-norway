@@ -46,7 +46,7 @@ src/__tests__/
 ├── authMiddleware.test.ts            # Session authentication middleware
 ├── authProfile.test.ts               # Auth profile endpoints (GET/PATCH/DELETE)
 ├── authSession.test.ts               # GET /api/auth/session success-path
-├── errorHandler.test.ts              # handlePrismaError utility
+├── errorHandler.test.ts              # handleDatabaseError (src/repo/errors)
 ├── health.test.ts                    # GET /health endpoint
 ├── otp.test.ts                       # OTP request/verify endpoints
 ├── otpTestPeek.test.ts               # GET /otp/test-peek test-only endpoint
