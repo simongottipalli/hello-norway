@@ -267,7 +267,6 @@ export function ProfileView({ onBack }: ProfileViewProps) {
                   {error}
                 </p>
               )}
-
               <div className="flex gap-2">
                 <Button type="submit" disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save profile"}

@@ -8,6 +8,12 @@ import { test, expect, type Page } from '@playwright/test';
 const errorLocator = (page: Page) =>
   page.locator('[role="alert"].text-destructive');
 
+/**
+ * Selector that targets a visible sonner success toast notification.
+ */
+const successToastLocator = (page: Page) =>
+  page.locator('[data-sonner-toast][data-type="success"]');
+
 // All profile tests run with the shared authenticated session.
 test.describe('Profile editing', () => {
   test.beforeEach(async ({ page }) => {
@@ -41,48 +47,48 @@ test.describe('Profile editing', () => {
       await page.getByRole('button', { name: 'Save profile' }).click();
 
       // Success message should appear
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
 
       // Restore original name
       await nameInput.fill(originalName);
       await page.getByRole('button', { name: 'Save profile' }).click();
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
     });
 
     test('should save arrival year and show success', async ({ page }) => {
       await page.getByLabel('Arrival year').fill('2025');
       await page.getByRole('button', { name: 'Save profile' }).click();
 
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
 
       // Clear arrival year to restore state
       await page.getByLabel('Arrival year').fill('');
       await page.getByRole('button', { name: 'Save profile' }).click();
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
     });
 
     test('should save employment status and show success', async ({ page }) => {
       await page.getByLabel('Employment status').selectOption('EMPLOYED');
       await page.getByRole('button', { name: 'Save profile' }).click();
 
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
 
       // Restore default
       await page.getByLabel('Employment status').selectOption('');
       await page.getByRole('button', { name: 'Save profile' }).click();
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
     });
 
     test('should save has-children preference and show success', async ({ page }) => {
       await page.getByLabel('Has children').selectOption('yes');
       await page.getByRole('button', { name: 'Save profile' }).click();
 
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
 
       // Restore default
       await page.getByLabel('Has children').selectOption('');
       await page.getByRole('button', { name: 'Save profile' }).click();
-      await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+      await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
     });
   });
 
@@ -161,11 +167,11 @@ test.describe('Profile view on dashboard', () => {
 
     await nameInput.fill('Dashboard Profile Update');
     await page.getByRole('button', { name: 'Save profile' }).click();
-    await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+    await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
 
     // Restore
     await nameInput.fill(originalName);
     await page.getByRole('button', { name: 'Save profile' }).click();
-    await expect(page.getByRole('status')).toContainText(/profile updated successfully/i);
+    await expect(successToastLocator(page)).toContainText(/profile updated successfully/i);
   });
 });
