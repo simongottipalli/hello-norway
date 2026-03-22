@@ -6,7 +6,7 @@
  *   env  DATABASE_URL
  *   argv[2]  test-user email to delete (cascades to sessions)
  */
-import { PrismaClient } from "../../src/generated/prisma/client.js";
+import { PrismaClient } from "../../src/generated/prisma/client";
 
 async function main() {
   const email = process.argv[2];

@@ -1,6 +1,6 @@
 import { UserTaskStatus } from "../types/enums";
 import type { EmploymentStatus } from "../types/enums";
-import type { Prisma } from "../generated/prisma/client.js";
+import type { Prisma } from "../generated/prisma/client";
 import { prisma } from "./db";
 import { MS_PER_DAY } from "../lib/dateUtils";
 
