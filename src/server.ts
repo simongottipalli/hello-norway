@@ -1,3 +1,4 @@
+import "reflect-metadata"; // Must be first!
 import "dotenv/config";
 import { createApp } from "./app";
 import { logger } from "./lib/logger";
