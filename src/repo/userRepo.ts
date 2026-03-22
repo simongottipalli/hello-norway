@@ -1,4 +1,4 @@
-import type { Prisma } from "../generated/prisma/client.js";
+import type { Prisma } from "../generated/prisma/client";
 import { prisma, type DbClient } from "./db";
 import type { UserUpdateData } from "../types/models";
 import { EmploymentStatus } from "../types/enums";

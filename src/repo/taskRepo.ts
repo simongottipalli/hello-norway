@@ -1,5 +1,5 @@
 import { UserTaskStatus } from "../types/enums";
-import type { Prisma } from "../generated/prisma/client.js";
+import type { Prisma } from "../generated/prisma/client";
 import { prisma, type DbClient } from "./db";
 
 type TaskDb = Pick<DbClient, "task" | "userTask">;

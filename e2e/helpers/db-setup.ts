@@ -10,7 +10,7 @@
  * Prints a JSON line to stdout: { sessionToken, expiresAt, userId }
  */
 import crypto from "crypto";
-import { PrismaClient } from "../../src/generated/prisma/client.js";
+import { PrismaClient } from "../../src/generated/prisma/client";
 
 async function main() {
   const email = process.argv[2];
