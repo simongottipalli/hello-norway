@@ -1,0 +1,26 @@
+{
+  "entryFile": "src/app.ts",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": ["src/controllers/**/*Controller.ts"],
+  "spec": {
+    "outputDirectory": "src/generated",
+    "specVersion": 3,
+    "securityDefinitions": {
+      "cookie_auth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session_token",
+        "description": "Session token cookie obtained from /api/otp/verify"
+      }
+    },
+    "name": "Hello Norway API",
+    "description": "API for managing Norwegian life admin tasks",
+    "version": "1.0.0"
+  },
+  "routes": {
+    "routesDir": "src/generated",
+    "middleware": "express",
+    "basePath": "/api",
+    "authenticationModule": "./src/middleware/tsoaAuthentication.ts"
+  }
+}
