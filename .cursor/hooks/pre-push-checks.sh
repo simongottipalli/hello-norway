@@ -1,5 +1,6 @@
 #!/bin/bash
 # Pre-push gate: runs lint + tests before git push / gh pr create.
+# Starts the test database via docker-compose if it is not already running.
 # Fails open (failClosed: false) so a hook crash never silently blocks a push.
 
 set -uo pipefail
@@ -18,7 +19,21 @@ cd "$REPO_ROOT"
 
 echo '--- Pre-push checks ---' >&2
 
-# 1. Lint — disable -e so a non-zero exit is handled explicitly, not trapped
+# 0. Ensure test database is running
+echo '[0/2] Ensuring test database is up...' >&2
+set +e
+docker compose -f docker-compose.test.yml up -d 2>/dev/null
+timeout 30 bash -c 'until docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U postgres 2>/dev/null; do sleep 1; done' 2>/dev/null
+DB_READY=$?
+set -e
+if [ "$DB_READY" -ne 0 ]; then
+  echo "Could not start test database." >&2
+  echo '{"permission":"deny","user_message":"Pre-push blocked: test database could not be started. Run `docker compose -f docker-compose.test.yml up -d` manually.","agent_message":"Test database unavailable."}'
+  exit 0
+fi
+echo '[0/2] Database ready.' >&2
+
+# 1. Lint
 echo '[1/2] Running lint...' >&2
 set +e
 LINT_OUTPUT=$(npm run lint 2>&1)
@@ -32,7 +47,7 @@ if [ "$LINT_EXIT" -ne 0 ] || [ "$LINT_ERRORS" -gt 0 ]; then
 fi
 echo '[1/2] Lint passed.' >&2
 
-# 2. Unit tests (all of them — if DB tests fail, set up the local DB first)
+# 2. Unit tests
 echo '[2/2] Running unit tests...' >&2
 set +e
 TEST_OUTPUT=$(npm run test:unit 2>&1)
