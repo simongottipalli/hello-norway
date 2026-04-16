@@ -49,3 +49,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# tsoa generated files
+src/generated/routes.ts
+src/generated/swagger.json
