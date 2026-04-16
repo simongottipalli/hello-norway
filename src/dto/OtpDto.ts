@@ -2,6 +2,8 @@ export class RequestOtpDto {
   /**
    * User email address
    * @example "user@example.com"
+   * @format email
+   * @maxLength 320
    */
   email!: string;
 }
@@ -10,6 +12,8 @@ export class VerifyOtpDto {
   /**
    * User email address
    * @example "user@example.com"
+   * @format email
+   * @maxLength 320
    */
   email!: string;
 
