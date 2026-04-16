@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "tsoa:spec": "tsoa spec",
+    "tsoa:routes": "tsoa routes",
+    "tsoa:build": "tsoa spec-and-routes",
     "dev:server": "nodemon --watch src --ext ts --exec 'ts-node --swc src/server.ts'",
     "start:server": "ts-node --swc src/server.ts",
     "dev:client": "next dev --port 3000",
@@ -44,7 +47,9 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.5.0"
+    "swagger-ui-express": "^5.0.1",
+    "tailwind-merge": "^3.5.0",
+    "tsoa": "^7.0.0-alpha.0"
   },
   "overrides": {
     "vite": ">=8.0.5",
@@ -63,6 +68,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/supertest": "^7.2.0",
+    "@types/swagger-ui-express": "^4.1.8",
     "@vitest/coverage-v8": "^4.1.0",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.3",
