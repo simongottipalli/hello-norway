@@ -32,7 +32,7 @@ if [ "$LINT_EXIT" -ne 0 ] || [ "$LINT_ERRORS" -gt 0 ]; then
 fi
 echo '[1/2] Lint passed.' >&2
 
-# 2. Unit tests — same pattern: disable -e so failure is handled explicitly
+# 2. Unit tests (all of them — if DB tests fail, set up the local DB first)
 echo '[2/2] Running unit tests...' >&2
 set +e
 TEST_OUTPUT=$(npm run test:unit 2>&1)
