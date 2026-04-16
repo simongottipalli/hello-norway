@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/pre-push-checks.sh",
+        "matcher": "git push|gh pr create",
+        "failClosed": false
+      }
+    ]
+  }
+}

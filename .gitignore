@@ -50,6 +50,5 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# tsoa generated files
-src/generated/routes.ts
-src/generated/swagger.json
+# tsoa generated files are committed (deterministic, imported by app code)
+# Run `npm run tsoa:build` after changing controllers to regenerate them
