@@ -2,7 +2,7 @@
 # Pre-push gate: runs lint + tests before git push / gh pr create.
 # Fails open (failClosed: false) so a hook crash never silently blocks a push.
 
-set -euo pipefail
+set -uo pipefail
 
 input=$(cat)
 command=$(echo "$input" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('command',''))" 2>/dev/null || echo "")
@@ -18,28 +18,30 @@ cd "$REPO_ROOT"
 
 echo '--- Pre-push checks ---' >&2
 
-# 1. Lint
+# 1. Lint — disable -e so a non-zero exit is handled explicitly, not trapped
 echo '[1/2] Running lint...' >&2
-if ! npm run lint --silent 2>&1 | grep -q "0 errors"; then
-  # Re-run without silent to capture output
-  LINT_OUTPUT=$(npm run lint 2>&1)
-  LINT_ERRORS=$(echo "$LINT_OUTPUT" | grep -c " error " || true)
-  if [ "$LINT_ERRORS" -gt 0 ]; then
-    echo "Lint failed with errors." >&2
-    echo "{\"permission\":\"deny\",\"user_message\":\"Pre-push blocked: lint has $LINT_ERRORS error(s). Run \\`npm run lint\\` to see details.\",\"agent_message\":\"Lint check failed. Fix lint errors before pushing.\"}"
-    exit 0
-  fi
+set +e
+LINT_OUTPUT=$(npm run lint 2>&1)
+LINT_EXIT=$?
+set -e
+LINT_ERRORS=$(echo "$LINT_OUTPUT" | grep -c " error " || true)
+if [ "$LINT_EXIT" -ne 0 ] || [ "$LINT_ERRORS" -gt 0 ]; then
+  echo "Lint failed with errors." >&2
+  echo "{\"permission\":\"deny\",\"user_message\":\"Pre-push blocked: lint has $LINT_ERRORS error(s). Run \`npm run lint\` to see details.\",\"agent_message\":\"Lint check failed. Fix lint errors before pushing.\"}"
+  exit 0
 fi
 echo '[1/2] Lint passed.' >&2
 
-# 2. Unit tests (pretest:unit runs tsoa:build automatically)
-echo '[2/2] Running unit tests (includes tsoa:build)...' >&2
+# 2. Unit tests — same pattern: disable -e so failure is handled explicitly
+echo '[2/2] Running unit tests...' >&2
+set +e
 TEST_OUTPUT=$(npm run test:unit 2>&1)
 TEST_EXIT=$?
-if [ $TEST_EXIT -ne 0 ]; then
+set -e
+if [ "$TEST_EXIT" -ne 0 ]; then
   FAILED=$(echo "$TEST_OUTPUT" | grep -E "Tests.*failed" | tail -1 || echo "unknown failures")
   echo "Tests failed." >&2
-  echo "{\"permission\":\"deny\",\"user_message\":\"Pre-push blocked: unit tests failed ($FAILED). Run \\`npm run test:unit\\` to see details.\",\"agent_message\":\"Unit test check failed. Fix failing tests before pushing.\"}"
+  echo "{\"permission\":\"deny\",\"user_message\":\"Pre-push blocked: unit tests failed ($FAILED). Run \`npm run test:unit\` to see details.\",\"agent_message\":\"Unit test check failed. Fix failing tests before pushing.\"}"
   exit 0
 fi
 echo '[2/2] Tests passed.' >&2

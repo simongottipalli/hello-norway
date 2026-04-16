@@ -14,44 +14,57 @@ export class OtpController {
    */
   @Post("generate")
   @SuccessResponse("200", "OTP sent")
-  @Response<{ error: string; message: string }>("400", "Validation error")
+  @Response<{ error: string }>("400", "Validation error")
+  @Response<{ message: string; details: Record<string, unknown> }>("422", "DTO validation failed")
   @Response<{ error: string; message: string }>("429", "Rate limit exceeded")
   @Response<{ error: string; message: string }>("500", "Server error")
   public async requestOtp(
     @Body() body: RequestOtpDto,
     @Request() req: ExpressRequest
   ): Promise<OtpResponseDto> {
-    const { email } = body;
+    try {
+      const { email } = body;
 
-    if (email.length > MAX_EMAIL_LENGTH) {
+      if (email.length > MAX_EMAIL_LENGTH) {
+        throw {
+          status: 400,
+          message: "Email exceeds maximum length",
+        };
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!EMAIL_REGEX.test(normalizedEmail)) {
+        throw {
+          status: 400,
+          message: "Invalid email format",
+        };
+      }
+
+      const result = await otpService.requestOtp(normalizedEmail, req.logger);
+
+      if (!result.success) {
+        const statusCode = result.statusCode || 500;
+        throw {
+          status: statusCode,
+          message: result.error || "An error occurred",
+          retryAfter: result.retryAfter,
+          genericMessage: GENERIC_MESSAGE,
+        };
+      }
+
+      req.logger.info({ msg: "OTP request processed", email: normalizedEmail });
+      return { message: GENERIC_MESSAGE };
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "status" in error) {
+        throw error;
+      }
+      req.logger.error({ err: error, msg: "Unexpected error while processing OTP request" });
       throw {
-        status: 400,
-        message: "Email exceeds maximum length",
-      };
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!EMAIL_REGEX.test(normalizedEmail)) {
-      throw {
-        status: 400,
-        message: "Invalid email format",
-      };
-    }
-
-    const result = await otpService.requestOtp(normalizedEmail, req.logger);
-
-    if (!result.success) {
-      const statusCode = result.statusCode || 500;
-      throw {
-        status: statusCode,
-        message: result.error || "An error occurred",
-        retryAfter: result.retryAfter,
+        status: 500,
+        message: "Internal server error",
         genericMessage: GENERIC_MESSAGE,
       };
     }
-
-    req.logger.info({ msg: "OTP request processed", email: normalizedEmail });
-    return { message: GENERIC_MESSAGE };
   }
 
   /**
@@ -61,6 +74,7 @@ export class OtpController {
   @SuccessResponse("200", "OTP verified")
   @Response<{ error: string }>("400", "Validation error")
   @Response<{ error: string }>("401", "Invalid OTP")
+  @Response<{ message: string; details: Record<string, unknown> }>("422", "DTO validation failed")
   @Response<{ error: string }>("500", "Server error")
   public async verifyOtp(
     @Body() body: VerifyOtpDto,

@@ -19,6 +19,12 @@
 				"type": "object",
 				"additionalProperties": false
 			},
+			"Record_string.unknown_": {
+				"properties": {},
+				"additionalProperties": {},
+				"type": "object",
+				"description": "Construct a type with a set of properties K of type T"
+			},
 			"RequestOtpDto": {
 				"properties": {
 					"email": {
@@ -137,16 +143,34 @@
 							"application/json": {
 								"schema": {
 									"properties": {
-										"message": {
-											"type": "string"
-										},
 										"error": {
 											"type": "string"
 										}
 									},
 									"required": [
-										"message",
 										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "DTO validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {
+											"$ref": "#/components/schemas/Record_string.unknown_"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
 									],
 									"type": "object"
 								}
@@ -257,6 +281,28 @@
 									},
 									"required": [
 										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "DTO validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {
+											"$ref": "#/components/schemas/Record_string.unknown_"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
 									],
 									"type": "object"
 								}

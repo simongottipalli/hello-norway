@@ -7,7 +7,7 @@
     "tsoa:spec": "tsoa spec",
     "tsoa:routes": "tsoa routes",
     "tsoa:build": "tsoa spec-and-routes",
-    "dev:server": "npm run tsoa:build && nodemon --watch src --ext ts --exec 'npm run tsoa:build && ts-node --swc src/server.ts'",
+    "dev:server": "npm run tsoa:build && nodemon --watch src --ignore src/generated/** --ext ts --exec 'npm run tsoa:build && ts-node --swc src/server.ts'",
     "start:server": "ts-node --swc src/server.ts",
     "dev:client": "next dev --port 3000",
     "dev:client:experimental": "next dev --port 3000 --experimental-https",

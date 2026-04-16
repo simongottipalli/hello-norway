@@ -214,7 +214,7 @@ describe("OTP API", () => {
     });
   });
 
-  describe("Invalid Email Format - 400 Errors (missing @, no domain, too long, injection)", () => {
+  describe("Invalid Email Validation Errors - 400 and 422 cases (missing @, no domain, too long, injection)", () => {
     it("should return 422 for missing email", async () => {
       const response = await request(app)
         .post("/api/otp/generate")
