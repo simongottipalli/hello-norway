@@ -1,0 +1,18 @@
+---
+description: Workflow for implementing well-defined tasks
+alwaysApply: true
+---
+
+# Task Implementation Workflow
+
+When asked to implement a well-defined task (e.g. a GitHub issue, feature request, or bug fix):
+
+1. **Create a new branch** from `main` before making any changes.
+
+2. **Evaluate task size/complexity:**
+   - **Small–Medium**: Implement directly, then create a PR.
+   - **Medium–High or Large**: Break the task down into sub-tasks first, present the breakdown to the user, and wait for approval before implementing.
+
+3. **Implement** (one task at a time per the step-by-step execution rule).
+
+4. **Create a PR** once implementation and pre-push checks pass.
