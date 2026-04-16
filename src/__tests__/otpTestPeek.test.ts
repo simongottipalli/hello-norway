@@ -12,12 +12,6 @@ vi.mock('../repo/db', () => ({
   },
 }));
 
-// Also mock the OTP controller so generate/verify calls don't need full setup
-vi.mock('../controllers/otpController', () => ({
-  requestOtp: vi.fn((_req, res) => res.status(200).json({ message: 'ok' })),
-  verifyOtp: vi.fn((_req, res) => res.status(200).json({ message: 'ok' })),
-}));
-
 const createTestApp = () => {
   const app = express();
   app.use(express.json());

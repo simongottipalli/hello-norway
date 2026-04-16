@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import otpRoutes from "../routes/otpRoutes";
+import { RegisterRoutes } from "../generated/routes";
+import { tsoaErrorHandler } from "../middleware/tsoaErrorHandler";
+import { errorLogger } from "../middleware/errorLogger";
 import * as otpServiceModule from "../services/otpService";
 import { OtpService } from "../services/otpService";
 import { prisma } from "../repo/db";
@@ -56,12 +58,14 @@ vi.mock("../repo/db", () => {
   };
 });
 
-// Create test app with OTP routes
+// Create test app with tsoa-generated OTP routes
 const createTestApp = () => {
   const app = express();
   app.use(express.json());
   app.use(requestLogger);
-  app.use(otpRoutes);
+  RegisterRoutes(app);
+  app.use(tsoaErrorHandler);
+  app.use(errorLogger);
   return app;
 };
 
@@ -128,7 +132,7 @@ describe("OTP API", () => {
       mockRequestOtp.mockResolvedValue({ success: true });
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user@example.com" })
         .set("Content-Type", "application/json");
 
@@ -142,7 +146,7 @@ describe("OTP API", () => {
       mockRequestOtp.mockResolvedValue({ success: true });
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "User@EXAMPLE.COM" })
         .set("Content-Type", "application/json");
 
@@ -155,7 +159,7 @@ describe("OTP API", () => {
       mockRequestOtp.mockResolvedValue({ success: true });
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "  user@example.com  " })
         .set("Content-Type", "application/json");
 
@@ -168,7 +172,7 @@ describe("OTP API", () => {
       mockRequestOtp.mockResolvedValue({ success: true });
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user+tag@example.com" })
         .set("Content-Type", "application/json");
 
@@ -181,7 +185,7 @@ describe("OTP API", () => {
       mockRequestOtp.mockResolvedValue({ success: true });
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user@mail.example.com" })
         .set("Content-Type", "application/json");
 
@@ -202,7 +206,7 @@ describe("OTP API", () => {
       expect(exactLengthEmail.length).toBe(320);
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: exactLengthEmail })
         .set("Content-Type", "application/json");
 
@@ -211,31 +215,31 @@ describe("OTP API", () => {
   });
 
   describe("Invalid Email Format - 400 Errors (missing @, no domain, too long, injection)", () => {
-    it("should return 400 for missing email", async () => {
+    it("should return 422 for missing email", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({})
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe("Email is required");
-      expect(response.body.message).toBeUndefined();
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+      expect(response.body.details).toBeDefined();
     });
 
-    it("should return 400 for non-string email", async () => {
+    it("should return 422 for non-string email", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: 12345 })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe("Email is required");
-      expect(response.body.message).toBeUndefined();
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+      expect(response.body.details).toBeDefined();
     });
 
     it("should return 400 for email without @ symbol (missing @)", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "notanemail" })
         .set("Content-Type", "application/json");
 
@@ -246,7 +250,7 @@ describe("OTP API", () => {
 
     it("should return 400 for email without domain (no domain)", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user@" })
         .set("Content-Type", "application/json");
 
@@ -257,7 +261,7 @@ describe("OTP API", () => {
 
     it("should return 400 for email without local part", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "@example.com" })
         .set("Content-Type", "application/json");
 
@@ -268,7 +272,7 @@ describe("OTP API", () => {
 
     it("should return 400 for email with spaces", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user name@example.com" })
         .set("Content-Type", "application/json");
 
@@ -279,7 +283,7 @@ describe("OTP API", () => {
 
     it("should return 400 for email with multiple @ symbols", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user@@example.com" })
         .set("Content-Type", "application/json");
 
@@ -288,22 +292,22 @@ describe("OTP API", () => {
       expect(response.body.message).toBeUndefined();
     });
 
-    it("should return 400 for email exceeding 320 characters (too long)", async () => {
+    it("should return 422 for email exceeding 320 characters (too long)", async () => {
       const longEmail = "a".repeat(310) + "@example.com"; // 323 characters total
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: longEmail })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe("Email exceeds maximum length");
-      expect(response.body.message).toBeUndefined();
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+      expect(response.body.details).toBeDefined();
     });
 
     it("should return 400 for potential SQL injection attempt (injection attempt)", async () => {
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user'; DROP TABLE users; --@example.com" })
         .set("Content-Type", "application/json");
 
@@ -324,7 +328,7 @@ describe("OTP API", () => {
       });
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: testEmail })
         .set("Content-Type", "application/json");
 
@@ -640,41 +644,51 @@ describe("OTP API", () => {
       mockRequestOtp.mockRejectedValue(new Error("Unexpected error"));
 
       const response = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "user@example.com" })
         .set("Content-Type", "application/json");
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe("Internal server error");
-      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
     });
   });
 
   describe("Security - Email Enumeration Prevention", () => {
     it("should return generic message only for valid email attempts", async () => {
-      // Validation errors (before send attempt) should NOT have generic message
-      const validationErrors = [
-        { email: "", expectedStatus: 400 },
-        { email: "invalid-email", expectedStatus: 400 },
-        { email: "a".repeat(330) + "@example.com", expectedStatus: 400 },
+      // Controller-level validation errors should NOT include the generic message
+      const controllerValidationErrors = [
+        { email: "" },
+        { email: "invalid-email" },
       ];
 
-      for (const testCase of validationErrors) {
+      for (const testCase of controllerValidationErrors) {
         const response = await request(app)
-          .post("/otp/generate")
+          .post("/api/otp/generate")
           .send({ email: testCase.email })
           .set("Content-Type", "application/json");
 
+        expect(response.status).toBe(400);
         expect(response.body.message).toBeUndefined();
         expect(response.body.error).toBeDefined();
       }
+
+      // tsoa DTO validation errors (422) also do not include the generic OTP message
+      const tooLongEmail = "a".repeat(330) + "@example.com";
+      const tsoaValidationResponse = await request(app)
+        .post("/api/otp/generate")
+        .send({ email: tooLongEmail })
+        .set("Content-Type", "application/json");
+
+      expect(tsoaValidationResponse.status).toBe(422);
+      expect(tsoaValidationResponse.body.message).toBe("Validation Failed");
+      expect(tsoaValidationResponse.body.error).toBeUndefined();
 
       // Valid emails (after send attempt) SHOULD have generic message
       const mockRequestOtp = vi.spyOn(otpServiceModule.otpService, "requestOtp");
       mockRequestOtp.mockResolvedValue({ success: true });
 
       const validResponse = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "valid@example.com" })
         .set("Content-Type", "application/json");
 
@@ -686,12 +700,12 @@ describe("OTP API", () => {
       mockRequestOtp.mockResolvedValue({ success: true });
 
       const existingEmailResponse = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "existing@example.com" })
         .set("Content-Type", "application/json");
 
       const nonExistingEmailResponse = await request(app)
-        .post("/otp/generate")
+        .post("/api/otp/generate")
         .send({ email: "nonexisting@example.com" })
         .set("Content-Type", "application/json");
 
@@ -713,7 +727,7 @@ describe("OTP API", () => {
       });
 
       const response = await request(app)
-        .post("/otp/verify")
+        .post("/api/otp/verify")
         .send({ email: "user@example.com", code: 123456 })
         .set("Content-Type", "application/json");
 
@@ -733,7 +747,7 @@ describe("OTP API", () => {
       });
 
       const response = await request(app)
-        .post("/otp/verify")
+        .post("/api/otp/verify")
         .send({ email: "user@example.com", code: 999999 })
         .set("Content-Type", "application/json");
 
@@ -741,29 +755,31 @@ describe("OTP API", () => {
       expect(response.body.error).toBe("Invalid or expired OTP");
     });
 
-    it("should require email field", async () => {
+    it("should return 422 when email field is missing", async () => {
       const response = await request(app)
-        .post("/otp/verify")
+        .post("/api/otp/verify")
         .send({ code: 123456 })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe("Email is required");
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+      expect(response.body.details).toBeDefined();
     });
 
-    it("should require code field", async () => {
+    it("should return 422 when code field is missing", async () => {
       const response = await request(app)
-        .post("/otp/verify")
+        .post("/api/otp/verify")
         .send({ email: "user@example.com" })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe("OTP code is required");
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+      expect(response.body.details).toBeDefined();
     });
 
     it("should validate email format", async () => {
       const response = await request(app)
-        .post("/otp/verify")
+        .post("/api/otp/verify")
         .send({ email: "invalid-email", code: 123456 })
         .set("Content-Type", "application/json");
 
@@ -776,7 +792,7 @@ describe("OTP API", () => {
       mockVerifyOtp.mockResolvedValue({ success: true });
 
       const response = await request(app)
-        .post("/otp/verify")
+        .post("/api/otp/verify")
         .send({ email: "User@EXAMPLE.COM", code: 123456 })
         .set("Content-Type", "application/json");
 
@@ -793,7 +809,7 @@ describe("OTP API", () => {
       });
 
       const response = await request(app)
-        .post("/otp/verify")
+        .post("/api/otp/verify")
         .send({ email: "user@example.com", code: 123456 })
         .set("Content-Type", "application/json");
 

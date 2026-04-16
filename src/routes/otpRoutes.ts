@@ -1,11 +1,7 @@
 import { Router } from "express";
-import { requestOtp as generateOtp, verifyOtp } from "../controllers/otpController";
 import { prisma } from "../repo/db";
 
 const router = Router();
-
-router.post("/otp/generate", generateOtp);
-router.post("/otp/verify", verifyOtp);
 
 // Test-only endpoint: returns the latest valid OTP code for a given email.
 // Only available when NODE_ENV === 'test' to prevent accidental exposure in production.
