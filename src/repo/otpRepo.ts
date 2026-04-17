@@ -35,3 +35,9 @@ export const findValidOtp = (email: string, code: number, db: OtpDb = prisma) =>
 
 export const deleteAllOtpsByEmail = (email: string, db: OtpDb = prisma) =>
   db.oTPCode.deleteMany({ where: { email } });
+
+export const findLatestValidOtp = (email: string, db: OtpDb = prisma) =>
+  db.oTPCode.findFirst({
+    where: { email, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: "desc" },
+  });

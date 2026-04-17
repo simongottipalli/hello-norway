@@ -2,20 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import otpRoutes from '../routes/otpRoutes';
-import { prisma } from '../repo/db';
+import * as otpRepo from '../repo/otpRepo';
 
-vi.mock('../repo/db', () => ({
-  prisma: {
-    oTPCode: {
-      findFirst: vi.fn(),
-    },
-  },
-}));
-
-// Also mock the OTP controller so generate/verify calls don't need full setup
-vi.mock('../controllers/otpController', () => ({
-  requestOtp: vi.fn((_req, res) => res.status(200).json({ message: 'ok' })),
-  verifyOtp: vi.fn((_req, res) => res.status(200).json({ message: 'ok' })),
+vi.mock('../repo/otpRepo', () => ({
+  findLatestValidOtp: vi.fn(),
 }));
 
 const createTestApp = () => {
@@ -55,7 +45,7 @@ describe('GET /otp/test-peek (test-only endpoint)', () => {
   });
 
   it('should return 404 when no valid OTP exists for the email', async () => {
-    vi.mocked(prisma.oTPCode.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(otpRepo.findLatestValidOtp).mockResolvedValueOnce(null);
 
     const response = await request(app).get(
       '/otp/test-peek?email=user@example.com'
@@ -66,7 +56,7 @@ describe('GET /otp/test-peek (test-only endpoint)', () => {
   });
 
   it('should return 200 with OTP code when a valid OTP exists', async () => {
-    vi.mocked(prisma.oTPCode.findFirst).mockResolvedValueOnce({
+    vi.mocked(otpRepo.findLatestValidOtp).mockResolvedValueOnce({
       id: 'otp-1',
       code: 123456,
       email: 'user@example.com',
@@ -83,14 +73,10 @@ describe('GET /otp/test-peek (test-only endpoint)', () => {
   });
 
   it('should normalize email to lowercase before querying', async () => {
-    vi.mocked(prisma.oTPCode.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(otpRepo.findLatestValidOtp).mockResolvedValueOnce(null);
 
     await request(app).get('/otp/test-peek?email=User@EXAMPLE.COM');
 
-    expect(prisma.oTPCode.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ email: 'user@example.com' }),
-      })
-    );
+    expect(otpRepo.findLatestValidOtp).toHaveBeenCalledWith('user@example.com');
   });
 });

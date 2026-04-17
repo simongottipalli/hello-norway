@@ -1,0 +1,352 @@
+{
+	"openapi": "3.0.0",
+	"components": {
+		"examples": {},
+		"headers": {},
+		"parameters": {},
+		"requestBodies": {},
+		"responses": {},
+		"schemas": {
+			"OtpResponseDto": {
+				"properties": {
+					"message": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"message"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"Record_string.unknown_": {
+				"properties": {},
+				"additionalProperties": {},
+				"type": "object",
+				"description": "Construct a type with a set of properties K of type T"
+			},
+			"RequestOtpDto": {
+				"properties": {
+					"email": {
+						"type": "string",
+						"description": "User email address",
+						"example": "user@example.com",
+						"format": "email",
+						"maxLength": 320
+					}
+				},
+				"required": [
+					"email"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"VerifyOtpSuccessDto": {
+				"properties": {
+					"message": {
+						"type": "string"
+					},
+					"success": {
+						"type": "boolean"
+					},
+					"sessionToken": {
+						"type": "string"
+					},
+					"user": {
+						"properties": {
+							"name": {
+								"type": "string",
+								"nullable": true
+							},
+							"email": {
+								"type": "string"
+							},
+							"id": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"name",
+							"email",
+							"id"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"message",
+					"success",
+					"sessionToken",
+					"user"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"VerifyOtpDto": {
+				"properties": {
+					"email": {
+						"type": "string",
+						"description": "User email address",
+						"example": "user@example.com",
+						"format": "email",
+						"maxLength": 320
+					},
+					"code": {
+						"type": "integer",
+						"format": "int32",
+						"description": "6-digit OTP code",
+						"example": 123456,
+						"minimum": 100000,
+						"maximum": 999999
+					}
+				},
+				"required": [
+					"email",
+					"code"
+				],
+				"type": "object",
+				"additionalProperties": false
+			}
+		},
+		"securitySchemes": {
+			"cookie_auth": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "session_token"
+			}
+		}
+	},
+	"info": {
+		"title": "Hello Norway API",
+		"version": "1.0.0",
+		"description": "API for managing Norwegian life admin tasks",
+		"contact": {}
+	},
+	"paths": {
+		"/otp/generate": {
+			"post": {
+				"operationId": "RequestOtp",
+				"responses": {
+					"200": {
+						"description": "OTP sent",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/OtpResponseDto"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "DTO validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {
+											"$ref": "#/components/schemas/Record_string.unknown_"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Rate limit exceeded",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"message": {
+											"type": "string"
+										},
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"message",
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"message": {
+											"type": "string"
+										},
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"message",
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Request an OTP code to be sent to the provided email",
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/RequestOtpDto"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/otp/verify": {
+			"post": {
+				"operationId": "VerifyOtp",
+				"responses": {
+					"200": {
+						"description": "OTP verified",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/VerifyOtpSuccessDto"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid OTP",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "DTO validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {
+											"$ref": "#/components/schemas/Record_string.unknown_"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Verify an OTP code and create a session",
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/VerifyOtpDto"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "/"
+		}
+	]
+}
