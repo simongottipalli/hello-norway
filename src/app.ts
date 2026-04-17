@@ -32,15 +32,16 @@ export const createApp = () => {
 
   publicApiRoutes.forEach((router) => app.use(apiBaseUrl, router));
 
+  // Legacy test-only route — must be before the protected router so
+  // authenticateSession does not intercept it
+  if (process.env.NODE_ENV === "test") {
+    app.use(apiBaseUrl, otpRoutes);
+  }
+
   const protectedRouter = Router();
   protectedRouter.use(authenticateSession);
   protectedApiRoutes.forEach((router) => protectedRouter.use(router));
   app.use(apiBaseUrl, protectedRouter);
-
-  // Legacy test-only OTP route (test-peek endpoint)
-  if (process.env.NODE_ENV === "test") {
-    app.use(apiBaseUrl, otpRoutes);
-  }
 
   // tsoa validation error handler (before generic error logger)
   app.use(tsoaErrorHandler);
