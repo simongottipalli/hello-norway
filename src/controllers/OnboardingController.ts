@@ -53,6 +53,9 @@ export class OnboardingController {
         plannedArrivalDate: plannedArrivalDate ?? null,
       });
 
+      // Prisma generates TaskCategory as a string-literal union (const object),
+      // while the DTO uses our app-level TS enum. The values are identical at
+      // runtime so the cast is safe, but the two types are nominally incompatible.
       return tasks as OnboardingTaskPreviewDto[];
     } catch (error: unknown) {
       req.logger.error({ err: error, msg: "Failed to fetch onboarding task preview" });
