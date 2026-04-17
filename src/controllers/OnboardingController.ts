@@ -1,11 +1,9 @@
 import { Body, Post, Route, Response, SuccessResponse, Request } from "tsoa";
-import { OnboardingProfileDto } from "../dto/OnboardingDto";
+import { OnboardingProfileDto, OnboardingTaskPreviewDto } from "../dto/OnboardingDto";
 import * as onboardingService from "../services/onboardingService";
 import { parseDateOnly } from "../lib/dateUtils";
-import { EMPLOYMENT_STATUS_VALUES, EmploymentStatus } from "../types/enums";
+import { EmploymentStatus } from "../types/enums";
 import type { Request as ExpressRequest } from "express";
-
-const EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
 
 @Route("onboarding")
 export class OnboardingController {
@@ -21,18 +19,7 @@ export class OnboardingController {
   public async getTaskPreview(
     @Body() body: OnboardingProfileDto,
     @Request() req: ExpressRequest
-  ): Promise<unknown> {
-    if (
-      body.employmentStatus !== undefined &&
-      body.employmentStatus !== null &&
-      !EMPLOYMENT_STATUSES.has(body.employmentStatus)
-    ) {
-      throw {
-        status: 400,
-        message: "Invalid employmentStatus.",
-      };
-    }
-
+  ): Promise<OnboardingTaskPreviewDto[]> {
     const arrivalDate = parseDateOnly(body.arrivalDate);
     if (
       body.arrivalDate !== undefined &&
@@ -66,7 +53,7 @@ export class OnboardingController {
         plannedArrivalDate: plannedArrivalDate ?? null,
       });
 
-      return tasks;
+      return tasks as OnboardingTaskPreviewDto[];
     } catch (error: unknown) {
       req.logger.error({ err: error, msg: "Failed to fetch onboarding task preview" });
       throw {

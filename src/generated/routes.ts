@@ -58,6 +58,23 @@ const models: TsoaRoute.Models = {
         "additionalProperties": false,
     },
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "TaskCategory": {
+        "dataType": "refEnum",
+        "enums": ["ARRIVAL","IDENTITY_BANKING","HEALTH","TAX_WORK","FAMILY","HOUSING","DRIVING","OTHER"],
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "OnboardingTaskPreviewDto": {
+        "dataType": "refObject",
+        "properties": {
+            "id": {"dataType":"string","required":true},
+            "title": {"dataType":"string","required":true},
+            "shortDescription": {"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}],"required":true},
+            "category": {"ref":"TaskCategory","required":true},
+            "sortOrder": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "EmploymentStatus": {
         "dataType": "refEnum",
         "enums": ["EMPLOYED","SELF_EMPLOYED","UNEMPLOYED","STUDENT","OTHER"],
