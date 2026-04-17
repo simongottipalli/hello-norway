@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prisma } from "../repo/db";
+import { findLatestValidOtp } from "../repo/otpRepo";
 
 const router = Router();
 
@@ -14,10 +14,7 @@ if (process.env.NODE_ENV === "test") {
     if (!normalizedEmail) {
       return res.status(400).json({ error: "email query param required" });
     }
-    const otp = await prisma.oTPCode.findFirst({
-      where: { email: normalizedEmail, expiresAt: { gt: new Date() } },
-      orderBy: { createdAt: "desc" },
-    });
+    const otp = await findLatestValidOtp(normalizedEmail);
     if (!otp) {
       return res.status(404).json({ error: "No valid OTP found" });
     }

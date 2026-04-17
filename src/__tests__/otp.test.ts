@@ -650,6 +650,7 @@ describe("OTP API", () => {
 
       expect(response.status).toBe(500);
       expect(response.body.error).toBe("Internal server error");
+      expect(response.body.message).toBe("If this email is valid, an OTP has been sent.");
     });
   });
 
