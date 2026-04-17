@@ -106,6 +106,56 @@
 				],
 				"type": "object",
 				"additionalProperties": false
+			},
+			"EmploymentStatus": {
+				"enum": [
+					"EMPLOYED",
+					"SELF_EMPLOYED",
+					"UNEMPLOYED",
+					"STUDENT",
+					"OTHER"
+				],
+				"type": "string"
+			},
+			"OnboardingProfileDto": {
+				"properties": {
+					"isEU": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Is the user from an EU country?",
+						"example": true
+					},
+					"hasChildren": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Does the user have children?",
+						"example": false
+					},
+					"employmentStatus": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/EmploymentStatus"
+							}
+						],
+						"nullable": true,
+						"description": "User's employment status",
+						"example": "EMPLOYED"
+					},
+					"arrivalDate": {
+						"type": "string",
+						"nullable": true,
+						"description": "Arrival date in Norway (YYYY-MM-DD)",
+						"example": "2024-01-15"
+					},
+					"plannedArrivalDate": {
+						"type": "string",
+						"nullable": true,
+						"description": "Planned arrival date (YYYY-MM-DD)",
+						"example": "2024-06-01"
+					}
+				},
+				"type": "object",
+				"additionalProperties": false
 			}
 		},
 		"securitySchemes": {
@@ -337,6 +387,92 @@
 						"application/json": {
 							"schema": {
 								"$ref": "#/components/schemas/VerifyOtpDto"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/onboarding/tasks": {
+			"post": {
+				"operationId": "GetTaskPreview",
+				"responses": {
+					"200": {
+						"description": "Task preview generated",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "DTO validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {
+											"$ref": "#/components/schemas/Record_string.unknown_"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Get a preview of tasks based on user profile.\nPublic endpoint used during onboarding before account creation.",
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/OnboardingProfileDto"
 							}
 						}
 					}

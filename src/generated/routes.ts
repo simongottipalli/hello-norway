@@ -5,6 +5,8 @@ import type { TsoaRoute } from '@tsoa/runtime';
 import {  fetchMiddlewares, ExpressTemplateService } from '@tsoa/runtime';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { OtpController } from './../controllers/OtpController';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { OnboardingController } from './../controllers/OnboardingController';
 import { expressAuthentication } from './../middleware/tsoaAuthentication';
 // @ts-ignore - no great way to install types from subpackage
 import type { Request as ExRequest, Response as ExResponse, RequestHandler, Router } from 'express';
@@ -52,6 +54,23 @@ const models: TsoaRoute.Models = {
         "properties": {
             "email": {"dataType":"string","required":true,"validators":{"maxLength":{"value":320}}},
             "code": {"dataType":"integer","required":true,"validators":{"minimum":{"value":100000},"maximum":{"value":999999}}},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "EmploymentStatus": {
+        "dataType": "refEnum",
+        "enums": ["EMPLOYED","SELF_EMPLOYED","UNEMPLOYED","STUDENT","OTHER"],
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "OnboardingProfileDto": {
+        "dataType": "refObject",
+        "properties": {
+            "isEU": {"dataType":"union","subSchemas":[{"dataType":"boolean"},{"dataType":"enum","enums":[null]}]},
+            "hasChildren": {"dataType":"union","subSchemas":[{"dataType":"boolean"},{"dataType":"enum","enums":[null]}]},
+            "employmentStatus": {"dataType":"union","subSchemas":[{"ref":"EmploymentStatus"},{"dataType":"enum","enums":[null]}]},
+            "arrivalDate": {"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}]},
+            "plannedArrivalDate": {"dataType":"union","subSchemas":[{"dataType":"string"},{"dataType":"enum","enums":[null]}]},
         },
         "additionalProperties": false,
     },
@@ -124,6 +143,37 @@ export function RegisterRoutes(app: Router) {
 
               await templateService.apiHandler({
                 methodName: 'verifyOtp',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsOnboardingController_getTaskPreview: Record<string, TsoaRoute.ParameterSchema> = {
+                body: {"in":"body","name":"body","required":true,"ref":"OnboardingProfileDto"},
+                req: {"in":"request","name":"req","required":true,"dataType":"object"},
+        };
+        app.post('/api/onboarding/tasks',
+            ...(fetchMiddlewares<RequestHandler>(OnboardingController)),
+            ...(fetchMiddlewares<RequestHandler>(OnboardingController.prototype.getTaskPreview)),
+
+            async function OnboardingController_getTaskPreview(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsOnboardingController_getTaskPreview, request, response });
+
+                const controller = new OnboardingController();
+
+              await templateService.apiHandler({
+                methodName: 'getTaskPreview',
                 controller,
                 response,
                 next,
