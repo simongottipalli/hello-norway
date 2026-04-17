@@ -4,7 +4,6 @@ import { authenticateSession } from "../middleware/authMiddleware";
 import { logger } from "../lib/logger";
 import { parseDateOnly } from "../lib/dateUtils";
 import * as authService from "../services/authService";
-import * as onboardingService from "../services/onboardingService";
 
 const router = Router();
 const EMPLOYMENT_STATUSES = new Set<string>(EMPLOYMENT_STATUS_VALUES);
@@ -81,22 +80,6 @@ const parseOnboardingProfilePayload = (body: unknown): OnboardingProfileParseRes
     },
   };
 };
-
-router.post("/onboarding/tasks", async (req, res) => {
-  const parsed = parseOnboardingProfilePayload(req.body);
-  if (parsed.error) {
-    return res.status(parsed.error.status).json(parsed.error.body);
-  }
-
-  try {
-    const tasks = await onboardingService.getTaskPreview(parsed.value);
-
-    return res.status(200).json(tasks);
-  } catch (error: unknown) {
-    logger.error({ err: error, msg: "Failed to fetch onboarding task preview" });
-    return res.status(500).json({ error: "Failed to fetch onboarding tasks" });
-  }
-});
 
 router.get("/auth/session", authenticateSession, (req, res) => {
   return res.status(200).json({

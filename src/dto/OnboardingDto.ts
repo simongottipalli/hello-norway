@@ -1,4 +1,4 @@
-import { EmploymentStatus } from "@/types/enums";
+import { EmploymentStatus, TaskCategory } from "../types/enums";
 
 export class OnboardingProfileDto {
   /**
@@ -30,4 +30,36 @@ export class OnboardingProfileDto {
    * @example "2024-06-01"
    */
   plannedArrivalDate?: string | null;
+}
+
+export class OnboardingTaskPreviewDto {
+  /**
+   * Task identifier
+   * @example "c3b2a1d0-0000-4000-8000-000000000001"
+   */
+  id!: string;
+
+  /**
+   * Task title
+   * @example "Register with the police"
+   */
+  title!: string;
+
+  /**
+   * Short description shown in previews
+   * @example "Complete your initial police registration within 3 months of arrival."
+   */
+  shortDescription!: string | null;
+
+  /**
+   * Task category used for grouping and ordering
+   * @example "ARRIVAL"
+   */
+  category!: TaskCategory;
+
+  /**
+   * Relative ordering within a category
+   * @example 20
+   */
+  sortOrder!: number;
 }
