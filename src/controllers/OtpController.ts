@@ -4,7 +4,6 @@ import { otpService } from "../services/otpService";
 import { EMAIL_REGEX } from "../lib/utils";
 import type { Request as ExpressRequest } from "express";
 
-const MAX_EMAIL_LENGTH = 320;
 const GENERIC_MESSAGE = "If this email is valid, an OTP has been sent.";
 
 @Route("otp")
@@ -24,13 +23,6 @@ export class OtpController {
   ): Promise<OtpResponseDto> {
     try {
       const { email } = body;
-
-      if (email.length > MAX_EMAIL_LENGTH) {
-        throw {
-          status: 400,
-          message: "Email exceeds maximum length",
-        };
-      }
 
       const normalizedEmail = email.trim().toLowerCase();
       if (!EMAIL_REGEX.test(normalizedEmail)) {
@@ -55,7 +47,7 @@ export class OtpController {
       req.logger.info({ msg: "OTP request processed", email: normalizedEmail });
       return { message: GENERIC_MESSAGE };
     } catch (error: unknown) {
-      if (typeof error === "object" && error !== null && "status" in error) {
+      if (isControllerError(error)) {
         throw error;
       }
       req.logger.error({ err: error, msg: "Unexpected error while processing OTP request" });
@@ -107,4 +99,17 @@ export class OtpController {
       user: result.user!,
     };
   }
+}
+
+function isControllerError(
+  err: unknown
+): err is { status: number; message: string } {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "status" in err &&
+    typeof (err as Record<string, unknown>).status === "number" &&
+    "message" in err &&
+    typeof (err as Record<string, unknown>).message === "string"
+  );
 }
