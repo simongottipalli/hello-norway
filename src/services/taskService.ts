@@ -1,7 +1,7 @@
 import { UserTaskStatus } from "../types/enums";
 import { withTransaction } from "../repo/db";
 import * as taskRepo from "../repo/taskRepo";
-import { type CreateTaskPayload } from "../controllers/taskValidation";
+import { type CreateTaskDto } from "../dto/TaskDto";
 
 // ──────────────────────────────────────────────
 // Types
@@ -86,7 +86,7 @@ export const getTaskById = async (
  * Both operations are wrapped in a transaction for atomicity.
  */
 export const createTask = async (
-  payload: CreateTaskPayload,
+  payload: CreateTaskDto,
   userId: string,
 ): Promise<TaskServiceResult<Awaited<ReturnType<typeof taskRepo.createTask>>>> => {
   const {
@@ -98,11 +98,13 @@ export const createTask = async (
     sortOrder,
     officialLinks,
     requiresEU,
-    requiresEmploymentStatus,
     requiresChildren,
     minDaysFromArrival,
     maxDaysFromArrival,
   } = payload;
+
+  // Normalize optional array to empty array for the repo layer
+  const requiresEmploymentStatus = payload.requiresEmploymentStatus ?? [];
 
   const task = await withTransaction(async (tx) => {
     const createdTask = await taskRepo.createTask(

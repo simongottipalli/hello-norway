@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll, beforeAll, beforeEach, vi } from "vitest";
 import request from "supertest";
-import type { Request, Response, NextFunction } from "express";
+import type { Request } from "express";
 import { randomUUID } from "node:crypto";
 import { createApp } from "../app";
 import { prisma } from "../repo/db";
@@ -13,12 +13,12 @@ let taskCreatorEmail: string;
 const generateUniqueTestEmail = () =>
   `test+${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
 
-vi.mock("../middleware/authMiddleware", () => ({
-  authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
+vi.mock("../middleware/tsoaAuthentication", () => ({
+  expressAuthentication: vi.fn().mockImplementation((req: Request) => {
     req.user = { id: authUserId, email: authUserEmail, name: "Test User" };
     req.session = { id: "test-session-id", token: "test-token", expiresAt: new Date(Date.now() + 60_000) };
-    next();
-  },
+    return Promise.resolve(req.user);
+  }),
 }));
 
 const app = createApp();
@@ -183,7 +183,7 @@ describe("Task API", () => {
       await prisma.task.delete({ where: { id: response.body.id } });
     });
 
-    it("should return 400 when missing required fields", async () => {
+    it("should return 422 when missing required fields", async () => {
       const incompleteTask = {
         slug: "incomplete-task",
       };
@@ -193,9 +193,8 @@ describe("Task API", () => {
         .send(incompleteTask)
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toBe("Missing required fields");
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
     });
 
     it("should return 400 when slug already exists", async () => {
@@ -234,7 +233,7 @@ describe("Task API", () => {
       }
     });
 
-    it("should return 400 when category is not a valid enum value", async () => {
+    it("should return 422 when category is not a valid enum value", async () => {
       const response = await request(app)
         .post("/api/tasks")
         .send({
@@ -247,11 +246,11 @@ describe("Task API", () => {
         })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("Invalid category");
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
     });
 
-    it("should return 400 when sortOrder is not an integer", async () => {
+    it("should return 422 when sortOrder is not an integer", async () => {
       const response = await request(app)
         .post("/api/tasks")
         .send({
@@ -264,11 +263,11 @@ describe("Task API", () => {
         })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("sortOrder");
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
     });
 
-    it("should return 400 when sortOrder exceeds SmallInt max", async () => {
+    it("should return 422 when sortOrder exceeds SmallInt max", async () => {
       const response = await request(app)
         .post("/api/tasks")
         .send({
@@ -281,11 +280,11 @@ describe("Task API", () => {
         })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("sortOrder");
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
     });
 
-    it("should return 400 when requiresEU is not a boolean", async () => {
+    it("should return 422 when requiresEU is not a boolean", async () => {
       const response = await request(app)
         .post("/api/tasks")
         .send({
@@ -299,8 +298,8 @@ describe("Task API", () => {
         })
         .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("requiresEU");
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
     });
 
     it("should allow negative minDaysFromArrival values", async () => {
@@ -335,6 +334,7 @@ describe("Task API", () => {
         })
         .set("Content-Type", "application/json");
 
+      // Cross-field validation is handled by the controller (not tsoa DTO), so still 400
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("maxDaysFromArrival");
     });

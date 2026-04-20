@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
-import type { NextFunction, Request, Response } from "express";
+import type { Request } from "express";
 import { createApp } from "../app";
 import * as taskRepo from "../repo/taskRepo";
 
 type UserTask = Awaited<ReturnType<typeof taskRepo.upsertUserTaskStatus>>;
 
-vi.mock("../middleware/authMiddleware", () => ({
-  authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
+vi.mock("../middleware/tsoaAuthentication", () => ({
+  expressAuthentication: vi.fn().mockImplementation((req: Request) => {
     req.user = { id: "test-user-id", email: "test@example.com", name: "Test User" };
     req.session = { id: "test-session-id", token: "test-token", expiresAt: new Date(Date.now() + 60_000) };
-    next();
-  },
+    return Promise.resolve(req.user);
+  }),
 }));
 
 vi.mock("../repo/taskRepo", () => ({
@@ -43,7 +43,7 @@ describe("Task status updates", () => {
 
     const response = await request(app)
       .patch("/api/tasks/task-1/status")
-      .send({ status: "DONE" })
+      .send({ status: "done" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
@@ -68,7 +68,7 @@ describe("Task status updates", () => {
 
     const response = await request(app)
       .patch("/api/tasks/task-2/status")
-      .send({ status: "SAVED" })
+      .send({ status: "in_progress" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
@@ -92,7 +92,7 @@ describe("Task status updates", () => {
 
     const response = await request(app)
       .patch("/api/tasks/task-3/status")
-      .send({ status: "TODO", dueDate: "2026-03-15" })
+      .send({ status: "todo", dueDate: "2026-03-15" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
@@ -115,7 +115,7 @@ describe("Task status updates", () => {
 
     const response = await request(app)
       .patch("/api/tasks/task-4/status")
-      .send({ status: "TODO", dueDate: null })
+      .send({ status: "todo", dueDate: null })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
@@ -127,7 +127,7 @@ describe("Task status updates", () => {
   it("returns 400 for invalid dueDate values", async () => {
     const response = await request(app)
       .patch("/api/tasks/task-1/status")
-      .send({ status: "TODO", dueDate: "not-a-date" })
+      .send({ status: "todo", dueDate: "not-a-date" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(400);
@@ -138,7 +138,7 @@ describe("Task status updates", () => {
   it("returns 400 for invalid-but-parsable dueDate values", async () => {
     const response = await request(app)
       .patch("/api/tasks/task-1/status")
-      .send({ status: "TODO", dueDate: "2026-02-30" })
+      .send({ status: "todo", dueDate: "2026-02-30" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(400);
@@ -146,34 +146,36 @@ describe("Task status updates", () => {
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
-  it("returns 400 for non-string dueDate types", async () => {
+  it("returns 422 for non-string dueDate types", async () => {
+    // tsoa DTO validates dueDate as string | null — numeric and object values are rejected at the validation layer
     const numericResponse = await request(app)
       .patch("/api/tasks/task-1/status")
-      .send({ status: "TODO", dueDate: 1234567890 })
+      .send({ status: "todo", dueDate: 1234567890 })
       .set("Content-Type", "application/json");
 
-    expect(numericResponse.status).toBe(400);
-    expect(numericResponse.body.error).toContain("Invalid dueDate");
+    expect(numericResponse.status).toBe(422);
+    expect(numericResponse.body.message).toBe("Validation Failed");
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
 
     const objectResponse = await request(app)
       .patch("/api/tasks/task-1/status")
-      .send({ status: "TODO", dueDate: { date: "2026-01-01" } })
+      .send({ status: "todo", dueDate: { date: "2026-01-01" } })
       .set("Content-Type", "application/json");
 
-    expect(objectResponse.status).toBe(400);
-    expect(objectResponse.body.error).toContain("Invalid dueDate");
+    expect(objectResponse.status).toBe(422);
+    expect(objectResponse.body.message).toBe("Validation Failed");
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
-  it("returns 400 for invalid task status", async () => {
+  it("returns 422 for invalid task status", async () => {
+    // tsoa DTO validates status as TaskStatusValue enum — unrecognised strings are rejected at the validation layer
     const response = await request(app)
       .patch("/api/tasks/task-1/status")
       .send({ status: "INVALID" })
       .set("Content-Type", "application/json");
 
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain("Invalid status");
+    expect(response.status).toBe(422);
+    expect(response.body.message).toBe("Validation Failed");
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
@@ -190,7 +192,7 @@ describe("Task status updates", () => {
 
     const response = await request(app)
       .patch("/api/tasks/task-3/status")
-      .send({ status: "SAVED", personalNotes: "Bring all paperwork copies" })
+      .send({ status: "in_progress", personalNotes: "Bring all paperwork copies" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(200);
@@ -200,14 +202,15 @@ describe("Task status updates", () => {
     expect(data.personalNotes).toBe("Bring all paperwork copies");
   });
 
-  it("returns 400 for invalid personalNotes type", async () => {
+  it("returns 422 for invalid personalNotes type", async () => {
+    // tsoa DTO validates personalNotes as string | null — numeric values are rejected at the validation layer
     const response = await request(app)
       .patch("/api/tasks/task-1/status")
-      .send({ status: "SAVED", personalNotes: 123 })
+      .send({ status: "in_progress", personalNotes: 123 })
       .set("Content-Type", "application/json");
 
-    expect(response.status).toBe(400);
-    expect(response.body.error).toContain("Invalid personalNotes");
+    expect(response.status).toBe(422);
+    expect(response.body.message).toBe("Validation Failed");
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
@@ -216,7 +219,7 @@ describe("Task status updates", () => {
 
     const response = await request(app)
       .patch("/api/tasks/missing-task/status")
-      .send({ status: "SAVED" })
+      .send({ status: "in_progress" })
       .set("Content-Type", "application/json");
 
     expect(response.status).toBe(404);
