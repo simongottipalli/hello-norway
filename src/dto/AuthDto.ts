@@ -1,4 +1,4 @@
-import { EmploymentStatus } from "@/types/enums";
+import { EmploymentStatus } from "../types/enums";
 
 export class UpdateProfileDto {
   /**

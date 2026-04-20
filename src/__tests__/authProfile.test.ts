@@ -1,19 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
-import express from "express";
-import type { NextFunction, Request, Response } from "express";
-import authRoutes from "../routes/authRoutes";
+import type { Request } from "express";
+import { createApp } from "../app";
 import { withTransaction } from "../repo/db";
 import * as userRepo from "../repo/userRepo";
 import * as sessionRepo from "../repo/sessionRepo";
 import { getRelevantTaskWhere } from "../repo/taskAssignmentRepo";
 import { syncUserTaskAssignments } from "../services/taskAssignmentService";
 
-vi.mock("../middleware/authMiddleware", () => ({
-  authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
-    req.user = { id: "user-1", email: "user@example.com", name: "User" };
-    next();
-  },
+const MOCK_USER = { id: "user-1", email: "user@example.com", name: "User" };
+
+vi.mock("../middleware/tsoaAuthentication", () => ({
+  expressAuthentication: vi.fn().mockImplementation((req: Request) => {
+    req.user = MOCK_USER;
+    return Promise.resolve(MOCK_USER);
+  }),
 }));
 
 vi.mock("../repo/userRepo", () => ({
@@ -57,9 +58,7 @@ vi.mock("../services/taskAssignmentService", () => ({
   syncUserTaskAssignments: vi.fn(),
 }));
 
-const app = express();
-app.use(express.json());
-app.use("/api", authRoutes);
+const app = createApp();
 
 describe("/api/auth/profile", () => {
   beforeEach(() => {
@@ -136,7 +135,10 @@ describe("/api/auth/profile", () => {
       );
       expect(syncUserTaskAssignments).toHaveBeenCalledWith(
         expect.objectContaining({ id: "user-1", employmentStatus: "EMPLOYED" }),
-        expect.objectContaining({ removeOutdatedTodoAssignments: true, db: expect.any(Object) })
+        expect.objectContaining({
+          removeOutdatedTodoAssignments: true,
+          db: expect.any(Object),
+        }),
       );
     });
 
@@ -166,7 +168,9 @@ describe("/api/auth/profile", () => {
     });
 
     it("returns 500 when sync fails inside transaction", async () => {
-      vi.mocked(syncUserTaskAssignments).mockRejectedValueOnce(new Error("sync failed"));
+      vi.mocked(syncUserTaskAssignments).mockRejectedValueOnce(
+        new Error("sync failed"),
+      );
 
       const response = await request(app)
         .patch("/api/auth/profile")
@@ -193,13 +197,24 @@ describe("/api/auth/profile", () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(withTransaction).toHaveBeenCalledTimes(1);
-      expect(sessionRepo.deleteUserSessions).toHaveBeenCalledWith("user-1", expect.anything());
-      expect(userRepo.deleteUserTasks).toHaveBeenCalledWith("user-1", expect.anything());
-      expect(userRepo.deleteUser).toHaveBeenCalledWith("user-1", expect.anything());
+      expect(sessionRepo.deleteUserSessions).toHaveBeenCalledWith(
+        "user-1",
+        expect.anything(),
+      );
+      expect(userRepo.deleteUserTasks).toHaveBeenCalledWith(
+        "user-1",
+        expect.anything(),
+      );
+      expect(userRepo.deleteUser).toHaveBeenCalledWith(
+        "user-1",
+        expect.anything(),
+      );
     });
 
     it("returns 500 when deletion fails", async () => {
-      vi.mocked(userRepo.deleteUser).mockRejectedValueOnce(new Error("Database error"));
+      vi.mocked(userRepo.deleteUser).mockRejectedValueOnce(
+        new Error("Database error"),
+      );
 
       const response = await request(app).delete("/api/auth/profile");
 
@@ -209,4 +224,3 @@ describe("/api/auth/profile", () => {
     });
   });
 });
-

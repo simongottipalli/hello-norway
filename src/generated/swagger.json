@@ -209,6 +209,94 @@
 				},
 				"type": "object",
 				"additionalProperties": false
+			},
+			"SessionResponseDto": {
+				"properties": {
+					"authenticated": {
+						"type": "boolean"
+					},
+					"user": {
+						"properties": {
+							"name": {
+								"type": "string",
+								"nullable": true
+							},
+							"email": {
+								"type": "string"
+							},
+							"id": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"name",
+							"email",
+							"id"
+						],
+						"type": "object"
+					},
+					"session": {
+						"properties": {
+							"expiresAt": {
+								"type": "string",
+								"format": "date-time"
+							}
+						},
+						"required": [
+							"expiresAt"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"authenticated",
+					"user",
+					"session"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"UpdateProfileDto": {
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "User's full name",
+						"example": "John Doe",
+						"minLength": 1,
+						"maxLength": 255
+					},
+					"isEU": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Is the user from an EU country?"
+					},
+					"hasChildren": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Does the user have children?"
+					},
+					"employmentStatus": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/EmploymentStatus"
+							}
+						],
+						"nullable": true,
+						"description": "User's employment status"
+					},
+					"arrivalDate": {
+						"type": "string",
+						"nullable": true,
+						"description": "Arrival date in Norway (YYYY-MM-DD)"
+					},
+					"plannedArrivalDate": {
+						"type": "string",
+						"nullable": true,
+						"description": "Planned arrival date (YYYY-MM-DD)"
+					}
+				},
+				"type": "object",
+				"additionalProperties": false
 			}
 		},
 		"securitySchemes": {
@@ -535,6 +623,304 @@
 						}
 					}
 				}
+			}
+		},
+		"/auth/session": {
+			"get": {
+				"operationId": "GetSession",
+				"responses": {
+					"200": {
+						"description": "Session retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SessionResponseDto"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Get current session information",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/auth/profile": {
+			"get": {
+				"operationId": "GetProfile",
+				"responses": {
+					"200": {
+						"description": "Profile retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"user": {}
+									},
+									"required": [
+										"user"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "User not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Get user profile",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": []
+			},
+			"patch": {
+				"operationId": "UpdateProfile",
+				"responses": {
+					"200": {
+						"description": "Profile updated",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"user": {},
+										"success": {
+											"type": "boolean"
+										}
+									},
+									"required": [
+										"user",
+										"success"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Update user profile",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/UpdateProfileDto"
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"operationId": "DeleteProfile",
+				"responses": {
+					"200": {
+						"description": "Profile deleted",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"success": {
+											"type": "boolean"
+										}
+									},
+									"required": [
+										"success"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Delete user account and all associated data",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/auth/logout": {
+			"post": {
+				"operationId": "Logout",
+				"responses": {
+					"200": {
+						"description": "Logged out",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"success": {
+											"type": "boolean"
+										}
+									},
+									"required": [
+										"success"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Logout user session",
+				"security": [],
+				"parameters": []
 			}
 		}
 	},

@@ -199,24 +199,39 @@ describe("Task API", () => {
     });
 
     it("should return 400 when slug already exists", async () => {
-      const existingTask = await prisma.task.findFirst({ where: { createdByUserId: null } });
+      const uniqueSlug = `duplicate-test-slug-${Date.now()}`;
 
-      const duplicateTask = {
-        slug: existingTask!.slug,
-        title: "Duplicate Test",
-        shortDescription: "Testing duplicate",
-        body: "This should fail",
-        category: "OTHER",
-        sortOrder: 1,
-      };
+      const created = await prisma.task.create({
+        data: {
+          slug: uniqueSlug,
+          title: "Original Task",
+          shortDescription: "Original",
+          body: "Original body",
+          category: "OTHER",
+          sortOrder: 1,
+          officialLinks: {},
+          createdByUserId: taskCreatorUserId,
+        },
+      });
 
-      const response = await request(app)
-        .post("/api/tasks")
-        .send(duplicateTask)
-        .set("Content-Type", "application/json");
+      try {
+        const response = await request(app)
+          .post("/api/tasks")
+          .send({
+            slug: uniqueSlug,
+            title: "Duplicate Test",
+            shortDescription: "Testing duplicate",
+            body: "This should fail",
+            category: "OTHER",
+            sortOrder: 1,
+          })
+          .set("Content-Type", "application/json");
 
-      expect(response.status).toBe(400);
-      expect(response.body.error).toContain("already exists");
+        expect(response.status).toBe(400);
+        expect(response.body.error).toContain("already exists");
+      } finally {
+        await prisma.task.delete({ where: { id: created.id } }).catch(() => {});
+      }
     });
 
     it("should return 400 when category is not a valid enum value", async () => {

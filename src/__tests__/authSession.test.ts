@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
-import type { Request, Response, NextFunction } from "express";
+import type { Request } from "express";
 import { createApp } from "../app";
 
 const MOCK_USER = { id: "user-1", email: "user@example.com", name: "Test User" };
@@ -10,12 +10,12 @@ const MOCK_SESSION = {
   expiresAt: new Date("2030-01-01T00:00:00.000Z"),
 };
 
-vi.mock("../middleware/authMiddleware", () => ({
-  authenticateSession: (req: Request, _res: Response, next: NextFunction) => {
+vi.mock("../middleware/tsoaAuthentication", () => ({
+  expressAuthentication: vi.fn().mockImplementation((req: Request) => {
     req.user = MOCK_USER;
     req.session = MOCK_SESSION;
-    next();
-  },
+    return Promise.resolve(MOCK_USER);
+  }),
 }));
 
 const app = createApp();
@@ -32,13 +32,17 @@ describe("GET /api/auth/session", () => {
     });
   });
 
-  it("should return 401 when no session cookie is present (real auth middleware)", async () => {
-    // Re-import with real auth to verify 401 behaviour
-    const { authenticateSession } = await import("../middleware/authMiddleware");
+  it("should return 401 when authentication fails", async () => {
+    const { expressAuthentication } = await import(
+      "../middleware/tsoaAuthentication"
+    );
+    vi.mocked(expressAuthentication).mockRejectedValueOnce({
+      status: 401,
+      message: "Unauthorized",
+    });
 
-    // The mock above intercepts all calls; this test verifies the contract
-    // via the app-routing test (app-routing.test.ts covers the 401 case).
-    // Here we simply assert the mock is the one intercepting.
-    expect(authenticateSession).toBeDefined();
+    const response = await request(app).get("/api/auth/session");
+
+    expect(response.status).toBe(401);
   });
 });
