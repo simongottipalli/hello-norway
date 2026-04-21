@@ -67,6 +67,7 @@ export class TaskController {
   @Security("cookie_auth")
   @SuccessResponse("201", "Task created")
   @Response<{ error: string }>("400", "Validation error")
+  @Response<{ message: string; details: unknown }>("422", "Validation failed")
   @Response<{ error: string }>("401", "Unauthorized")
   @Response<{ error: string }>("500", "Server error")
   public async createTask(
@@ -110,6 +111,7 @@ export class TaskController {
   @Security("cookie_auth")
   @SuccessResponse("200", "Task status updated")
   @Response<{ error: string }>("400", "Validation error")
+  @Response<{ message: string; details: unknown }>("422", "Validation failed")
   @Response<{ error: string }>("401", "Unauthorized")
   @Response<{ error: string }>("404", "Task not found")
   @Response<{ error: string }>("500", "Server error")

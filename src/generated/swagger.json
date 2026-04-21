@@ -634,6 +634,26 @@
 							}
 						}
 					},
+					"422": {
+						"description": "Validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
 					"500": {
 						"description": "Server error",
 						"content": {
@@ -732,6 +752,26 @@
 									},
 									"required": [
 										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
 									],
 									"type": "object"
 								}
