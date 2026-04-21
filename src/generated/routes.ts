@@ -42,7 +42,7 @@ const models: TsoaRoute.Models = {
             "sortOrder": {"dataType":"integer","required":true,"validators":{"minimum":{"value":0},"maximum":{"value":32767}}},
             "officialLinks": {"dataType":"any"},
             "requiresEU": {"dataType":"union","subSchemas":[{"dataType":"boolean"},{"dataType":"enum","enums":[null]}]},
-            "requiresEmploymentStatus": {"dataType":"array","array":{"dataType":"refEnum","ref":"EmploymentStatus"}},
+            "requiresEmploymentStatus": {"dataType":"union","subSchemas":[{"dataType":"array","array":{"dataType":"refEnum","ref":"EmploymentStatus"}},{"dataType":"enum","enums":[null]}]},
             "requiresChildren": {"dataType":"union","subSchemas":[{"dataType":"boolean"},{"dataType":"enum","enums":[null]}]},
             "minDaysFromArrival": {"dataType":"union","subSchemas":[{"dataType":"integer"},{"dataType":"enum","enums":[null]}],"validators":{"minimum":{"value":-32768},"maximum":{"value":32767}}},
             "maxDaysFromArrival": {"dataType":"union","subSchemas":[{"dataType":"integer"},{"dataType":"enum","enums":[null]}],"validators":{"minimum":{"value":-32768},"maximum":{"value":32767}}},

@@ -82,6 +82,7 @@
 							"$ref": "#/components/schemas/EmploymentStatus"
 						},
 						"type": "array",
+						"nullable": true,
 						"description": "Employment statuses this task applies to"
 					},
 					"requiresChildren": {
@@ -547,6 +548,24 @@
 								}
 							}
 						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
 					}
 				},
 				"description": "Get a single task by ID",
@@ -599,6 +618,24 @@
 					},
 					"401": {
 						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
 						"content": {
 							"application/json": {
 								"schema": {
@@ -685,6 +722,24 @@
 					},
 					"404": {
 						"description": "Task not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
 						"content": {
 							"application/json": {
 								"schema": {
