@@ -155,6 +155,11 @@ describe("Task status updates", () => {
 
     expect(numericResponse.status).toBe(422);
     expect(numericResponse.body.message).toBe("Validation Failed");
+    expect(numericResponse.body.details).toEqual(
+      expect.objectContaining({
+        "body.dueDate": expect.objectContaining({ message: expect.any(String) }),
+      }),
+    );
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
 
     const objectResponse = await request(app)
@@ -164,6 +169,11 @@ describe("Task status updates", () => {
 
     expect(objectResponse.status).toBe(422);
     expect(objectResponse.body.message).toBe("Validation Failed");
+    expect(objectResponse.body.details).toEqual(
+      expect.objectContaining({
+        "body.dueDate": expect.objectContaining({ message: expect.any(String) }),
+      }),
+    );
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 
@@ -176,6 +186,11 @@ describe("Task status updates", () => {
 
     expect(response.status).toBe(422);
     expect(response.body.message).toBe("Validation Failed");
+    expect(response.body.details).toEqual(
+      expect.objectContaining({
+        "body.status": expect.objectContaining({ message: expect.any(String) }),
+      }),
+    );
     expect(taskRepo.upsertUserTaskStatus).not.toHaveBeenCalled();
   });
 

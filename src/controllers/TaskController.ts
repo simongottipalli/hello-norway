@@ -34,6 +34,7 @@ export class TaskController {
   @SuccessResponse("200", "Task retrieved")
   @Response<{ error: string }>("401", "Unauthorized")
   @Response<{ error: string }>("404", "Task not found")
+  @Response<{ error: string }>("500", "Server error")
   public async getTaskById(
     @Path() id: string,
     @Request() req: ExpressRequest
@@ -67,6 +68,7 @@ export class TaskController {
   @SuccessResponse("201", "Task created")
   @Response<{ error: string }>("400", "Validation error")
   @Response<{ error: string }>("401", "Unauthorized")
+  @Response<{ error: string }>("500", "Server error")
   public async createTask(
     @Body() body: CreateTaskDto,
     @Request() req: ExpressRequest
@@ -110,6 +112,7 @@ export class TaskController {
   @Response<{ error: string }>("400", "Validation error")
   @Response<{ error: string }>("401", "Unauthorized")
   @Response<{ error: string }>("404", "Task not found")
+  @Response<{ error: string }>("500", "Server error")
   public async updateTaskStatus(
     @Path() id: string,
     @Body() body: UpdateTaskStatusDto,

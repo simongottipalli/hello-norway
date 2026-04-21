@@ -22,7 +22,7 @@ export const createApp = () => {
   // Register tsoa-generated routes (auth, tasks, onboarding, otp)
   RegisterRoutes(app);
 
-  // Public auth routes (not yet migrated to tsoa)
+  // Keep the placeholder auth router mount; auth API endpoints are registered via tsoa above.
   app.use(apiBaseUrl, authRoutes);
 
   // Legacy test-only route — OTP peek endpoint used in tests

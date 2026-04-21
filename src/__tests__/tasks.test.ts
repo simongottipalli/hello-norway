@@ -195,6 +195,25 @@ describe("Task API", () => {
 
       expect(response.status).toBe(422);
       expect(response.body.message).toBe("Validation Failed");
+      expect(response.body.details).toEqual(
+        expect.objectContaining({
+          "body.title": expect.objectContaining({
+            message: expect.stringContaining("'title' is required"),
+          }),
+          "body.shortDescription": expect.objectContaining({
+            message: expect.stringContaining("'shortDescription' is required"),
+          }),
+          "body.body": expect.objectContaining({
+            message: expect.stringContaining("'body' is required"),
+          }),
+          "body.category": expect.objectContaining({
+            message: expect.stringContaining("'category' is required"),
+          }),
+          "body.sortOrder": expect.objectContaining({
+            message: expect.stringContaining("'sortOrder' is required"),
+          }),
+        }),
+      );
     });
 
     it("should return 400 when slug already exists", async () => {

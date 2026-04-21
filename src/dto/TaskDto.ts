@@ -74,7 +74,7 @@ export class CreateTaskDto {
   /**
    * Employment statuses this task applies to
    */
-  requiresEmploymentStatus?: EmploymentStatus[];
+  requiresEmploymentStatus?: EmploymentStatus[] | null;
 
   /**
    * Whether the task is only relevant for users with children
