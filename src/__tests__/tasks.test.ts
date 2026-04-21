@@ -357,6 +357,78 @@ describe("Task API", () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("maxDaysFromArrival");
     });
+
+    it("should return 422 when sortOrder is below the minimum of 0", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({ slug: `neg-sortorder-${Date.now()}`, title: "T", shortDescription: "S", body: "B", category: "OTHER", sortOrder: -1 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+    });
+
+    it.each([
+      ["slug", "slug", 81, "s"],
+      ["title", "title", 141, "t"],
+      ["shortDescription", "shortDescription", 281, "d"],
+    ])("should return 422 when %s exceeds max length", async (field, key, length, char) => {
+      const base = {
+        slug: `too-long-${field}-${Date.now()}`,
+        title: "Title",
+        shortDescription: "Short desc",
+        body: "Body",
+        category: "OTHER",
+        sortOrder: 1,
+      };
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({ ...base, [key]: char.repeat(length) })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+    });
+
+    it("should return 422 when body exceeds max length", async () => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `too-long-body-${Date.now()}`,
+          title: "Title",
+          shortDescription: "Short desc",
+          body: "x".repeat(50001),
+          category: "OTHER",
+          sortOrder: 1,
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+    });
+
+    it.each([
+      ["minDaysFromArrival below -32768", { minDaysFromArrival: -32769 }],
+      ["minDaysFromArrival above 32767", { minDaysFromArrival: 32768 }],
+      ["maxDaysFromArrival below -32768", { maxDaysFromArrival: -32769 }],
+      ["maxDaysFromArrival above 32767", { maxDaysFromArrival: 32768 }],
+    ])("should return 422 when %s", async (_label, extra) => {
+      const response = await request(app)
+        .post("/api/tasks")
+        .send({
+          slug: `days-bound-${Date.now()}`,
+          title: "Title",
+          shortDescription: "Short desc",
+          body: "Body",
+          category: "OTHER",
+          sortOrder: 1,
+          ...extra,
+        })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(422);
+      expect(response.body.message).toBe("Validation Failed");
+    });
   });
 
   describe("User-created task isolation", () => {
