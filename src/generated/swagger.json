@@ -7,6 +7,155 @@
 		"requestBodies": {},
 		"responses": {},
 		"schemas": {
+			"TaskCategory": {
+				"enum": [
+					"ARRIVAL",
+					"IDENTITY_BANKING",
+					"HEALTH",
+					"TAX_WORK",
+					"FAMILY",
+					"HOUSING",
+					"DRIVING",
+					"OTHER"
+				],
+				"type": "string"
+			},
+			"EmploymentStatus": {
+				"enum": [
+					"EMPLOYED",
+					"SELF_EMPLOYED",
+					"UNEMPLOYED",
+					"STUDENT",
+					"OTHER"
+				],
+				"type": "string"
+			},
+			"CreateTaskDto": {
+				"properties": {
+					"title": {
+						"type": "string",
+						"description": "Task title",
+						"example": "Register with GP",
+						"minLength": 1,
+						"maxLength": 140
+					},
+					"shortDescription": {
+						"type": "string",
+						"description": "Short description (max 280 chars)",
+						"minLength": 1,
+						"maxLength": 280
+					},
+					"body": {
+						"type": "string",
+						"description": "Full task body / instructions (max 50 000 chars)",
+						"minLength": 1,
+						"maxLength": 50000
+					},
+					"category": {
+						"$ref": "#/components/schemas/TaskCategory",
+						"description": "Task category"
+					},
+					"slug": {
+						"type": "string",
+						"description": "Task slug (unique identifier)",
+						"example": "register-gp",
+						"minLength": 1,
+						"maxLength": 80
+					},
+					"sortOrder": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Display order (PostgreSQL SmallInt, 0–32767)",
+						"minimum": 0,
+						"maximum": 32767
+					},
+					"officialLinks": {
+						"description": "Official links for more information"
+					},
+					"requiresEU": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Whether the task is only relevant for EU citizens"
+					},
+					"requiresEmploymentStatus": {
+						"items": {
+							"$ref": "#/components/schemas/EmploymentStatus"
+						},
+						"type": "array",
+						"nullable": true,
+						"description": "Employment statuses this task applies to"
+					},
+					"requiresChildren": {
+						"type": "boolean",
+						"nullable": true,
+						"description": "Whether the task is only relevant for users with children"
+					},
+					"minDaysFromArrival": {
+						"type": "integer",
+						"format": "int32",
+						"nullable": true,
+						"description": "Earliest day from arrival this task applies (can be negative)",
+						"minimum": -32768,
+						"maximum": 32767
+					},
+					"maxDaysFromArrival": {
+						"type": "integer",
+						"format": "int32",
+						"nullable": true,
+						"description": "Latest day from arrival this task applies (can be negative)",
+						"minimum": -32768,
+						"maximum": 32767
+					}
+				},
+				"required": [
+					"title",
+					"shortDescription",
+					"body",
+					"category",
+					"slug",
+					"sortOrder"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"TaskStatusValue": {
+				"description": "Canonical status values accepted by the API.\nLegacy aliases (todo / saved / done) map to the same underlying states.",
+				"enum": [
+					"not_started",
+					"in_progress",
+					"completed",
+					"todo",
+					"saved",
+					"done"
+				],
+				"type": "string"
+			},
+			"UpdateTaskStatusDto": {
+				"properties": {
+					"status": {
+						"$ref": "#/components/schemas/TaskStatusValue",
+						"description": "Task status",
+						"example": "not_started"
+					},
+					"dueDate": {
+						"type": "string",
+						"nullable": true,
+						"description": "Optional due date (YYYY-MM-DD)",
+						"example": "2024-12-31"
+					},
+					"personalNotes": {
+						"type": "string",
+						"nullable": true,
+						"description": "Optional personal notes",
+						"example": "Called and booked appointment"
+					}
+				},
+				"required": [
+					"status"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
 			"OtpResponseDto": {
 				"properties": {
 					"message": {
@@ -107,19 +256,6 @@
 				"type": "object",
 				"additionalProperties": false
 			},
-			"TaskCategory": {
-				"enum": [
-					"ARRIVAL",
-					"IDENTITY_BANKING",
-					"HEALTH",
-					"TAX_WORK",
-					"FAMILY",
-					"HOUSING",
-					"DRIVING",
-					"OTHER"
-				],
-				"type": "string"
-			},
 			"OnboardingTaskPreviewDto": {
 				"properties": {
 					"id": {
@@ -159,16 +295,6 @@
 				],
 				"type": "object",
 				"additionalProperties": false
-			},
-			"EmploymentStatus": {
-				"enum": [
-					"EMPLOYED",
-					"SELF_EMPLOYED",
-					"UNEMPLOYED",
-					"STUDENT",
-					"OTHER"
-				],
-				"type": "string"
 			},
 			"OnboardingProfileDto": {
 				"properties": {
@@ -314,6 +440,391 @@
 		"contact": {}
 	},
 	"paths": {
+		"/tasks/personalized": {
+			"get": {
+				"operationId": "GetUserTasks",
+				"responses": {
+					"200": {
+						"description": "Tasks retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"items": {},
+									"type": "array"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Get all tasks personalized for the current user",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/tasks/{id}": {
+			"get": {
+				"operationId": "GetTaskById",
+				"responses": {
+					"200": {
+						"description": "Task retrieved",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Task not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Get a single task by ID",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				]
+			}
+		},
+		"/tasks": {
+			"post": {
+				"operationId": "CreateTask",
+				"responses": {
+					"201": {
+						"description": "Task created",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Create a new task",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CreateTaskDto"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/tasks/{id}/status": {
+			"patch": {
+				"operationId": "UpdateTaskStatus",
+				"responses": {
+					"200": {
+						"description": "Task status updated",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Task not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "Validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Update task status and optional fields",
+				"security": [
+					{
+						"cookie_auth": []
+					}
+				],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/UpdateTaskStatusDto"
+							}
+						}
+					}
+				}
+			}
+		},
 		"/otp/generate": {
 			"post": {
 				"operationId": "RequestOtp",

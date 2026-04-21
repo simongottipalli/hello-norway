@@ -150,6 +150,27 @@ describe("taskService", () => {
 
       expect((capturedTaskData as { createdByUserId: string }).createdByUserId).toBe("user-1");
     });
+
+    it.each([
+      ["null", { ...payload, requiresEmploymentStatus: null }],
+      ["undefined", { ...payload, requiresEmploymentStatus: undefined }],
+    ])("normalises requiresEmploymentStatus %s to [] before passing to the repo", async (_label, payloadVariant) => {
+      const createdTask = { id: "task-1", ...payload };
+      vi.mocked(taskRepo.createUserTaskAssignment).mockResolvedValue({} as never);
+
+      let capturedTaskData: unknown;
+      vi.mocked(withTransaction).mockImplementation(async (fn) => fn({} as never));
+      vi.mocked(taskRepo.createTask).mockImplementation(async (data) => {
+        capturedTaskData = data;
+        return createdTask as never;
+      });
+
+      await taskService.createTask(payloadVariant as never, "user-1");
+
+      expect(
+        (capturedTaskData as { requiresEmploymentStatus: unknown[] }).requiresEmploymentStatus,
+      ).toEqual([]);
+    });
   });
 
   // ──────────────────────────────────────────────

@@ -1,14 +1,21 @@
-import { TaskCategory, EmploymentStatus } from "@/types/enums";
-import {
-  TITLE_MAX_LENGTH,
-  SHORT_DESCRIPTION_MAX_LENGTH,
-  BODY_MAX_LENGTH,
-  SLUG_MAX_LENGTH,
-  SORT_ORDER_MIN,
-  SORT_ORDER_MAX,
-  DAYS_FROM_ARRIVAL_MIN,
-  DAYS_FROM_ARRIVAL_MAX,
-} from "@/controllers/taskValidation";
+import { TaskCategory, EmploymentStatus } from "../types/enums";
+
+// ──────────────────────────────────────────────
+// Constants (aligned with prisma/schema.prisma)
+// ──────────────────────────────────────────────
+
+export const SLUG_MAX_LENGTH = 80;
+export const TITLE_MAX_LENGTH = 140;
+export const SHORT_DESCRIPTION_MAX_LENGTH = 280;
+export const BODY_MAX_LENGTH = 50000;
+
+// sortOrder is PostgreSQL SmallInt (signed 16-bit, non-negative)
+export const SORT_ORDER_MIN = 0;
+export const SORT_ORDER_MAX = 32767;
+
+// minDaysFromArrival / maxDaysFromArrival are also SmallInt but can be negative (before arrival)
+export const DAYS_FROM_ARRIVAL_MIN = -32768;
+export const DAYS_FROM_ARRIVAL_MAX = 32767;
 
 export class CreateTaskDto {
   /**
@@ -67,7 +74,7 @@ export class CreateTaskDto {
   /**
    * Employment statuses this task applies to
    */
-  requiresEmploymentStatus?: EmploymentStatus[];
+  requiresEmploymentStatus?: EmploymentStatus[] | null;
 
   /**
    * Whether the task is only relevant for users with children
@@ -124,14 +131,3 @@ export class UpdateTaskStatusDto {
   personalNotes?: string | null;
 }
 
-// Re-export constants so that consumers can reference them without importing taskValidation directly.
-export {
-  TITLE_MAX_LENGTH,
-  SHORT_DESCRIPTION_MAX_LENGTH,
-  BODY_MAX_LENGTH,
-  SLUG_MAX_LENGTH,
-  SORT_ORDER_MIN,
-  SORT_ORDER_MAX,
-  DAYS_FROM_ARRIVAL_MIN,
-  DAYS_FROM_ARRIVAL_MAX,
-};
