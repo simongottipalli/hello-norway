@@ -1,3 +1,4 @@
+import path from "path";
 import express from "express";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
@@ -27,21 +28,24 @@ export const createApp = () => {
     app.use(apiBaseUrl, otpRoutes);
   }
 
-  // Swagger UI
-  app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(undefined, {
-      swaggerOptions: {
-        url: "/api-docs/swagger.json",
-      },
-    })
-  );
+  if (process.env.API_DOCS_ENABLED === "true") {
+    // Serve the raw OpenAPI spec before the UI middleware so it isn't intercepted
+    app.get("/api-docs/swagger.json", (_req, res) => {
+      res.sendFile("swagger.json", {
+        root: path.resolve(__dirname, "generated"),
+      });
+    });
 
-  // Serve OpenAPI spec as JSON
-  app.get("/api-docs/swagger.json", (_req, res) => {
-    res.sendFile("swagger.json", { root: "./src/generated" });
-  });
+    app.use(
+      "/api-docs",
+      swaggerUi.serve,
+      swaggerUi.setup(undefined, {
+        swaggerOptions: {
+          url: "/api-docs/swagger.json",
+        },
+      })
+    );
+  }
 
   // tsoa validation + auth error handler (before generic error logger)
   app.use(tsoaErrorHandler);

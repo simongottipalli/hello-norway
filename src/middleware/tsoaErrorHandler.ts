@@ -20,15 +20,6 @@ export const tsoaErrorHandler = (
     return;
   }
 
-  if (
-    typeof err === "object" &&
-    err !== null &&
-    (err as { message?: string }).message === "Unauthorized"
-  ) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
   if (isControllerError(err)) {
     const { status, message, retryAfter, genericMessage } = err;
 
