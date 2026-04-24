@@ -39,7 +39,11 @@ describe("API docs routes", () => {
   const originalEnv = process.env.API_DOCS_ENABLED;
 
   afterEach(() => {
-    process.env.API_DOCS_ENABLED = originalEnv;
+    if (originalEnv === undefined) {
+      delete process.env.API_DOCS_ENABLED;
+    } else {
+      process.env.API_DOCS_ENABLED = originalEnv;
+    }
   });
 
   describe("when API_DOCS_ENABLED=true", () => {
