@@ -429,7 +429,8 @@
 			"cookie_auth": {
 				"type": "apiKey",
 				"in": "cookie",
-				"name": "session_token"
+				"name": "session_token",
+				"description": "Session token cookie obtained from /api/otp/verify"
 			}
 		}
 	},
@@ -1437,7 +1438,7 @@
 	},
 	"servers": [
 		{
-			"url": "/"
+			"url": "/api"
 		}
 	]
 }

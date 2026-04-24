@@ -9,9 +9,11 @@
       "cookie_auth": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "session_token"
+        "name": "session_token",
+        "description": "Session token cookie obtained from /api/otp/verify"
       }
     },
+    "basePath": "/api",
     "name": "Hello Norway API",
     "description": "API for managing Norwegian life admin tasks",
     "version": "1.0.0"

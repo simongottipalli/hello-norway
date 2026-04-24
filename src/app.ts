@@ -1,5 +1,7 @@
+import path from "path";
 import express from "express";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
 import otpRoutes from "./routes/otpRoutes";
 import { RegisterRoutes } from "./generated/routes";
 import { requestLogger } from "./middleware/requestLogger";
@@ -26,7 +28,26 @@ export const createApp = () => {
     app.use(apiBaseUrl, otpRoutes);
   }
 
-  // tsoa validation error handler (before generic error logger)
+  if (process.env.API_DOCS_ENABLED === "true") {
+    // Serve the raw OpenAPI spec before the UI middleware so it isn't intercepted
+    app.get("/api-docs/swagger.json", (_req, res) => {
+      res.sendFile("swagger.json", {
+        root: path.resolve(__dirname, "generated"),
+      });
+    });
+
+    app.use(
+      "/api-docs",
+      swaggerUi.serve,
+      swaggerUi.setup(undefined, {
+        swaggerOptions: {
+          url: "/api-docs/swagger.json",
+        },
+      })
+    );
+  }
+
+  // tsoa validation + auth error handler (before generic error logger)
   app.use(tsoaErrorHandler);
 
   // Error logging middleware (after routes)
