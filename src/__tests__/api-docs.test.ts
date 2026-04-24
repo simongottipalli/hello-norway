@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { createApp } from "../app";
 
+vi.mock("../repo/db", () => ({
+  withTransaction: vi.fn(),
+}));
+
 vi.mock("../repo/sessionRepo", () => ({
   findSessionWithUser: vi.fn().mockResolvedValue(null),
   deleteSessionById: vi.fn(),
@@ -65,6 +69,14 @@ describe("API docs routes", () => {
       expect(response.status).toBe(200);
       expect(response.headers["content-type"]).toMatch(/application\/json/);
       expect(response.body).toHaveProperty("openapi");
+    });
+
+    it("GET /api-docs/swagger.json has server URL matching the /api runtime prefix", async () => {
+      const app = createApp();
+      const response = await request(app).get("/api-docs/swagger.json");
+      expect(response.status).toBe(200);
+      const servers: Array<{ url: string }> = response.body.servers ?? [];
+      expect(servers.some((s) => s.url === "/api")).toBe(true);
     });
   });
 
