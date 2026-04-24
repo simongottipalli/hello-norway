@@ -1,0 +1,25 @@
+{
+  "name": "Hello Norway",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  // Test-safe defaults — no real secrets needed to run tests or lint
+  "containerEnv": {
+    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/hello_norway_test",
+    "SESSION_COOKIE_SECRET": "devcontainer-session-secret-not-for-production",
+    "EMAIL_PROVIDER": "test",
+    "EMAIL_FROM": "test@example.com",
+    "BREVO_API_KEY": "test-api-key",
+    "API_BASE_URL": "http://localhost:3001/api",
+    "NODE_ENV": "test"
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // Forward Next.js (3000), Express API (3001), and PostgreSQL (5432)
+  "forwardPorts": [3000, 3001, 5432],
+
+  "remoteUser": "node"
+}
