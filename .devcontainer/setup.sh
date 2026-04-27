@@ -7,6 +7,9 @@ npm ci --ignore-scripts
 echo "▶ Generating Prisma client..."
 npx prisma generate
 
+echo "▶ Loading environment from .env.test..."
+set -a; . .env.test; set +a
+
 echo "▶ Starting PostgreSQL..."
 docker compose -f docker-compose.test.yml up -d
 
