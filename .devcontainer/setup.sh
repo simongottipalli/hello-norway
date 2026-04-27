@@ -15,6 +15,6 @@ echo "▶ Running database migrations..."
 npx prisma migrate deploy
 
 echo "▶ Seeding database..."
-npx prisma db seed || echo "[warn] Seed failed — continuing anyway"
+npx prisma db seed
 
 echo "✓ Environment ready. Run 'npm run test:unit' to verify."
