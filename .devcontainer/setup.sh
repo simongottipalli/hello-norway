@@ -11,9 +11,6 @@ echo "▶ Waiting for PostgreSQL to be ready..."
 timeout 30 bash -c \
   'until docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U postgres; do sleep 1; done'
 
-echo "▶ Generating Prisma client..."
-npx prisma generate
-
 echo "▶ Running database migrations..."
 npx prisma migrate deploy
 
