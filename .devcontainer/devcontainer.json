@@ -9,7 +9,7 @@
   // the single source of truth — avoids duplicating values here.
   "containerEnv": {
     "NODE_ENV": "test",
-    "DOTENV_CONFIG_PATH": ".env.test"
+    "DOTENV_CONFIG_PATH": "${containerWorkspaceFolder}/.env.test"
   },
 
   "postCreateCommand": "bash .devcontainer/setup.sh",

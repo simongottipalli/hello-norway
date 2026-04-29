@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+cd "$REPO_ROOT"
+
 echo "▶ Loading environment from .env.test..."
-set -a; . .env.test; set +a
+set -a
+. "$REPO_ROOT/.env.test"
+set +a
 
 echo "▶ Installing dependencies..."
 npm ci --ignore-scripts
