@@ -125,7 +125,7 @@ Routes are generated at build time by running `npm run tsoa:build`, which create
 - `src/generated/routes.ts` — Express route registration
 - `src/generated/swagger.json` — OpenAPI 3.0 specification
 
-These files are gitignored and regenerated on every build.
+These files are **committed to the repository** (unlike the Prisma-generated client) because the app imports `routes.ts` at runtime. Regenerate them after any controller change.
 
 ### Authentication
 
@@ -154,6 +154,6 @@ DTOs use JSDoc comments for OpenAPI schema generation.
 2. Add tsoa decorators (`@Get`, `@Post`, etc.)
 3. Define request/response DTOs in `src/dto/`
 4. Run `npm run tsoa:build` to regenerate routes
-5. Test via Swagger UI at `/api-docs`
+5. Test via Swagger UI at `/api-docs` (requires `API_DOCS_ENABLED=true`)
 
 See `docs/API.md` for detailed examples.

@@ -24,7 +24,7 @@ export class CreateExampleDto {
 ```typescript
 // src/controllers/ExampleController.ts
 import { Body, Post, Route, Security, Request } from "tsoa";
-import { CreateExampleDto } from "@/dto/ExampleDto";
+import { CreateExampleDto } from "../dto/ExampleDto";
 import type { Request as ExpressRequest } from "express";
 
 @Route("examples")
@@ -57,7 +57,7 @@ npm run tsoa:build
 
 ### 4. Test
 
-- Visit `/api-docs` to see the new endpoint in Swagger UI
+- Visit `/api-docs` to see the new endpoint in Swagger UI (requires `API_DOCS_ENABLED=true`)
 - Write unit tests in `src/__tests__/`
 - Test manually via Swagger UI or curl
 

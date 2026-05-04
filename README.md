@@ -364,6 +364,8 @@ The API uses [tsoa](https://tsoa-community.github.io/docs/) for type-safe routin
 
 Visit `http://localhost:3001/api-docs` to explore the API interactively.
 
+> Swagger UI is only served when `API_DOCS_ENABLED=true` is set. The default `.env.example` enables it for local development.
+
 ### Adding Endpoints
 
 See [docs/API.md](docs/API.md) for a detailed guide on adding new endpoints.
