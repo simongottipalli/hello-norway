@@ -356,6 +356,32 @@ All logs from the same request share the same `requestId`, making it easy to tra
 | `npm run test:all:parallel`    | Run unit and E2E tests in parallel                       |
 | `npm run test:ci`              | CI mode: unit coverage + E2E                             |
 
+## API Documentation
+
+The API uses [tsoa](https://tsoa-community.github.io/docs/) for type-safe routing and auto-generated OpenAPI specification.
+
+### Swagger UI
+
+Visit `http://localhost:3001/api-docs` to explore the API interactively.
+
+### Adding Endpoints
+
+See [docs/API.md](docs/API.md) for a detailed guide on adding new endpoints.
+
+### Regenerating Routes
+
+Routes are auto-generated from controller decorators:
+
+```bash
+npm run tsoa:build
+```
+
+This creates:
+- `src/generated/routes.ts` — Route registration
+- `src/generated/swagger.json` — OpenAPI 3.0 spec
+
+---
+
 ## API Endpoints
 
 All endpoints are served by the Express backend at port 3001. Next.js API routes in `src/app/api/` proxy to them transparently.

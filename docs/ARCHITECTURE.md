@@ -97,3 +97,63 @@ Centralises Prisma error code handling. The `handleDatabaseError` function maps 
 ### Handling new Prisma error codes
 
 Add a new `case` to `handleDatabaseError` in `src/repo/errors.ts`.
+
+---
+
+## Routing & Controllers (tsoa)
+
+The API uses **tsoa** for type-safe, decorator-based routing with auto-generated OpenAPI specification.
+
+### Controller Structure
+
+Controllers live in `src/controllers/` and use tsoa decorators:
+
+```typescript
+@Route("tasks")
+export class TaskController {
+  @Get("personalized")
+  @Security("cookie_auth")
+  public async getUserTasks(@Request() req: ExpressRequest): Promise<Task[]> {
+    // ...
+  }
+}
+```
+
+### Route Generation
+
+Routes are generated at build time by running `npm run tsoa:build`, which creates:
+- `src/generated/routes.ts` — Express route registration
+- `src/generated/swagger.json` — OpenAPI 3.0 specification
+
+These files are gitignored and regenerated on every build.
+
+### Authentication
+
+Protected endpoints use `@Security("cookie_auth")` which triggers the authentication handler in `src/middleware/tsoaAuthentication.ts`. This handler reuses the existing session validation logic from `sessionRepo`.
+
+### Validation
+
+Request validation is handled by:
+1. **TypeScript types** — Compile-time type checking via DTOs
+2. **tsoa runtime validation** — Validates request body matches DTO shape
+3. **Custom validation** — Additional business logic in controller methods
+
+### DTOs
+
+Data Transfer Objects in `src/dto/` define request/response shapes:
+- `OtpDto.ts` — OTP generation and verification
+- `OnboardingDto.ts` — Onboarding profile
+- `AuthDto.ts` — Auth and profile updates
+- `TaskDto.ts` — Task creation and status updates
+
+DTOs use JSDoc comments for OpenAPI schema generation.
+
+### Adding a New Endpoint
+
+1. Create or update a controller in `src/controllers/`
+2. Add tsoa decorators (`@Get`, `@Post`, etc.)
+3. Define request/response DTOs in `src/dto/`
+4. Run `npm run tsoa:build` to regenerate routes
+5. Test via Swagger UI at `/api-docs`
+
+See `docs/API.md` for detailed examples.
