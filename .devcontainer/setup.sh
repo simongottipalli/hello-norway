@@ -11,10 +11,7 @@ set -a
 set +a
 
 echo "▶ Installing dependencies..."
-npm ci --ignore-scripts
-
-echo "▶ Generating Prisma client..."
-npx prisma generate
+npm ci
 
 echo "▶ Starting PostgreSQL..."
 docker compose -f docker-compose.test.yml up -d
