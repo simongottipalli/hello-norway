@@ -1,0 +1,21 @@
+{
+  "name": "Hello Norway",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  // Point dotenv/config at .env.test so all app code and tests use it as
+  // the single source of truth — avoids duplicating values here.
+  "containerEnv": {
+    "NODE_ENV": "test",
+    "DOTENV_CONFIG_PATH": "${containerWorkspaceFolder}/.env.test"
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // Forward Next.js (3000), Express API (3001), and PostgreSQL (5432)
+  "forwardPorts": [3000, 3001, 5432],
+
+  "remoteUser": "node"
+}
