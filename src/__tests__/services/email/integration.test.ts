@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import type { EmailService } from '../../../services/email';
 
-const originalEnv = process.env;
+const originalEnv = { ...process.env };
 
 vi.mock('@getbrevo/brevo', () => {
   const mockSendTransacEmail = vi.fn();
@@ -36,7 +36,7 @@ describe('Email Service Integration', () => {
   });
 
   afterAll(() => {
-    process.env = originalEnv;
+    process.env = { ...originalEnv };
   });
 
   describe('emailService singleton', () => {
