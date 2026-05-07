@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import type { EmailService } from '../../../services/email';
 
 const originalEnv = process.env;
 
@@ -23,9 +24,10 @@ vi.mock('@getbrevo/brevo', () => {
 });
 
 describe('Email Service Integration', () => {
-  let emailService: { sendEmail: (options: unknown) => Promise<unknown> };
+  let emailService: EmailService;
 
   beforeAll(async () => {
+    process.env = { ...originalEnv };
     process.env.EMAIL_PROVIDER = 'brevo';
     process.env.EMAIL_FROM = 'test@example.com';
     process.env.BREVO_API_KEY = 'test-api-key';
@@ -42,7 +44,7 @@ describe('Email Service Integration', () => {
     it('should be able to send email', async () => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as unknown as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockResolvedValue({ messageId: 'integration-test-id' });
 
@@ -67,7 +69,7 @@ describe('Email Service Integration', () => {
     ])('propagates provider error: %s', async (errorMessage) => {
       const { BrevoClient } = await import('@getbrevo/brevo');
       const mockClient = new BrevoClient({ apiKey: 'test' });
-      const mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
+      const mockSendTransacEmail = (mockClient.transactionalEmails as unknown as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
 
       mockSendTransacEmail.mockRejectedValue(new Error(errorMessage));
 

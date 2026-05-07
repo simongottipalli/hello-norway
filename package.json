@@ -30,7 +30,7 @@
     "test:quick": "vitest run --reporter=dot && playwright test --reporter=dot"
   },
   "dependencies": {
-    "@getbrevo/brevo": "^4.0.1",
+    "@getbrevo/brevo": "^5",
     "@prisma/client": "^6.19.2",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",

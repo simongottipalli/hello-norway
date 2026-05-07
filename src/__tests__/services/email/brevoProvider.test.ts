@@ -52,9 +52,8 @@ describe('BrevoProvider', () => {
     let mockSendTransacEmail: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: mockApiKey });
-      mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
+      const { __mockSendTransacEmail } = await import('@getbrevo/brevo') as unknown as { __mockSendTransacEmail: ReturnType<typeof vi.fn> };
+      mockSendTransacEmail = __mockSendTransacEmail;
     });
 
     it('should send email successfully with minimal options', async () => {
@@ -268,9 +267,8 @@ describe('BrevoProvider', () => {
     let mockSendTransacEmail: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
-      const { BrevoClient } = await import('@getbrevo/brevo');
-      const mockClient = new BrevoClient({ apiKey: mockApiKey });
-      mockSendTransacEmail = (mockClient.transactionalEmails as { sendTransacEmail: ReturnType<typeof vi.fn> }).sendTransacEmail;
+      const { __mockSendTransacEmail } = await import('@getbrevo/brevo') as unknown as { __mockSendTransacEmail: ReturnType<typeof vi.fn> };
+      mockSendTransacEmail = __mockSendTransacEmail;
     });
 
     it('should parse email with name correctly', async () => {
