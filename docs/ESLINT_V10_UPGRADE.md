@@ -8,17 +8,37 @@ This is a **major version bump**. The project already uses ESLint's flat config 
 
 ---
 
-## Critical Prerequisite — `eslint-config-next` Compatibility
+## Current Status — Blocked (as of May 2026)
 
-Before upgrading ESLint, confirm that `eslint-config-next` supports v10. The project currently pins `eslint-config-next: "16.1.7"` which targets ESLint v9 as a peer dependency.
+The branch `chore/eslint-v10-upgrade` has the version bumped to `^10` and ESLint 10.3.0 installed, but the upgrade is **blocked** and cannot proceed until `eslint-config-next` ships a stable release with an ESLint v10-compatible `eslint-plugin-react`.
 
-**Action required:** Check `eslint-config-next`'s peer dependency range before upgrading ESLint:
+### What was tried
+
+Running `npm run lint` after the bump crashes with:
+
+```
+TypeError: Error while loading rule 'react/display-name': contextOrFilename.getFilename is not a function
+```
+
+`eslint-plugin-react@7.37.5` (bundled inside `eslint-config-next`) uses `context.getFilename()`, an API removed in ESLint v10. `7.37.5` is the latest stable release of `eslint-plugin-react` — there is an [open issue tracking v10 compatibility](https://github.com/jsx-eslint/eslint-plugin-react/issues/3977).
+
+### Why an alternative plugin doesn't help
+
+`@eslint-react/eslint-plugin` is the ESLint v10-compatible replacement for `eslint-plugin-react`, but it is not a drop-in. More importantly, `eslint-config-next` loads `eslint-plugin-react` internally — so even wiring up `@eslint-react` in `eslint.config.mjs` would not prevent the crash from the config-next bundle. Fully replacing `eslint-config-next` with a hand-rolled config is out of scope for this upgrade.
+
+### What to check before resuming
 
 ```bash
 npm info eslint-config-next peerDependencies
+# Look for eslint-plugin-react version bundled in the new release:
+npm info eslint-config-next dependencies
 ```
 
-If `eslint-config-next` does not yet declare ESLint v10 as a supported peer, hold this upgrade until it does. Running ESLint v10 with a config that only supports v9 will produce peer dependency warnings and may cause unexpected linting behavior.
+Resume this upgrade once a stable `eslint-config-next` (currently on canary `16.3.0-canary.x`) ships with a version of `eslint-plugin-react` that supports ESLint v10.
+
+---
+
+## Original Prerequisite Note
 
 ---
 
