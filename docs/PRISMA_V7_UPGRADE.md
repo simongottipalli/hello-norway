@@ -25,7 +25,7 @@ The key architectural shift in v7 is:
 | `postinstall` and `build` scripts run `prisma generate` | No change needed |
 | CI workflow already calls `prisma generate` explicitly | Already v7-compatible |
 | CI workflow already calls `prisma db seed` explicitly | Already v7-compatible |
-| Node.js 22 used in CI | Meets the v7 minimum of 20.19.0 |
+| Node.js 22 (latest 22.x) used in CI | Meets v7 requirement of `^20.19.0 \|\| ^22.12.0` |
 
 ---
 
