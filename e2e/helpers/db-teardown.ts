@@ -7,6 +7,7 @@
  *   argv[2]  test-user email to delete (cascades to sessions)
  */
 import { PrismaClient } from "../../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 async function main() {
   const email = process.argv[2];
@@ -15,7 +16,8 @@ async function main() {
     process.exit(1);
   }
 
-  const prisma = new PrismaClient();
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+  const prisma = new PrismaClient({ adapter });
 
   try {
     await prisma.user.deleteMany({ where: { email } });
