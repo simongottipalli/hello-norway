@@ -1,20 +1,16 @@
-# Prisma v6 → v7 Upgrade Plan
+# Prisma v6 → v7 Upgrade
 
-## Overview
+Upgraded `prisma` and `@prisma/client` from `6.19.2` to `7.8.0` (LTS as of May 2026).
 
-Upgrade `prisma` and `@prisma/client` from `6.19.2` to `7.x` (latest: `7.5.0` as of March 2026).
-
-This is a **major version bump** with breaking changes. The key architectural shift in v7 is:
+The key architectural shift in v7 is:
 
 - The classic Rust-based query engine is removed
-- All database connections now go through a **driver adapter** (e.g. `@prisma/adapter-pg` for PostgreSQL)
+- All database connections now go through a **driver adapter** (`@prisma/adapter-pg` for PostgreSQL)
 - Prisma ships as an **ES module**
 
 ---
 
-## What's Already v7-Ready
-
-No changes needed for these — the codebase is already aligned:
+## What Was Already v7-Ready
 
 | Area | Status |
 |---|---|
@@ -27,10 +23,13 @@ No changes needed for these — the codebase is already aligned:
 | No Metrics API usage | Removed in v7; not used here |
 | PostgreSQL database | Fully supported in v7 (MongoDB is not yet) |
 | `postinstall` and `build` scripts run `prisma generate` | No change needed |
+| CI workflow already calls `prisma generate` explicitly | Already v7-compatible |
+| CI workflow already calls `prisma db seed` explicitly | Already v7-compatible |
+| Node.js 22.x (≥ 22.12) used in CI | Meets v7 requirement of `^20.19 \|\| ^22.12 \|\| >=24`; Node 22.0–22.11 is **not** supported |
 
 ---
 
-## Required Changes
+## Changes Made
 
 ### 1. Package versions — `package.json`
 
@@ -50,8 +49,6 @@ No changes needed for these — the codebase is already aligned:
 
 ### 2. Remove `engine: "classic"` — `prisma.config.ts`
 
-The classic (Rust-based) query engine is gone in v7. The `engine` field must be removed.
-
 ```diff
  export default defineConfig({
    schema: "prisma/schema.prisma",
@@ -66,13 +63,24 @@ The classic (Rust-based) query engine is gone in v7. The `engine` field must be 
  });
 ```
 
-### 3. Wire up the PostgreSQL driver adapter — `src/repo/db.ts`
+### 3. Remove deprecated `url` from `prisma/schema.prisma`
 
-v7 requires a driver adapter for all databases. For PostgreSQL, use `@prisma/adapter-pg`.
+v7 validates `env("DATABASE_URL")` in the schema even during `prisma generate`. Without `DATABASE_URL` set (e.g. during `npm install`), the `postinstall` step fails. Since `prisma.config.ts` already owns the URL, remove it from the schema:
 
 ```diff
--import { PrismaClient } from "../generated/prisma/client.js";
-+import { PrismaClient } from "../generated/prisma/client.js";
+ datasource db {
+   provider = "postgresql"
+-  url      = env("DATABASE_URL")
+ }
+```
+
+### 4. Wire up the PostgreSQL driver adapter
+
+v7 requires a driver adapter for every `PrismaClient` instantiation. Updated all four files that construct their own client:
+
+**`src/repo/db.ts`**
+```diff
+ import { PrismaClient } from "../generated/prisma/client";
 +import { PrismaPg } from "@prisma/adapter-pg";
 
 -export const prisma = new PrismaClient();
@@ -80,71 +88,62 @@ v7 requires a driver adapter for all databases. For PostgreSQL, use `@prisma/ada
 +export const prisma = new PrismaClient({ adapter });
 ```
 
-### 4. Regenerate the Prisma client
-
-```bash
-npx prisma generate
-```
-
-### 5. Run unit tests
-
-```bash
-npm run test:unit
-```
+Same adapter pattern applied to:
+- `prisma/seed.ts`
+- `e2e/helpers/db-setup.ts`
+- `e2e/helpers/db-teardown.ts`
 
 ---
 
 ## ESM Consideration
 
-The Prisma v7 migration guide recommends adding `"type": "module"` to `package.json`. This is **intentionally skipped** for this project because:
+The Prisma v7 migration guide recommends adding `"type": "module"` to `package.json`. This is **intentionally skipped** because:
 
-- Next.js manages its own module bundling (webpack/turbopack) and handles ESM natively
-- The Express server runs via `tsx`, which handles ESM imports in a TypeScript-first context
+- Next.js manages its own module bundling and handles ESM natively
+- The Express server runs via `ts-node --swc` (CommonJS mode), which handles TypeScript without requiring ESM
 - Adding `"type": "module"` would require renaming config files (e.g. `vitest.config.ts`, `next.config.ts`) to `.cjs` or migrating all `require()` calls
 
-**If unit tests fail after the upgrade due to ESM-related import errors**, the fallback is to add `"type": "module"` to `package.json` and address any cascading config file changes.
+All 34 unit test suites pass without it.
+
+**If tests fail in future due to ESM-related import errors**, the fallback is to add `"type": "module"` and address cascading config changes.
 
 ---
 
-## Workflow Change (No Code Change Required)
+## Workflow Change
 
-In v7, `prisma migrate dev` **no longer auto-seeds** after applying migrations. Seeding must now be triggered explicitly:
+In v7, `prisma migrate dev` no longer auto-seeds after applying migrations, and no longer auto-runs `prisma generate`. Both must be triggered explicitly:
 
 ```bash
+npx prisma generate
 npx prisma db seed
 ```
 
-The seed script is still configured in `prisma.config.ts`:
-
-```ts
-migrations: {
-  path: "prisma/migrations",
-  seed: "tsx prisma/seed.ts",
-},
-```
+The CI workflow and `setup.sh` already call both steps explicitly — no changes needed. For local development, follow `prisma migrate dev` with those two commands manually.
 
 ---
 
-## Risk Assessment
+## SSL Certificate Validation
 
-| Change | Risk | Notes |
-|---|---|---|
-| Remove `engine: "classic"` | Low | Direct removal, no API surface change |
-| Add `PrismaPg` driver adapter | Low | Drop-in for the default connection; connection pool defaults differ (see below) |
-| Package version bumps | Low | No query API changes affect the app's usage patterns |
-| ESM module format | Medium | Mitigated by `tsx` and Next.js; monitor test output |
-| `createMany` with `skipDuplicates` | Low | Stable API, supported in v7 |
-| Interactive `$transaction` calls | Low | Stable API since Prisma v4 |
-| Nested relation filters in `deleteMany` | Low | Standard feature, no known changes |
+In v6, the Rust query engine silently ignored invalid SSL certificates. In v7, the `pg` driver enforces them by default. If a staging/production database uses a self-signed certificate, connections will fail with `P1010`. Fix by configuring the adapter:
 
-### Connection pool note
+```ts
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+```
+
+Local development and CI (plain PostgreSQL container) are unaffected.
+
+---
+
+## Connection Pool Note
 
 The `pg` driver has no connection timeout by default (`0`), whereas Prisma v6 used a 5-second timeout. If timeout-related issues appear in production after upgrading, configure the adapter explicitly:
 
 ```ts
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
-  // Match v6 behavior: 5 second connection timeout
   connectionTimeoutMillis: 5000,
 });
 ```
@@ -157,4 +156,8 @@ const adapter = new PrismaPg({
 |---|---|
 | `package.json` | Bump `prisma`, `@prisma/client`; add `@prisma/adapter-pg`, `pg`, `@types/pg` |
 | `prisma.config.ts` | Remove `engine: "classic"` |
+| `prisma/schema.prisma` | Remove deprecated `url` from datasource block |
 | `src/repo/db.ts` | Add `PrismaPg` adapter |
+| `prisma/seed.ts` | Add `PrismaPg` adapter |
+| `e2e/helpers/db-setup.ts` | Add `PrismaPg` adapter |
+| `e2e/helpers/db-teardown.ts` | Add `PrismaPg` adapter |

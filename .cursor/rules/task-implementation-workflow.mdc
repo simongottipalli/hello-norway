@@ -7,7 +7,7 @@ alwaysApply: true
 
 When asked to implement a well-defined task (e.g. a GitHub issue, feature request, or bug fix):
 
-1. **Create a new branch** from `main` before making any changes.
+1. **Create a new branch** from `main` before making any changes, then immediately push it to remote with tracking (`git push -u origin <branch>`). Keep local and remote in sync after every commit (push after each commit, or at minimum before creating/updating a PR).
 
 2. **Evaluate task size/complexity:**
    - **Small–Medium**: Implement directly, then create a PR.
@@ -16,3 +16,10 @@ When asked to implement a well-defined task (e.g. a GitHub issue, feature reques
 3. **Implement** (one task at a time per the step-by-step execution rule).
 
 4. **Create a PR** once implementation and pre-push checks pass.
+
+## Working on Existing Branches / PRs
+
+When fixing PR review comments, adding follow-up changes, or otherwise building on work that already has a branch and/or open PR:
+
+- **Continue on the existing branch** — do not create a new branch unless the user explicitly asks for one.
+- Push new commits to the same remote branch so the open PR is updated automatically.

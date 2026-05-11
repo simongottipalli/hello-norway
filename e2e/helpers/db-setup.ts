@@ -11,6 +11,7 @@
  */
 import crypto from "crypto";
 import { PrismaClient } from "../../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 async function main() {
   const email = process.argv[2];
@@ -19,7 +20,13 @@ async function main() {
     process.exit(1);
   }
 
-  const prisma = new PrismaClient();
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.error("DATABASE_URL environment variable is not set");
+    process.exit(1);
+  }
+  const adapter = new PrismaPg({ connectionString });
+  const prisma = new PrismaClient({ adapter });
 
   try {
     const user = await prisma.user.upsert({
