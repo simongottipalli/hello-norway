@@ -93,6 +93,10 @@ All UI primitives live in `src/components/ui/`. **Always use these components** 
 | `Input` | `ui/input.tsx` | All text inputs |
 | `Label` | `ui/label.tsx` | Form field labels (pair with `Input`) |
 | `Badge` | `ui/badge.tsx` | Status indicators and category tags |
+| `Dialog`, `DialogTrigger`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription` | `ui/dialog.tsx` | Modal dialogs |
+| `Select` | `ui/select.tsx` | Native `<select>` wrapper |
+| `Textarea` | `ui/textarea.tsx` | Multi-line text inputs |
+| `Spinner` | `ui/spinner.tsx` | Loading indicator — supports `size` (sm, md, lg) |
 
 ### Adding New Components
 
@@ -140,6 +144,10 @@ src/
       input.tsx
       label.tsx
       badge.tsx
+      dialog.tsx
+      select.tsx
+      textarea.tsx
+      spinner.tsx
     [Feature].tsx    # Feature components that compose ui/ primitives
   lib/
     utils.ts         # cn() helper for className merging
