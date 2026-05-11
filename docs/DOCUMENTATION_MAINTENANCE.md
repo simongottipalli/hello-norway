@@ -69,7 +69,7 @@ Before opening a PR, follow this workflow to keep project documentation accurate
 
 - Create when performing a significant library or tooling upgrade.
 - Include: motivation, breaking changes, migration steps, and any commands run.
-- Follow the naming pattern of existing files: e.g. `ESLINT_V10_UPGRADE.md`, `BREVO_V5_UPGRADE.md`.
+- Follow the naming pattern of existing files: e.g. `ESLINT_V10_UPGRADE.md`.
 
 ## When to Skip Doc Updates
 
