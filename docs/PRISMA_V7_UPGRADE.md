@@ -25,7 +25,7 @@ The key architectural shift in v7 is:
 | `postinstall` and `build` scripts run `prisma generate` | No change needed |
 | CI workflow already calls `prisma generate` explicitly | Already v7-compatible |
 | CI workflow already calls `prisma db seed` explicitly | Already v7-compatible |
-| Node.js 22 (latest 22.x) used in CI | Meets v7 requirement of `^20.19.0 \|\| ^22.12.0` |
+| Node.js 22.x (≥ 22.12) used in CI | Meets v7 requirement of `^20.19 \|\| ^22.12 \|\| >=24`; Node 22.0–22.11 is **not** supported |
 
 ---
 
@@ -100,7 +100,7 @@ Same adapter pattern applied to:
 The Prisma v7 migration guide recommends adding `"type": "module"` to `package.json`. This is **intentionally skipped** because:
 
 - Next.js manages its own module bundling and handles ESM natively
-- The Express server runs via `tsx`, which handles ESM in a TypeScript-first context
+- The Express server runs via `ts-node --swc` (CommonJS mode), which handles TypeScript without requiring ESM
 - Adding `"type": "module"` would require renaming config files (e.g. `vitest.config.ts`, `next.config.ts`) to `.cjs` or migrating all `require()` calls
 
 All 34 unit test suites pass without it.

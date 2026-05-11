@@ -2,6 +2,9 @@
   "name": "hello-norway",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "^20.19 || ^22.12 || >=24"
+  },
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "tsoa:spec": "tsoa spec",
