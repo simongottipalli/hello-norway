@@ -119,16 +119,19 @@ hello-norway/
 │   ├── health.test.ts                      # GET /health
 │   ├── otp.test.ts                         # OTP request/verify endpoints
 │   ├── otpTestPeek.test.ts                 # GET /otp/test-peek (test-only endpoint)
+│   ├── api-docs.test.ts                    # GET /api-docs (Swagger UI endpoint)
 │   ├── tasks.test.ts                       # Task CRUD API
 │   ├── taskStatusUpdate.test.ts            # PATCH /tasks/:id/status
-│   ├── taskValidation.test.ts              # CreateTask payload validation
 │   ├── taskAssignmentIntegration.test.ts   # Profile-based task assignment (DB)
 │   ├── onboardingProfile.test.ts           # Onboarding profile validation
+│   ├── onboardingController.test.ts        # OnboardingController (tsoa)
 │   ├── seedTasks.test.ts                   # Seed data integrity
 │   ├── dateUtils.test.ts                   # Date utility functions
+│   ├── task-detail-helpers.test.ts         # Task detail UI helper functions
 │   ├── dashboard-page.test.tsx             # Dashboard React component
 │   ├── onboarding-page.test.tsx            # Onboarding React component
 │   ├── landing-page.test.tsx               # Landing page React component
+│   ├── footer.test.tsx                     # Footer React component
 │   ├── lib/                                # lib/ utility tests
 │   ├── middleware/                         # Middleware tests
 │   ├── repo/                               # Repository layer tests
