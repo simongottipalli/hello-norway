@@ -147,7 +147,6 @@ prisma/
 docs/                       # Architecture and upgrade documentation
   ARCHITECTURE.md           # Prisma isolation pattern and layer diagram
   DOCUMENTATION_MAINTENANCE.md
-  PRISMA_V7_UPGRADE.md      # Prisma v6 → v7 migration notes
   ESLINT_V10_UPGRADE.md     # ESLint v9 → v10 migration notes
 
 public/                     # Static assets
