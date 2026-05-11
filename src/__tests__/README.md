@@ -50,11 +50,12 @@ src/__tests__/
 ├── health.test.ts                    # GET /health endpoint
 ├── otp.test.ts                       # OTP request/verify endpoints
 ├── otpTestPeek.test.ts               # GET /otp/test-peek test-only endpoint
+├── api-docs.test.ts                  # GET /api-docs (Swagger UI endpoint)
 ├── tasks.test.ts                     # Task API (CRUD)
 ├── taskStatusUpdate.test.ts          # PATCH task status
-├── taskValidation.test.ts            # CreateTask payload validation
 ├── taskAssignmentIntegration.test.ts # Profile-based task assignment
 ├── onboardingProfile.test.ts         # Onboarding profile validation
+├── onboardingController.test.ts      # OnboardingController (tsoa)
 ├── seedTasks.test.ts                 # Seed data integrity
 ├── dateUtils.test.ts                 # Date utility functions
 ├── task-detail-helpers.test.ts       # Task detail UI helpers
