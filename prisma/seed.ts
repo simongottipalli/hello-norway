@@ -1,5 +1,6 @@
 // prisma/seed.ts
 import { PrismaClient, TaskCategory, EmploymentStatus, Prisma } from "../src/generated/prisma/client";
+import { EMAIL_REGEX } from "../src/lib/utils";
 import { PrismaPg } from "@prisma/adapter-pg";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -263,13 +264,16 @@ async function seedAdminUser() {
     return;
   }
   const email = raw.trim().toLowerCase();
+  if (!email || !EMAIL_REGEX.test(email)) {
+    console.warn("ADMIN_SEED_EMAIL is not a valid email address — skipping admin user seed");
+    return;
+  }
   await prisma.adminUser.upsert({
     where: { email },
     create: { email },
     update: {},
   });
-  const masked = email.replace(/^(.{2}).+(@.+)$/, "$1***$2");
-  console.log(`Admin user seeded: ${masked}`);
+  console.log("Admin user seeded successfully");
 }
 
 async function main() {
