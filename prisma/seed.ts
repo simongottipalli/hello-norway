@@ -1,6 +1,6 @@
 // prisma/seed.ts
 import { PrismaClient, TaskCategory, EmploymentStatus, Prisma } from "../src/generated/prisma/client";
-import { EMAIL_REGEX } from "../src/lib/utils";
+import { EMAIL_REGEX } from "../src/lib/validation";
 import { PrismaPg } from "@prisma/adapter-pg";
 import path from "path";
 import { fileURLToPath } from "url";

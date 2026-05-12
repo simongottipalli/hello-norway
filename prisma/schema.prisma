@@ -129,6 +129,8 @@ model Session {
 model AdminUser {
   id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String         @unique @db.VarChar(320)
+  // name is intentionally optional: admins are provisioned by email only
+  // (via seed script) and a display name can be set later if needed.
   name      String?        @db.VarChar(255)
   createdAt DateTime       @default(now()) @db.Timestamptz(6)
   sessions  AdminSession[]
