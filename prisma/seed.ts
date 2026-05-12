@@ -257,17 +257,19 @@ export const tasks: SeedTask[] = [
 ];
 
 async function seedAdminUser() {
-  const email = process.env.ADMIN_SEED_EMAIL;
-  if (!email) {
+  const raw = process.env.ADMIN_SEED_EMAIL;
+  if (!raw) {
     console.warn("ADMIN_SEED_EMAIL not set — skipping admin user seed");
     return;
   }
+  const email = raw.trim().toLowerCase();
   await prisma.adminUser.upsert({
     where: { email },
     create: { email },
     update: {},
   });
-  console.log(`Admin user seeded: ${email}`);
+  const masked = email.replace(/^(.{2}).+(@.+)$/, "$1***$2");
+  console.log(`Admin user seeded: ${masked}`);
 }
 
 async function main() {
