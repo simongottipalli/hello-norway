@@ -256,7 +256,23 @@ export const tasks: SeedTask[] = [
   },
 ];
 
+async function seedAdminUser() {
+  const email = process.env.ADMIN_SEED_EMAIL;
+  if (!email) {
+    console.warn("ADMIN_SEED_EMAIL not set — skipping admin user seed");
+    return;
+  }
+  await prisma.adminUser.upsert({
+    where: { email },
+    create: { email },
+    update: {},
+  });
+  console.log(`Admin user seeded: ${email}`);
+}
+
 async function main() {
+  await seedAdminUser();
+
   for (const t of tasks) {
     await prisma.task.upsert({
       where: { slug: t.slug },
