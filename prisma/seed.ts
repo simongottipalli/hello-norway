@@ -268,6 +268,10 @@ async function seedAdminUser() {
     console.warn("ADMIN_SEED_EMAIL is not a valid email address — skipping admin user seed");
     return;
   }
+  if (email.length > 320) {
+    console.warn("ADMIN_SEED_EMAIL exceeds 320 characters — skipping admin user seed");
+    return;
+  }
   await prisma.adminUser.upsert({
     where: { email },
     create: { email },
