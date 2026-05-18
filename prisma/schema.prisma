@@ -125,3 +125,25 @@ model Session {
   @@index([sessionToken, expiresAt])
   @@index([userId])
 }
+
+model AdminUser {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String         @unique @db.VarChar(320)
+  // name is intentionally optional: admins are provisioned by email only
+  // (via seed script) and a display name can be set later if needed.
+  name      String?        @db.VarChar(255)
+  createdAt DateTime       @default(now()) @db.Timestamptz(6)
+  sessions  AdminSession[]
+}
+
+model AdminSession {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken String    @unique @db.VarChar(128)
+  adminUserId  String    @db.Uuid
+  expiresAt    DateTime  @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  adminUser    AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([sessionToken, expiresAt])
+  @@index([adminUserId])
+}
