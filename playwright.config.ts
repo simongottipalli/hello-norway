@@ -66,6 +66,8 @@ export default defineConfig({
         BREVO_API_KEY: '',
         // Must be 'test' so the /otp/test-peek endpoint is registered by Express.
         NODE_ENV: 'test',
+        // Admin portal secrets (optional — admin e2e tests are skipped when unset)
+        ADMIN_SESSION_COOKIE_SECRET: process.env.ADMIN_SESSION_COOKIE_SECRET || 'test-admin-secret-for-e2e-tests-must-be-at-least-32-chars-1234',
       },
     },
     {
@@ -87,6 +89,11 @@ export default defineConfig({
         BREVO_API_KEY: '',
         NODE_ENV: 'test',
         PORT: '3999',
+        // Admin portal: obscure path + secret for E2E.
+        // Set ADMIN_PATH in your .env to enable admin e2e tests locally.
+        // In CI, set ADMIN_PATH and ADMIN_SESSION_COOKIE_SECRET as secrets.
+        ADMIN_PATH: process.env.ADMIN_PATH || 'e2e-admin-portal',
+        ADMIN_SESSION_COOKIE_SECRET: process.env.ADMIN_SESSION_COOKIE_SECRET || 'test-admin-secret-for-e2e-tests-must-be-at-least-32-chars-1234',
       },
     },
   ],
