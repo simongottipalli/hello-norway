@@ -4,6 +4,16 @@ import { config as loadDotenv } from 'dotenv';
 
 loadDotenv({ path: path.join(__dirname, '.env') });
 
+// Ensure admin portal env vars are available to global-setup (which runs in
+// the same process as this config) as well as to the webservers.
+if (!process.env.ADMIN_PATH) {
+  process.env.ADMIN_PATH = 'e2e-admin-portal';
+}
+if (!process.env.ADMIN_SESSION_COOKIE_SECRET) {
+  process.env.ADMIN_SESSION_COOKIE_SECRET =
+    'test-admin-secret-for-e2e-tests-must-be-at-least-32-chars-1234';
+}
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  *
@@ -89,11 +99,8 @@ export default defineConfig({
         BREVO_API_KEY: '',
         NODE_ENV: 'test',
         PORT: '3999',
-        // Admin portal: obscure path + secret for E2E.
-        // Set ADMIN_PATH in your .env to enable admin e2e tests locally.
-        // In CI, set ADMIN_PATH and ADMIN_SESSION_COOKIE_SECRET as secrets.
-        ADMIN_PATH: process.env.ADMIN_PATH || 'e2e-admin-portal',
-        ADMIN_SESSION_COOKIE_SECRET: process.env.ADMIN_SESSION_COOKIE_SECRET || 'test-admin-secret-for-e2e-tests-must-be-at-least-32-chars-1234',
+        ADMIN_PATH: process.env.ADMIN_PATH!,
+        ADMIN_SESSION_COOKIE_SECRET: process.env.ADMIN_SESSION_COOKIE_SECRET!,
       },
     },
   ],

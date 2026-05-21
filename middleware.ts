@@ -19,27 +19,25 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Admin portal ────────────────────────────────────────────────────────
-  // Block direct access to the internal /portal path. The public URL is the
-  // value of ADMIN_PATH, rewritten to /portal by next.config.ts rewrites.
-  // Without this guard anyone who knows the /portal path could bypass the
-  // obscurity provided by ADMIN_PATH.
+  // Block direct access to the internal /portal path so the public URL
+  // (configured via ADMIN_PATH) is the only entry point.
   if (pathname === "/portal" || pathname.startsWith("/portal/")) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Protect admin portal pages that were reached via the rewrite.
-  // next.config.ts rewrites /{ADMIN_PATH}/* → /portal/*; at this point in
-  // the middleware the rewritten (internal) pathname is visible.
-  const adminPortalProtected = ["/portal/dashboard"];
-  const adminPortalLoginPath = "/portal/login";
+  const adminPath = process.env.ADMIN_PATH;
+  if (adminPath && (pathname === `/${adminPath}` || pathname.startsWith(`/${adminPath}/`))) {
+    // Map the public /{ADMIN_PATH}/* URL to the internal /portal/* path for
+    // auth checking, then rewrite. Auth is checked here (before the rewrite)
+    // so unauthenticated requests are redirected without serving page content.
+    const rest = pathname.slice(`/${adminPath}`.length) || "/";
+    const internalPath = `/portal${rest === "/" ? "" : rest}`;
 
-  const isAdminProtectedPath = adminPortalProtected.some(
-    (p) => pathname === p || pathname.startsWith(p + "/"),
-  );
-  const isAdminLoginPath =
-    pathname === adminPortalLoginPath || pathname.startsWith(adminPortalLoginPath + "/");
+    const isAdminProtectedPath =
+      internalPath === "/portal/dashboard" || internalPath.startsWith("/portal/dashboard/");
+    const isAdminLoginPath =
+      internalPath === "/portal/login" || internalPath.startsWith("/portal/login/");
 
-  if (isAdminProtectedPath || isAdminLoginPath) {
     const adminSessionToken = request.cookies.get(ADMIN_SESSION_TOKEN_COOKIE_NAME)?.value;
     const adminSessionSig = request.cookies.get(ADMIN_SESSION_SIG_COOKIE_NAME)?.value;
 
@@ -55,19 +53,15 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    const adminPath = process.env.ADMIN_PATH;
-    const adminLoginPublicUrl = adminPath ? `/${adminPath}/login` : adminPortalLoginPath;
-    const adminDashboardPublicUrl = adminPath ? `/${adminPath}/dashboard` : "/portal/dashboard";
-
     if (isAdminProtectedPath && !isAdminAuthenticated) {
-      return NextResponse.redirect(new URL(adminLoginPublicUrl, request.url));
+      return NextResponse.redirect(new URL(`/${adminPath}/login`, request.url));
     }
-
     if (isAdminLoginPath && isAdminAuthenticated) {
-      return NextResponse.redirect(new URL(adminDashboardPublicUrl, request.url));
+      return NextResponse.redirect(new URL(`/${adminPath}/dashboard`, request.url));
     }
 
-    return NextResponse.next();
+    // Auth check passed — rewrite to the internal /portal path.
+    return NextResponse.rewrite(new URL(internalPath || "/portal", request.url));
   }
 
   // ── Regular user routes ─────────────────────────────────────────────────

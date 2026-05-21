@@ -29,7 +29,12 @@ export function AdminLoginForm({ adminPath }: AdminLoginFormProps) {
   const [successMessage, setSuccessMessage] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  const dashboardUrl = adminPath ? `/${adminPath}/dashboard` : "/portal/dashboard";
+  // Derive the dashboard URL from the current URL path so it stays consistent
+  // regardless of how ADMIN_PATH is set on the server at build vs. runtime.
+  // pathname is e.g. "/e2e-admin-portal/login" → base is "/e2e-admin-portal"
+  const { pathname } = typeof window !== "undefined" ? window.location : { pathname: adminPath ? `/${adminPath}/login` : "/portal/login" };
+  const adminBase = pathname.replace(/\/login\/?$/, "");
+  const dashboardUrl = `${adminBase}/dashboard`;
 
   useEffect(() => {
     if (resendCooldown > 0) {
