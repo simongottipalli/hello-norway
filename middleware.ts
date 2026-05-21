@@ -4,40 +4,94 @@ import {
   verifySessionCookie,
   SESSION_SIG_COOKIE_NAME,
 } from "@/lib/sessionCookieSig";
+import {
+  verifyAdminSessionCookie,
+  ADMIN_SESSION_TOKEN_COOKIE_NAME,
+  ADMIN_SESSION_SIG_COOKIE_NAME,
+} from "@/lib/adminSessionCookieSig";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Allow static files and API routes to pass through
+  if (pathname.startsWith("/api") || pathname.startsWith("/_next")) {
+    return NextResponse.next();
+  }
+
+  // ── Admin portal ────────────────────────────────────────────────────────
+  // Block direct access to the internal /portal path. The public URL is the
+  // value of ADMIN_PATH, rewritten to /portal by next.config.ts rewrites.
+  // Without this guard anyone who knows the /portal path could bypass the
+  // obscurity provided by ADMIN_PATH.
+  if (pathname === "/portal" || pathname.startsWith("/portal/")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Protect admin portal pages that were reached via the rewrite.
+  // next.config.ts rewrites /{ADMIN_PATH}/* → /portal/*; at this point in
+  // the middleware the rewritten (internal) pathname is visible.
+  const adminPortalProtected = ["/portal/dashboard"];
+  const adminPortalLoginPath = "/portal/login";
+
+  const isAdminProtectedPath = adminPortalProtected.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+  const isAdminLoginPath =
+    pathname === adminPortalLoginPath || pathname.startsWith(adminPortalLoginPath + "/");
+
+  if (isAdminProtectedPath || isAdminLoginPath) {
+    const adminSessionToken = request.cookies.get(ADMIN_SESSION_TOKEN_COOKIE_NAME)?.value;
+    const adminSessionSig = request.cookies.get(ADMIN_SESSION_SIG_COOKIE_NAME)?.value;
+
+    let isAdminAuthenticated = false;
+    if (adminSessionToken && adminSessionSig) {
+      const secret = process.env.ADMIN_SESSION_COOKIE_SECRET;
+      if (secret) {
+        isAdminAuthenticated = await verifyAdminSessionCookie(
+          adminSessionToken,
+          adminSessionSig,
+          secret,
+        );
+      }
+    }
+
+    const adminPath = process.env.ADMIN_PATH;
+    const adminLoginPublicUrl = adminPath ? `/${adminPath}/login` : adminPortalLoginPath;
+    const adminDashboardPublicUrl = adminPath ? `/${adminPath}/dashboard` : "/portal/dashboard";
+
+    if (isAdminProtectedPath && !isAdminAuthenticated) {
+      return NextResponse.redirect(new URL(adminLoginPublicUrl, request.url));
+    }
+
+    if (isAdminLoginPath && isAdminAuthenticated) {
+      return NextResponse.redirect(new URL(adminDashboardPublicUrl, request.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  // ── Regular user routes ─────────────────────────────────────────────────
 
   // Routes that authenticated users should not access
   const authOnlyPaths = ["/login"];
 
   // Protected routes that require authentication
-  // Exact match or any sub-path (e.g. /profile protects /profile/edit but not /profiles)
   const protectedPaths = ["/dashboard", "/profile"];
 
-  // Allow static files and API routes to pass through
-  if (
-    pathname.startsWith("/api") ||
-    pathname.startsWith("/_next")
-  ) {
-    return NextResponse.next();
-  }
+  const isProtectedPath = protectedPaths.some(
+    (path) => pathname === path || pathname.startsWith(path + "/"),
+  );
+  const isAuthPath = authOnlyPaths.some(
+    (path) => pathname === path || pathname.startsWith(path + "/"),
+  );
 
-  // Check if current path is protected or auth-only
-  // Use exact match or prefix with "/" to avoid false positives (e.g. /tasks-review matching /tasks)
-  const isProtectedPath = protectedPaths.some((path) => pathname === path || pathname.startsWith(path + "/"));
-  const isAuthPath = authOnlyPaths.some((path) => pathname === path || pathname.startsWith(path + "/"));
-
-  // Skip authentication check if path is neither protected nor auth-only
   if (!isProtectedPath && !isAuthPath) {
     return NextResponse.next();
   }
 
-  // Only verify session for paths that need authentication checks
   const sessionToken = request.cookies.get("session_token")?.value;
   const sessionSig = request.cookies.get(SESSION_SIG_COOKIE_NAME)?.value;
 
-  // Check if session is valid
   let isAuthenticated = false;
   if (sessionToken && sessionSig) {
     const secret = process.env.SESSION_COOKIE_SECRET;
@@ -46,21 +100,17 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect unauthenticated users from protected routes to login
   if (isProtectedPath && !isAuthenticated) {
     const loginUrl = new URL("/login", request.url);
-    // Include both pathname and search params in redirect
     const redirectPath = pathname + request.nextUrl.search;
     loginUrl.searchParams.set("redirect", redirectPath);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from login to dashboard
   if (isAuthPath && isAuthenticated) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Allow public paths and authenticated access to protected paths
   return NextResponse.next();
 }
 
@@ -73,6 +123,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };

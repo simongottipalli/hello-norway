@@ -15,6 +15,16 @@ declare global {
         token: string;
         expiresAt: Date;
       };
+      adminUser?: {
+        id: string;
+        email: string;
+        name: string | null;
+      };
+      adminSession?: {
+        id: string;
+        token: string;
+        expiresAt: Date;
+      };
     }
   }
 }
