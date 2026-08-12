@@ -12,7 +12,7 @@ export class AdminAuthController {
   @Security("admin_cookie_auth")
   @SuccessResponse("200", "Session retrieved")
   @Response<{ error: string }>("401", "Unauthorized")
-  public async getSession(@Request() req: ExpressRequest): Promise<AdminSessionResponseDto> {
+  public async getAdminSession(@Request() req: ExpressRequest): Promise<AdminSessionResponseDto> {
     return {
       authenticated: true,
       adminUser: req.adminUser!,
@@ -28,7 +28,7 @@ export class AdminAuthController {
   @Post("logout")
   @SuccessResponse("200", "Logged out")
   @Response<{ error: string }>("500", "Server error")
-  public async logout(@Request() req: ExpressRequest): Promise<{ success: boolean }> {
+  public async logoutAdmin(@Request() req: ExpressRequest): Promise<{ success: boolean }> {
     const sessionToken = req.cookies?.admin_session_token;
 
     try {

@@ -11,6 +11,7 @@ import {
  * without an explicit env var.
  */
 const ADMIN_PATH = process.env.ADMIN_PATH || "e2e-admin-portal";
+const ADMIN_ROOT_URL = `/${ADMIN_PATH}`;
 const ADMIN_LOGIN_URL = `/${ADMIN_PATH}/login`;
 const ADMIN_DASHBOARD_URL = `/${ADMIN_PATH}/dashboard`;
 
@@ -74,6 +75,14 @@ test.describe("Direct /portal access is blocked", () => {
 // ── Unauthenticated routing ─────────────────────────────────────────────────
 
 test.describe("Admin portal unauthenticated routing", () => {
+  unauthenticatedTest(
+    "should redirect the bare admin path to login",
+    async ({ page }) => {
+      await page.goto(ADMIN_ROOT_URL);
+      await expect(page).toHaveURL(ADMIN_LOGIN_URL);
+    },
+  );
+
   unauthenticatedTest(
     "should show the admin login page at the configured ADMIN_PATH",
     async ({ page }) => {
@@ -192,6 +201,14 @@ test.describe("Admin login OTP flow", () => {
 // ── Authenticated admin routing ─────────────────────────────────────────────
 
 test.describe("Authenticated admin routing", () => {
+  adminTest(
+    "should redirect the bare admin path to the dashboard",
+    async ({ page }) => {
+      await page.goto(ADMIN_ROOT_URL);
+      await expect(page).toHaveURL(ADMIN_DASHBOARD_URL);
+    },
+  );
+
   adminTest(
     "should allow an authenticated admin to access the dashboard",
     async ({ page }) => {

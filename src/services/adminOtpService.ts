@@ -64,17 +64,18 @@ export class AdminOtpService {
 
       await otpRepo.deleteExpiredOtps(email);
 
+      const code = randomInt(OTP_MIN_VALUE, OTP_MAX_VALUE + 1);
+      const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
+      await otpRepo.createOtp(email, code, expiresAt);
+
       // Only send OTP to known admin emails — unknown emails receive a generic
-      // success response without an actual email being dispatched.
+      // success response without an actual email being dispatched. Recording
+      // the request for every address keeps rate-limit behavior uniform.
       const adminUser = await adminRepo.findAdminUserByEmail(email);
       if (!adminUser) {
         logger?.info({ msg: "Admin OTP requested for non-admin email (silently ignored)", email });
         return { success: true };
       }
-
-      const code = randomInt(OTP_MIN_VALUE, OTP_MAX_VALUE);
-      const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
-      await otpRepo.createOtp(email, code, expiresAt);
 
       logger?.info({ msg: "Admin OTP generated", email, expiresIn: `${OTP_EXPIRATION_MINUTES}m` });
 
@@ -121,18 +122,19 @@ export class AdminOtpService {
       const result = await withTransaction(async (tx) => {
         await otpRepo.deleteAllOtpsByEmail(email, tx);
 
-        const adminUser = await adminRepo.findAdminUserByEmail(email);
+        const adminUser = await adminRepo.findAdminUserByEmail(email, tx);
         if (!adminUser) {
           throw { status: 401, message: "Unauthorized" };
         }
 
-        await adminRepo.deleteAdminUserSessions(adminUser.id);
+        await adminRepo.deleteAdminUserSessions(adminUser.id, tx);
 
         const sessionToken = randomBytes(SESSION_TOKEN_BYTES).toString("hex");
         await adminRepo.createAdminSession(
           sessionToken,
           adminUser.id,
           new Date(Date.now() + SESSION_EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
+          tx,
         );
 
         return {

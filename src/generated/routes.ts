@@ -596,26 +596,26 @@ export function RegisterRoutes(app: Router) {
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsAdminOtpController_requestOtp: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsAdminOtpController_requestAdminOtp: Record<string, TsoaRoute.ParameterSchema> = {
                 body: {"in":"body","name":"body","required":true,"ref":"AdminRequestOtpDto"},
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/api/admin/otp/generate',
             ...(fetchMiddlewares<RequestHandler>(AdminOtpController)),
-            ...(fetchMiddlewares<RequestHandler>(AdminOtpController.prototype.requestOtp)),
+            ...(fetchMiddlewares<RequestHandler>(AdminOtpController.prototype.requestAdminOtp)),
 
-            async function AdminOtpController_requestOtp(request: ExRequest, response: ExResponse, next: any) {
+            async function AdminOtpController_requestAdminOtp(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsAdminOtpController_requestOtp, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsAdminOtpController_requestAdminOtp, request, response });
 
                 const controller = new AdminOtpController();
 
               await templateService.apiHandler({
-                methodName: 'requestOtp',
+                methodName: 'requestAdminOtp',
                 controller,
                 response,
                 next,
@@ -627,26 +627,26 @@ export function RegisterRoutes(app: Router) {
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsAdminOtpController_verifyOtp: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsAdminOtpController_verifyAdminOtp: Record<string, TsoaRoute.ParameterSchema> = {
                 body: {"in":"body","name":"body","required":true,"ref":"AdminVerifyOtpDto"},
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/api/admin/otp/verify',
             ...(fetchMiddlewares<RequestHandler>(AdminOtpController)),
-            ...(fetchMiddlewares<RequestHandler>(AdminOtpController.prototype.verifyOtp)),
+            ...(fetchMiddlewares<RequestHandler>(AdminOtpController.prototype.verifyAdminOtp)),
 
-            async function AdminOtpController_verifyOtp(request: ExRequest, response: ExResponse, next: any) {
+            async function AdminOtpController_verifyAdminOtp(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsAdminOtpController_verifyOtp, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsAdminOtpController_verifyAdminOtp, request, response });
 
                 const controller = new AdminOtpController();
 
               await templateService.apiHandler({
-                methodName: 'verifyOtp',
+                methodName: 'verifyAdminOtp',
                 controller,
                 response,
                 next,
@@ -658,26 +658,26 @@ export function RegisterRoutes(app: Router) {
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsAdminAuthController_getSession: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsAdminAuthController_getAdminSession: Record<string, TsoaRoute.ParameterSchema> = {
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.get('/api/admin/auth/session',
             authenticateMiddleware([{"admin_cookie_auth":[]}]),
             ...(fetchMiddlewares<RequestHandler>(AdminAuthController)),
-            ...(fetchMiddlewares<RequestHandler>(AdminAuthController.prototype.getSession)),
+            ...(fetchMiddlewares<RequestHandler>(AdminAuthController.prototype.getAdminSession)),
 
-            async function AdminAuthController_getSession(request: ExRequest, response: ExResponse, next: any) {
+            async function AdminAuthController_getAdminSession(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsAdminAuthController_getSession, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsAdminAuthController_getAdminSession, request, response });
 
                 const controller = new AdminAuthController();
 
               await templateService.apiHandler({
-                methodName: 'getSession',
+                methodName: 'getAdminSession',
                 controller,
                 response,
                 next,
@@ -689,25 +689,25 @@ export function RegisterRoutes(app: Router) {
             }
         });
         // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsAdminAuthController_logout: Record<string, TsoaRoute.ParameterSchema> = {
+        const argsAdminAuthController_logoutAdmin: Record<string, TsoaRoute.ParameterSchema> = {
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
         };
         app.post('/api/admin/auth/logout',
             ...(fetchMiddlewares<RequestHandler>(AdminAuthController)),
-            ...(fetchMiddlewares<RequestHandler>(AdminAuthController.prototype.logout)),
+            ...(fetchMiddlewares<RequestHandler>(AdminAuthController.prototype.logoutAdmin)),
 
-            async function AdminAuthController_logout(request: ExRequest, response: ExResponse, next: any) {
+            async function AdminAuthController_logoutAdmin(request: ExRequest, response: ExResponse, next: any) {
 
             // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
             let validatedArgs: any[] = [];
             try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsAdminAuthController_logout, request, response });
+                validatedArgs = templateService.getValidatedArgs({ args: argsAdminAuthController_logoutAdmin, request, response });
 
                 const controller = new AdminAuthController();
 
               await templateService.apiHandler({
-                methodName: 'logout',
+                methodName: 'logoutAdmin',
                 controller,
                 response,
                 next,

@@ -1583,7 +1583,7 @@
 		},
 		"/admin/otp/generate": {
 			"post": {
-				"operationId": "RequestOtp",
+				"operationId": "RequestAdminOtp",
 				"responses": {
 					"200": {
 						"description": "OTP sent",
@@ -1697,7 +1697,7 @@
 		},
 		"/admin/otp/verify": {
 			"post": {
-				"operationId": "VerifyOtp",
+				"operationId": "VerifyAdminOtp",
 				"responses": {
 					"200": {
 						"description": "OTP verified",
@@ -1803,7 +1803,7 @@
 		},
 		"/admin/auth/session": {
 			"get": {
-				"operationId": "GetSession",
+				"operationId": "GetAdminSession",
 				"responses": {
 					"200": {
 						"description": "Session retrieved",
@@ -1845,7 +1845,7 @@
 		},
 		"/admin/auth/logout": {
 			"post": {
-				"operationId": "Logout",
+				"operationId": "LogoutAdmin",
 				"responses": {
 					"200": {
 						"description": "Logged out",

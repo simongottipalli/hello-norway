@@ -9,8 +9,15 @@ import * as adminOtpServiceModule from "../services/adminOtpService";
 import { AdminOtpService } from "../services/adminOtpService";
 import * as otpRepo from "../repo/otpRepo";
 import * as adminRepo from "../repo/adminRepo";
+import { withTransaction } from "../repo/db";
 import type { EmailService } from "../services/email/emailService";
 import type { EmailResult } from "../services/email/types";
+import { randomInt } from "crypto";
+
+vi.mock("crypto", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("crypto")>();
+  return { ...actual, randomInt: vi.fn(actual.randomInt) };
+});
 
 // ── Repo mocks ──────────────────────────────────────────────────────────────
 
@@ -337,7 +344,7 @@ describe("Admin OTP API", () => {
   // ── AdminOtpService unit tests ─────────────────────────────────────────────
 
   describe("AdminOtpService.requestOtp", () => {
-    it("should silently succeed for non-admin email without sending OTP", async () => {
+    it("should record an OTP attempt for a non-admin email without sending an email", async () => {
       vi.mocked(adminRepo.findAdminUserByEmail).mockResolvedValue(null);
       vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
       vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
@@ -345,7 +352,11 @@ describe("Admin OTP API", () => {
       const result = await adminOtpService.requestOtp("nobody@example.com");
 
       expect(result.success).toBe(true);
-      expect(otpRepo.createOtp).not.toHaveBeenCalled();
+      expect(otpRepo.createOtp).toHaveBeenCalledWith(
+        "nobody@example.com",
+        expect.any(Number),
+        expect.any(Date),
+      );
       expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
     });
 
@@ -383,6 +394,20 @@ describe("Admin OTP API", () => {
       expect(Number.isInteger(code)).toBe(true);
       expect(code).toBeGreaterThanOrEqual(100000);
       expect(code).toBeLessThan(1000000);
+    });
+
+    it("should include 999999 in the generated OTP range", async () => {
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(0);
+      vi.mocked(otpRepo.deleteExpiredOtps).mockResolvedValue({ count: 0 });
+      vi.mocked(otpRepo.createOtp).mockResolvedValue({} as never);
+      (mockEmailService.sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
+        success: true,
+        messageId: "msg-1",
+      } as EmailResult);
+
+      await adminOtpService.requestOtp("admin@example.com");
+
+      expect(randomInt).toHaveBeenCalledWith(100000, 1000000);
     });
 
     it("should return 429 when rate limit is exceeded", async () => {
@@ -432,6 +457,10 @@ describe("Admin OTP API", () => {
 
   describe("AdminOtpService.verifyOtp", () => {
     it("should verify valid OTP and create an admin session", async () => {
+      const transactionClient = {};
+      vi.mocked(withTransaction).mockImplementationOnce(async (callback) =>
+        callback(transactionClient as never),
+      );
       vi.mocked(otpRepo.findValidOtp).mockResolvedValue({
         id: "otp-1",
         email: "admin@example.com",
@@ -447,6 +476,15 @@ describe("Admin OTP API", () => {
       expect(result.sessionToken).toBeDefined();
       expect(result.sessionToken).toHaveLength(128);
       expect(result.adminUser).toMatchObject({ email: "admin@example.com" });
+      expect(otpRepo.deleteAllOtpsByEmail).toHaveBeenCalledWith("admin@example.com", transactionClient);
+      expect(adminRepo.findAdminUserByEmail).toHaveBeenCalledWith("admin@example.com", transactionClient);
+      expect(adminRepo.deleteAdminUserSessions).toHaveBeenCalledWith("admin-1", transactionClient);
+      expect(adminRepo.createAdminSession).toHaveBeenCalledWith(
+        expect.any(String),
+        "admin-1",
+        expect.any(Date),
+        transactionClient,
+      );
     });
 
     it("should delete all OTPs for the email after successful verification", async () => {
@@ -508,7 +546,7 @@ describe("Admin OTP API", () => {
 
       await adminOtpService.verifyOtp("admin@example.com", 123456);
 
-      expect(adminRepo.deleteAdminUserSessions).toHaveBeenCalledWith("admin-1");
+      expect(adminRepo.deleteAdminUserSessions).toHaveBeenCalledWith("admin-1", expect.anything());
       expect(adminRepo.createAdminSession).toHaveBeenCalled();
 
       const deleteOrder = vi.mocked(adminRepo.deleteAdminUserSessions).mock.invocationCallOrder[0];

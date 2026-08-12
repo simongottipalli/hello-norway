@@ -22,7 +22,7 @@ export class AdminOtpController {
   @Response<{ message: string; details: Record<string, unknown> }>("422", "DTO validation failed")
   @Response<{ error: string; message: string }>("429", "Rate limit exceeded")
   @Response<{ error: string; message: string }>("500", "Server error")
-  public async requestOtp(
+  public async requestAdminOtp(
     @Body() body: AdminRequestOtpDto,
     @Request() req: ExpressRequest,
   ): Promise<AdminOtpResponseDto> {
@@ -64,7 +64,7 @@ export class AdminOtpController {
   @Response<{ error: string }>("401", "Invalid OTP or not an admin")
   @Response<{ message: string; details: Record<string, unknown> }>("422", "DTO validation failed")
   @Response<{ error: string }>("500", "Server error")
-  public async verifyOtp(
+  public async verifyAdminOtp(
     @Body() body: AdminVerifyOtpDto,
     @Request() req: ExpressRequest,
   ): Promise<AdminVerifyOtpSuccessDto> {

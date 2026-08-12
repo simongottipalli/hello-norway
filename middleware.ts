@@ -53,6 +53,11 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    if (rest === "/") {
+      const destination = isAdminAuthenticated ? "dashboard" : "login";
+      return NextResponse.redirect(new URL(`/${adminPath}/${destination}`, request.url));
+    }
+
     if (isAdminProtectedPath && !isAdminAuthenticated) {
       return NextResponse.redirect(new URL(`/${adminPath}/login`, request.url));
     }
