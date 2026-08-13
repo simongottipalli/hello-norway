@@ -28,10 +28,10 @@ describe("otpRepo", () => {
     it("counts OTP records created at or after the window start time", async () => {
       vi.mocked(prisma.oTPCode.count).mockResolvedValue(2);
       const windowStart = new Date("2024-01-01T11:50:00Z");
-      const result = await otpRepo.countRecentOtps("user@example.com", windowStart);
+      const result = await otpRepo.countRecentOtps("user@example.com", windowStart, "USER");
       expect(result).toBe(2);
       expect(prisma.oTPCode.count).toHaveBeenCalledWith({
-        where: { email: "user@example.com", createdAt: { gte: windowStart } },
+        where: { email: "user@example.com", purpose: "USER", createdAt: { gte: windowStart } },
       });
     });
   });
@@ -41,10 +41,10 @@ describe("otpRepo", () => {
       const oldestOtp = { id: "otp-1", email: "user@example.com", code: 123456, expiresAt: new Date(), createdAt: new Date("2024-01-01T11:51:00Z") };
       vi.mocked(prisma.oTPCode.findFirst).mockResolvedValue(oldestOtp);
       const windowStart = new Date("2024-01-01T11:50:00Z");
-      const result = await otpRepo.findOldestRecentOtp("user@example.com", windowStart);
+      const result = await otpRepo.findOldestRecentOtp("user@example.com", windowStart, "USER");
       expect(result).toBe(oldestOtp);
       expect(prisma.oTPCode.findFirst).toHaveBeenCalledWith({
-        where: { email: "user@example.com", createdAt: { gte: windowStart } },
+        where: { email: "user@example.com", purpose: "USER", createdAt: { gte: windowStart } },
         orderBy: { createdAt: "asc" },
       });
     });
@@ -53,9 +53,9 @@ describe("otpRepo", () => {
   describe("deleteExpiredOtps", () => {
     it("deletes OTPs whose expiresAt is before now", async () => {
       vi.mocked(prisma.oTPCode.deleteMany).mockResolvedValue({ count: 1 });
-      await otpRepo.deleteExpiredOtps("user@example.com");
+      await otpRepo.deleteExpiredOtps("user@example.com", "USER");
       expect(prisma.oTPCode.deleteMany).toHaveBeenCalledWith({
-        where: { email: "user@example.com", expiresAt: { lt: new Date("2024-01-01T12:00:00Z") } },
+        where: { email: "user@example.com", purpose: "USER", expiresAt: { lt: new Date("2024-01-01T12:00:00Z") } },
       });
     });
   });
@@ -64,9 +64,9 @@ describe("otpRepo", () => {
     it("creates an OTP record with the given email, code, and expiry", async () => {
       vi.mocked(prisma.oTPCode.create).mockResolvedValue({} as never);
       const expiresAt = new Date("2024-01-01T12:10:00Z");
-      await otpRepo.createOtp("user@example.com", 123456, expiresAt);
+      await otpRepo.createOtp("user@example.com", 123456, expiresAt, "USER");
       expect(prisma.oTPCode.create).toHaveBeenCalledWith({
-        data: { email: "user@example.com", code: 123456, expiresAt },
+        data: { email: "user@example.com", code: 123456, expiresAt, purpose: "USER" },
       });
     });
   });
@@ -75,12 +75,13 @@ describe("otpRepo", () => {
     it("finds an OTP that is not yet expired", async () => {
       const record = { id: "otp-1", email: "user@example.com", code: 123456, expiresAt: new Date("2024-01-01T12:10:00Z"), createdAt: new Date() };
       vi.mocked(prisma.oTPCode.findFirst).mockResolvedValue(record);
-      const result = await otpRepo.findValidOtp("user@example.com", 123456);
+      const result = await otpRepo.findValidOtp("user@example.com", 123456, "ADMIN");
       expect(result).toBe(record);
       expect(prisma.oTPCode.findFirst).toHaveBeenCalledWith({
         where: {
           email: "user@example.com",
           code: 123456,
+          purpose: "ADMIN",
           expiresAt: { gt: new Date("2024-01-01T12:00:00Z") },
         },
       });
@@ -88,7 +89,7 @@ describe("otpRepo", () => {
 
     it("returns null when no matching valid OTP exists", async () => {
       vi.mocked(prisma.oTPCode.findFirst).mockResolvedValue(null);
-      const result = await otpRepo.findValidOtp("user@example.com", 999999);
+      const result = await otpRepo.findValidOtp("user@example.com", 999999, "USER");
       expect(result).toBeNull();
     });
   });
@@ -96,15 +97,15 @@ describe("otpRepo", () => {
   describe("deleteAllOtpsByEmail", () => {
     it("deletes all OTPs for the given email regardless of expiry", async () => {
       vi.mocked(prisma.oTPCode.deleteMany).mockResolvedValue({ count: 3 });
-      await otpRepo.deleteAllOtpsByEmail("user@example.com");
+      await otpRepo.deleteAllOtpsByEmail("user@example.com", "USER");
       expect(prisma.oTPCode.deleteMany).toHaveBeenCalledWith({
-        where: { email: "user@example.com" },
+        where: { email: "user@example.com", purpose: "USER" },
       });
     });
 
     it("accepts a custom db instance", async () => {
       const mockDb = { oTPCode: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) } };
-      await otpRepo.deleteAllOtpsByEmail("user@example.com", mockDb as Parameters<typeof otpRepo.deleteAllOtpsByEmail>[1]);
+      await otpRepo.deleteAllOtpsByEmail("user@example.com", "USER", mockDb as Parameters<typeof otpRepo.deleteAllOtpsByEmail>[2]);
       expect(mockDb.oTPCode.deleteMany).toHaveBeenCalled();
       expect(prisma.oTPCode.deleteMany).not.toHaveBeenCalled();
     });

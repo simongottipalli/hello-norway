@@ -11,6 +11,12 @@
         "in": "cookie",
         "name": "session_token",
         "description": "Session token cookie obtained from /api/otp/verify"
+      },
+      "admin_cookie_auth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "admin_session_token",
+        "description": "Admin session token cookie obtained from /api/admin/otp/verify"
       }
     },
     "basePath": "/api",

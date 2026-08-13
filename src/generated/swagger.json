@@ -423,6 +423,146 @@
 				},
 				"type": "object",
 				"additionalProperties": false
+			},
+			"AdminOtpResponseDto": {
+				"properties": {
+					"message": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"message"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"AdminRequestOtpDto": {
+				"properties": {
+					"email": {
+						"type": "string",
+						"description": "Admin email address",
+						"example": "admin@example.com",
+						"format": "email",
+						"maxLength": 320
+					}
+				},
+				"required": [
+					"email"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"AdminVerifyOtpSuccessDto": {
+				"properties": {
+					"message": {
+						"type": "string"
+					},
+					"success": {
+						"type": "boolean"
+					},
+					"sessionToken": {
+						"type": "string"
+					},
+					"adminUser": {
+						"properties": {
+							"name": {
+								"type": "string",
+								"nullable": true
+							},
+							"email": {
+								"type": "string"
+							},
+							"id": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"name",
+							"email",
+							"id"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"message",
+					"success",
+					"sessionToken",
+					"adminUser"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"AdminVerifyOtpDto": {
+				"properties": {
+					"email": {
+						"type": "string",
+						"description": "Admin email address",
+						"example": "admin@example.com",
+						"format": "email",
+						"maxLength": 320
+					},
+					"code": {
+						"type": "integer",
+						"format": "int32",
+						"description": "6-digit OTP code",
+						"example": 123456,
+						"minimum": 100000,
+						"maximum": 999999
+					}
+				},
+				"required": [
+					"email",
+					"code"
+				],
+				"type": "object",
+				"additionalProperties": false
+			},
+			"AdminSessionResponseDto": {
+				"properties": {
+					"authenticated": {
+						"type": "boolean"
+					},
+					"adminUser": {
+						"properties": {
+							"name": {
+								"type": "string",
+								"nullable": true
+							},
+							"email": {
+								"type": "string"
+							},
+							"id": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"name",
+							"email",
+							"id"
+						],
+						"type": "object"
+					},
+					"session": {
+						"properties": {
+							"expiresAt": {
+								"type": "string",
+								"format": "date-time"
+							}
+						},
+						"required": [
+							"expiresAt"
+						],
+						"type": "object"
+					}
+				},
+				"required": [
+					"authenticated",
+					"adminUser",
+					"session"
+				],
+				"type": "object",
+				"additionalProperties": false
 			}
 		},
 		"securitySchemes": {
@@ -431,6 +571,12 @@
 				"in": "cookie",
 				"name": "session_token",
 				"description": "Session token cookie obtained from /api/otp/verify"
+			},
+			"admin_cookie_auth": {
+				"type": "apiKey",
+				"in": "cookie",
+				"name": "admin_session_token",
+				"description": "Admin session token cookie obtained from /api/admin/otp/verify"
 			}
 		}
 	},
@@ -1431,6 +1577,314 @@
 					}
 				},
 				"description": "Logout user session",
+				"security": [],
+				"parameters": []
+			}
+		},
+		"/admin/otp/generate": {
+			"post": {
+				"operationId": "RequestAdminOtp",
+				"responses": {
+					"200": {
+						"description": "OTP sent",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminOtpResponseDto"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "DTO validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {
+											"$ref": "#/components/schemas/Record_string.unknown_"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Rate limit exceeded",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"message": {
+											"type": "string"
+										},
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"message",
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"message": {
+											"type": "string"
+										},
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"message",
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Request an admin OTP code",
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AdminRequestOtpDto"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/otp/verify": {
+			"post": {
+				"operationId": "VerifyAdminOtp",
+				"responses": {
+					"200": {
+						"description": "OTP verified",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminVerifyOtpSuccessDto"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Validation error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid OTP or not an admin",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "DTO validation failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"details": {
+											"$ref": "#/components/schemas/Record_string.unknown_"
+										},
+										"message": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"details",
+										"message"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Verify an admin OTP code and create an admin session",
+				"security": [],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AdminVerifyOtpDto"
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/auth/session": {
+			"get": {
+				"operationId": "GetAdminSession",
+				"responses": {
+					"200": {
+						"description": "Session retrieved",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminSessionResponseDto"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Get current admin session information",
+				"security": [
+					{
+						"admin_cookie_auth": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/admin/auth/logout": {
+			"post": {
+				"operationId": "LogoutAdmin",
+				"responses": {
+					"200": {
+						"description": "Logged out",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"success": {
+											"type": "boolean"
+										}
+									},
+									"required": [
+										"success"
+									],
+									"type": "object"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"error": {
+											"type": "string"
+										}
+									},
+									"required": [
+										"error"
+									],
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"description": "Logout admin session",
 				"security": [],
 				"parameters": []
 			}

@@ -38,6 +38,8 @@ Repository Layer  ← only layer that imports from Prisma
 | `prisma/seed.ts` | Seed script runs outside the app |
 | `e2e/helpers/db-setup.ts` | E2E test database setup |
 | `e2e/helpers/db-teardown.ts` | E2E test database teardown |
+| `e2e/helpers/admin-db-setup.ts` | Admin portal E2E test database setup |
+| `e2e/helpers/admin-db-teardown.ts` | Admin portal E2E test database teardown |
 
 No other file should import from `@prisma/client` or `src/generated/prisma/`.
 

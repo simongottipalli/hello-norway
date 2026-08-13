@@ -77,6 +77,6 @@ describe('GET /otp/test-peek (test-only endpoint)', () => {
 
     await request(app).get('/otp/test-peek?email=User@EXAMPLE.COM');
 
-    expect(otpRepo.findLatestValidOtp).toHaveBeenCalledWith('user@example.com');
+    expect(otpRepo.findLatestValidOtp).toHaveBeenCalledWith('user@example.com', 'USER');
   });
 });
