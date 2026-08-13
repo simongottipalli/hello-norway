@@ -382,6 +382,7 @@ describe("Admin OTP API", () => {
         "nobody@example.com",
         expect.any(Number),
         expect.any(Date),
+        "ADMIN",
       );
       expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
     });
@@ -513,7 +514,7 @@ describe("Admin OTP API", () => {
       expect(result.sessionToken).toBeDefined();
       expect(result.sessionToken).toHaveLength(128);
       expect(result.adminUser).toMatchObject({ email: "admin@example.com" });
-      expect(otpRepo.deleteAllOtpsByEmail).toHaveBeenCalledWith("admin@example.com", transactionClient);
+      expect(otpRepo.deleteAllOtpsByEmail).toHaveBeenCalledWith("admin@example.com", "ADMIN", transactionClient);
       expect(adminRepo.findAdminUserByEmail).toHaveBeenCalledWith("admin@example.com", transactionClient);
       expect(adminRepo.deleteAdminUserSessions).toHaveBeenCalledWith("admin-1", transactionClient);
       expect(adminRepo.createAdminSession).toHaveBeenCalledWith(
@@ -538,6 +539,7 @@ describe("Admin OTP API", () => {
 
       expect(otpRepo.deleteAllOtpsByEmail).toHaveBeenCalledWith(
         "admin@example.com",
+        "ADMIN",
         expect.anything(),
       );
     });

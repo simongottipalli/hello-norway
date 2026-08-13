@@ -425,7 +425,7 @@ describe("OTP API", () => {
 
       expect(result.success).toBe(true);
       // Verify rate limit window only counts OTPs from last 10 minutes
-      expect(otpRepo.countRecentOtps).toHaveBeenCalledWith(testEmail, windowStartTime);
+      expect(otpRepo.countRecentOtps).toHaveBeenCalledWith(testEmail, windowStartTime, "USER");
     });
 
     it("should count OTPs from last 10 minutes only", async () => {
@@ -442,7 +442,7 @@ describe("OTP API", () => {
 
       await otpService.requestOtp(testEmail);
 
-      expect(otpRepo.countRecentOtps).toHaveBeenCalledWith(testEmail, tenMinutesAgo);
+      expect(otpRepo.countRecentOtps).toHaveBeenCalledWith(testEmail, tenMinutesAgo, "USER");
     });
   });
 
@@ -460,7 +460,7 @@ describe("OTP API", () => {
 
       await otpService.requestOtp(testEmail);
 
-      expect(otpRepo.deleteExpiredOtps).toHaveBeenCalledWith(testEmail);
+      expect(otpRepo.deleteExpiredOtps).toHaveBeenCalledWith(testEmail, "USER");
 
       // Verify deletion happens before creation
       const deleteCall = vi.mocked(otpRepo.deleteExpiredOtps).mock.invocationCallOrder[0];
@@ -545,6 +545,7 @@ describe("OTP API", () => {
         testEmail,
         expect.any(Number),
         expect.any(Date),
+        "USER",
       );
     });
   });
@@ -835,8 +836,8 @@ describe("OTP API", () => {
       const result = await otpService.verifyOtp(testEmail, 123456);
 
       expect(result.success).toBe(true);
-      expect(otpRepo.findValidOtp).toHaveBeenCalledWith(testEmail, 123456);
-      expect(otpRepo.deleteAllOtpsByEmail).toHaveBeenCalledWith(testEmail, expect.anything());
+      expect(otpRepo.findValidOtp).toHaveBeenCalledWith(testEmail, 123456, "USER");
+      expect(otpRepo.deleteAllOtpsByEmail).toHaveBeenCalledWith(testEmail, "USER", expect.anything());
       expect(sessionRepo.deleteUserSessions).toHaveBeenCalledWith("user-1", expect.anything());
       const [sessionToken] = vi.mocked(sessionRepo.createSession).mock.calls[0];
       expect(sessionToken).toHaveLength(128);

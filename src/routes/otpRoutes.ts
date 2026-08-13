@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === "test") {
     if (!normalizedEmail) {
       return res.status(400).json({ error: "email query param required" });
     }
-    const otp = await findLatestValidOtp(normalizedEmail);
+    const otp = await findLatestValidOtp(normalizedEmail, "USER");
     if (!otp) {
       return res.status(404).json({ error: "No valid OTP found" });
     }

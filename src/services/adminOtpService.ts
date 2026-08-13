@@ -18,6 +18,7 @@ const OTP_EXPIRATION_MINUTES = 10;
 const OTP_RATE_LIMIT_MAX_ATTEMPTS = 3;
 const OTP_MIN_VALUE = 100000;
 const OTP_MAX_VALUE = 999999;
+const OTP_PURPOSE = "ADMIN" as const;
 const SESSION_EXPIRATION_DAYS = 7;
 const SESSION_TOKEN_BYTES = 64;
 
@@ -45,10 +46,10 @@ export class AdminOtpService {
     try {
       const rateLimitWindowMs = OTP_EXPIRATION_MINUTES * 60 * 1000;
       const windowStartTime = new Date(Date.now() - rateLimitWindowMs);
-      const recentOtpCount = await otpRepo.countRecentOtps(email, windowStartTime);
+      const recentOtpCount = await otpRepo.countRecentOtps(email, windowStartTime, OTP_PURPOSE);
 
       if (recentOtpCount >= OTP_RATE_LIMIT_MAX_ATTEMPTS) {
-        const oldestOtp = await otpRepo.findOldestRecentOtp(email, windowStartTime);
+        const oldestOtp = await otpRepo.findOldestRecentOtp(email, windowStartTime, OTP_PURPOSE);
         const retryAfter = oldestOtp
           ? Math.ceil((oldestOtp.createdAt.getTime() + rateLimitWindowMs - Date.now()) / 1000)
           : OTP_EXPIRATION_MINUTES * 60;
@@ -62,11 +63,11 @@ export class AdminOtpService {
         };
       }
 
-      await otpRepo.deleteExpiredOtps(email);
+      await otpRepo.deleteExpiredOtps(email, OTP_PURPOSE);
 
       const code = randomInt(OTP_MIN_VALUE, OTP_MAX_VALUE + 1);
       const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MINUTES * 60 * 1000);
-      await otpRepo.createOtp(email, code, expiresAt);
+      await otpRepo.createOtp(email, code, expiresAt, OTP_PURPOSE);
 
       // Only send OTP to known admin emails — unknown emails receive a generic
       // success response without an actual email being dispatched. Recording
@@ -112,7 +113,7 @@ export class AdminOtpService {
 
   async verifyOtp(email: string, code: number, logger?: Logger): Promise<AdminOtpServiceResult> {
     try {
-      const otpRecord = await otpRepo.findValidOtp(email, code);
+      const otpRecord = await otpRepo.findValidOtp(email, code, OTP_PURPOSE);
 
       if (!otpRecord) {
         logger?.warn({ msg: "Invalid or expired admin OTP", email });
@@ -120,7 +121,7 @@ export class AdminOtpService {
       }
 
       const result = await withTransaction(async (tx) => {
-        await otpRepo.deleteAllOtpsByEmail(email, tx);
+        await otpRepo.deleteAllOtpsByEmail(email, OTP_PURPOSE, tx);
 
         const adminUser = await adminRepo.findAdminUserByEmail(email, tx);
         if (!adminUser) {
