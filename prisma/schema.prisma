@@ -45,42 +45,47 @@ enum UserTaskStatus {
   DONE
 }
 
+enum OtpPurpose {
+  USER
+  ADMIN
+}
+
 model User {
-  id                  String            @id @default(uuid()) @db.Uuid
-  email               String            @unique @db.VarChar(320)
-  name                String            @db.VarChar(255)
-  isEU                Boolean?
-  employmentStatus    EmploymentStatus?
-  hasChildren         Boolean?
-  housingType         HousingType?
-  plannedArrivalDate  DateTime?         @db.Date
-  arrivalDate         DateTime?         @db.Date
-  createdAt           DateTime          @default(now()) @db.Timestamptz(6)
-  updatedAt           DateTime          @updatedAt @db.Timestamptz(6)
-  userTasks           UserTask[]
-  sessions            Session[]
-  createdTasks        Task[]
+  id                 String            @id @default(uuid()) @db.Uuid
+  email              String            @unique @db.VarChar(320)
+  name               String            @db.VarChar(255)
+  isEU               Boolean?
+  employmentStatus   EmploymentStatus?
+  hasChildren        Boolean?
+  housingType        HousingType?
+  plannedArrivalDate DateTime?         @db.Date
+  arrivalDate        DateTime?         @db.Date
+  createdAt          DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(6)
+  userTasks          UserTask[]
+  sessions           Session[]
+  createdTasks       Task[]
 }
 
 model Task {
-  id                         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug                       String             @unique @db.VarChar(80)
-  title                      String             @db.VarChar(140)
-  shortDescription           String             @db.VarChar(280)
-  body                       String             @db.Text
-  category                   TaskCategory
-  officialLinks              Json               @db.JsonB
-  requiresEU                 Boolean?
-  requiresEmploymentStatus   EmploymentStatus[]
-  requiresChildren           Boolean?
-  minDaysFromArrival         Int?               @db.SmallInt
-  maxDaysFromArrival         Int?               @db.SmallInt
-  sortOrder                  Int                @db.SmallInt
-  createdByUserId            String?            @db.Uuid
-  createdAt                  DateTime           @default(now()) @db.Timestamptz(6)
-  updatedAt                  DateTime           @updatedAt @db.Timestamptz(6)
-  createdBy                  User?              @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
-  userTasks                  UserTask[]
+  id                       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                     String             @unique @db.VarChar(80)
+  title                    String             @db.VarChar(140)
+  shortDescription         String             @db.VarChar(280)
+  body                     String             @db.Text
+  category                 TaskCategory
+  officialLinks            Json               @db.JsonB
+  requiresEU               Boolean?
+  requiresEmploymentStatus EmploymentStatus[]
+  requiresChildren         Boolean?
+  minDaysFromArrival       Int?               @db.SmallInt
+  maxDaysFromArrival       Int?               @db.SmallInt
+  sortOrder                Int                @db.SmallInt
+  createdByUserId          String?            @db.Uuid
+  createdAt                DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt                DateTime           @updatedAt @db.Timestamptz(6)
+  createdBy                User?              @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  userTasks                UserTask[]
 
   @@index([category, sortOrder])
   @@index([slug])
@@ -105,13 +110,14 @@ model UserTask {
 }
 
 model OTPCode {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String   @db.VarChar(320)
-  code      Int      @db.Integer
-  expiresAt DateTime @db.Timestamptz(6)
-  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String     @db.VarChar(320)
+  code      Int        @db.Integer
+  purpose   OtpPurpose @default(USER)
+  expiresAt DateTime   @db.Timestamptz(6)
+  createdAt DateTime   @default(now()) @db.Timestamptz(6)
 
-  @@index([email, createdAt])
+  @@index([email, purpose, createdAt])
 }
 
 model Session {
