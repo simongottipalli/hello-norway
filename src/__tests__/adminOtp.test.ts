@@ -199,6 +199,19 @@ describe("Admin OTP API", () => {
       expect(response.headers["retry-after"]).toBe("300");
     });
 
+    it("should use fallback status and error values when the request service omits them", async () => {
+      const mockRequestOtp = vi.spyOn(adminOtpServiceModule.adminOtpService, "requestOtp");
+      mockRequestOtp.mockResolvedValueOnce({ success: false });
+
+      const response = await request(app)
+        .post("/api/admin/otp/generate")
+        .send({ email: "admin@example.com" })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe("An error occurred");
+    });
+
     it("should return generic message even on 429 to prevent enumeration", async () => {
       const mockRequestOtp = vi.spyOn(adminOtpServiceModule.adminOtpService, "requestOtp");
       mockRequestOtp.mockResolvedValueOnce({
@@ -280,6 +293,19 @@ describe("Admin OTP API", () => {
 
       expect(response.status).toBe(401);
       expect(response.body.error).toBe("Invalid or expired OTP");
+    });
+
+    it("should use fallback status and error values when the verification service omits them", async () => {
+      const mockVerifyOtp = vi.spyOn(adminOtpServiceModule.adminOtpService, "verifyOtp");
+      mockVerifyOtp.mockResolvedValueOnce({ success: false });
+
+      const response = await request(app)
+        .post("/api/admin/otp/verify")
+        .send({ email: "admin@example.com", code: 123456 })
+        .set("Content-Type", "application/json");
+
+      expect(response.status).toBe(500);
+      expect(response.body.error).toBe("Verification failed");
     });
 
     it("should return 401 when email belongs to a non-admin user", async () => {
@@ -426,6 +452,17 @@ describe("Admin OTP API", () => {
       expect(result.success).toBe(false);
       expect(result.statusCode).toBe(429);
       expect(result.retryAfter).toBe(300); // 5 minutes remaining
+    });
+
+    it("should use the full rate-limit window when no recent OTP can be found", async () => {
+      vi.mocked(otpRepo.countRecentOtps).mockResolvedValue(3);
+      vi.mocked(otpRepo.findOldestRecentOtp).mockResolvedValue(null);
+
+      const result = await adminOtpService.requestOtp("admin@example.com");
+
+      expect(result.success).toBe(false);
+      expect(result.statusCode).toBe(429);
+      expect(result.retryAfter).toBe(600);
     });
 
     it("should return 500 when email sending fails", async () => {

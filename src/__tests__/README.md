@@ -43,6 +43,7 @@ src/__tests__/
 ├── setup.ts                          # Test configuration (dotenv)
 ├── README.md                         # This file
 ├── app-routing.test.ts               # Route auth policy (public vs protected)
+├── adminRoutingMiddleware.test.ts    # Admin and regular Next.js middleware routing
 ├── authMiddleware.test.ts            # Session authentication middleware
 ├── authProfile.test.ts               # Auth profile endpoints (GET/PATCH/DELETE)
 ├── authSession.test.ts               # GET /api/auth/session success-path
